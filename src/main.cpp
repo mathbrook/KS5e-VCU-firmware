@@ -33,6 +33,7 @@ Metro timer_sensor_can_update = Metro(5);
 Metro timer_restart_inverter = Metro(500, 1); // Allow the MCU to restart the inverter
 Metro timer_status_send = Metro(100);
 Metro timer_watchdog_timer = Metro(500);
+elapsedMillis dischargeCountdown;
 PM100Info::MC_internal_states pm100State;
 PM100Info::MC_motor_position_information pm100Speed;
 PM100Info::MC_voltage_information pm100Voltage;
@@ -45,9 +46,6 @@ int rinehartState;
 int lastRinehartState;
 bool inverter_restart = false;
 //#define DEBUG 0
-elapsedMillis dischargeCountdown;
-elapsedMillis RTDcountDown;
-elapsedMillis RTDbuzzer; const int RTDPin=15; unsigned long RTD_interval=200;
 //objects
 #define NUM_TX_MAILBOXES 2
 #define NUM_RX_MAILBOXES 6
@@ -61,6 +59,7 @@ uint8_t enableSmallTorque[] = {0xD2, 0x04, 0, 0, 1, 1, 0, 0}; //The message to e
 uint8_t maxTorque;
 
 /*****PROTOTYPES*****/
+void state_machine();
 void writeControldisableWithZeros();
 void writeEnableNoTorque();
 void idle();
@@ -79,7 +78,9 @@ void tryToClearMcFault();
 void forceMCdischarge();
 void testStateMachine();
 void read_pedal_values();
-static CAN_message_t tx_msg;
+void set_state(MCU_STATE new_state);
+void check_TS_active();
+void check_inverter_disabled();
 void setup()
 {
     mcu_status.set_max_torque(0); //no torque on startup
@@ -124,7 +125,7 @@ void loop()
         digitalWrite(MC_RELAY, HIGH);
         mcu_status.set_inverter_powered(true);
     }
-    testStateMachine();
+    state_machine();
 }
 void readBroadcast()
 {   
@@ -143,6 +144,7 @@ void readBroadcast()
         // }
         if (rxMsg.id == ID_MC_INTERNAL_STATES)
         {
+            pm100State.load(rxMsg.buf);
             memcpy(MC_internalState,rxMsg.buf,sizeof(MC_internalState));
            // Serial.print("<< Internal States");
         }
@@ -152,10 +154,12 @@ void readBroadcast()
         }
         if (rxMsg.id == ID_MC_VOLTAGE_INFORMATION)
         {
+            pm100Voltage.load(rxMsg.buf);
             memcpy(MC_voltageInfo,rxMsg.buf,sizeof(MC_voltageInfo));
         }
          if (rxMsg.id == ID_MC_MOTOR_POSITION_INFORMATION)
         {
+            pm100Speed.load(rxMsg.buf);
             memcpy(MC_motorPosInfo,rxMsg.buf,sizeof(MC_motorPosInfo));
         }
         if (rxMsg.id == 0x69){
@@ -180,14 +184,7 @@ void writeControldisableWithZeros()
     if (CAN.write(ctrlMsg) > 0)
     {
         Serial.println("****DISABLE****");
-        blinkLED();
     }
-    // else
-    // {
-    //     Serial.print("NO CAN state: ");
-    //     Serial.println(state);
-    //    delay(50);
-    // }
 }
 void writeEnableNoTorque()
 {
@@ -197,7 +194,6 @@ void writeEnableNoTorque()
     memcpy(ctrlMsg.buf, enableNoTorque, sizeof(ctrlMsg.buf));
     CAN.write(ctrlMsg);
     Serial.println("----ENABLE----");
-    blinkLED();
 }
 void doStartup()
 {
@@ -205,24 +201,16 @@ void doStartup()
     writeControldisableWithZeros();
     writeEnableNoTorque();
 }
-void blinkLED()
-{
-    // digitalWrite(LED_BUILTIN, LOW);
-    // digitalWrite(LED_BUILTIN, HIGH);
-    // // delay(30);
-    // digitalWrite(LED_BUILTIN, LOW);
-    // delay(30);
-}
 inline void state_machine() {
     switch (mcu_status.get_state()) {
         case MCU_STATE::STARTUP: break;
         case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
-            inverter_heartbeat(0);
+            keepInverterAlive(0);
             #if DEBUG
             Serial.println("TS NOT ACTIVE");
             #endif
             // if TS is above HV threshold, move to Tractive System Active
-            if (mc_voltage_information.get_dc_bus_voltage() >= MIN_HV_VOLTAGE) {
+            if (pm100Voltage.get_dc_bus_voltage() >= MIN_HV_VOLTAGE) {
                 #if DEBUG
                 Serial.println("Setting state to TS Active from TS Not Active");
                 #endif
@@ -232,10 +220,10 @@ inline void state_machine() {
 
         case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
             check_TS_active();
-            inverter_heartbeat(0);
+            keepInverterAlive(0);
 
             // if start button has been pressed and brake pedal is held down, transition to the next state
-            if (dashboard_status.get_start_btn() && mcu_status.get_brake_pedal_active()) {
+            if (digitalRead(RTDbutton)==0 && mcu_status.get_brake_pedal_active()) {
                 #if DEBUG
                 Serial.println("Setting state to Enabling Inverter");
                 #endif
@@ -245,7 +233,7 @@ inline void state_machine() {
 
         case MCU_STATE::ENABLING_INVERTER:
             check_TS_active();
-            inverter_heartbeat(1);
+            keepInverterAlive(1);
 
             // inverter enabling timed out
             if (timer_inverter_enable.check()) {
@@ -255,7 +243,7 @@ inline void state_machine() {
                 set_state(MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
             }
             // motor controller indicates that inverter has enabled within timeout period
-            if (mc_internal_states.get_inverter_enable_state()) {
+            if (pm100State.get_inverter_enable_state()) {
                 #if DEBUG
                 Serial.println("Setting state to Waiting Ready to Drive Sound");
                 #endif
@@ -266,7 +254,7 @@ inline void state_machine() {
         case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
             check_TS_active();
             check_inverter_disabled();
-            inverter_heartbeat(1);
+            keepInverterAlive(1);
 
             // if the ready to drive sound has been playing for long enough, move to ready to drive mode
             if (timer_ready_sound.check()) {
@@ -283,17 +271,15 @@ inline void state_machine() {
 
             //update_coulomb_count();
             if (timer_motor_controller_send.check()) {
-                // MC_command_message mc_command_message(0, 0, 1, 1, 0, 0);
-                MC_command_message mc_command_message(0,0,1,1,1,0);
                 // FSAE EV.5.5
                 // FSAE T.4.2.10
-                if (filtered_accel1_reading < MIN_ACCELERATOR_PEDAL_1 || filtered_accel1_reading > MAX_ACCELERATOR_PEDAL_1) {
+                if (accel1 < MIN_ACCELERATOR_PEDAL_1 || accel1 > MAX_ACCELERATOR_PEDAL_1) {
                     mcu_status.set_no_accel_implausability(false);
                     #if DEBUG
                     Serial.println("T.4.2.10 1");
                     #endif
                 }
-                else if (filtered_accel2_reading < MAX_ACCELERATOR_PEDAL_2 ||filtered_accel2_reading > MIN_ACCELERATOR_PEDAL_2) {
+                else if (accel2 < MAX_ACCELERATOR_PEDAL_2 ||accel2 > MIN_ACCELERATOR_PEDAL_2) {
                     mcu_status.set_no_accel_implausability(false);
                     #if DEBUG
                     Serial.println("T.4.2.10 2");
@@ -302,11 +288,11 @@ inline void state_machine() {
                 // check that the pedals are reading within 10% of each other
                 // sum of the two readings should be within 10% of the average travel
                 // T.4.2.4
-                else if ((filtered_accel1_reading - (4096 - filtered_accel2_reading)) >
+                else if ((accel1 - (4096 - accel2)) >
                          (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2)/20 ){
                     #if DEBUG
                     Serial.println("T.4.2.4");
-                    Serial.printf("computed - %f\n", filtered_accel1_reading - (4096 - filtered_accel2_reading));
+                    Serial.printf("computed - %f\n", accel1 - (4096 - accel2));
                     Serial.printf("standard - %d\n", (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2)/20);
                     #endif
                     mcu_status.set_no_accel_implausability(false);
@@ -318,7 +304,7 @@ inline void state_machine() {
                 // BSE check
                 // EV.5.6
                 // FSAE T.4.3.4
-                if (filtered_brake1_reading < 409 || filtered_brake1_reading > 3687) {
+                if (brake1 < 409 || brake1 > 3687) {
                     mcu_status.set_no_brake_implausability(false);
                 }
                 else{
@@ -329,9 +315,9 @@ inline void state_machine() {
                 // APPS/Brake Pedal Plausability Check
                 if  (
                         (
-                            (filtered_accel1_reading > ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1)/4 + START_ACCELERATOR_PEDAL_1))
+                            (accel1 > ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1)/4 + START_ACCELERATOR_PEDAL_1))
                             ||
-                            (filtered_accel2_reading < ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2)/4 + START_ACCELERATOR_PEDAL_2))
+                            (accel2 < ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2)/4 + START_ACCELERATOR_PEDAL_2))
                         )
                         && mcu_status.get_brake_pedal_active()
                     )
@@ -340,9 +326,9 @@ inline void state_machine() {
                 }
                 else if
                 (
-                    (filtered_accel1_reading < ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1)/20 + START_ACCELERATOR_PEDAL_1))
+                    (accel1 < ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1)/20 + START_ACCELERATOR_PEDAL_1))
                     &&
-                    (filtered_accel2_reading > ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2)/20 + START_ACCELERATOR_PEDAL_2))
+                    (accel2 > ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2)/20 + START_ACCELERATOR_PEDAL_2))
                 )
                 {
                     mcu_status.set_no_accel_brake_implausability(true);
@@ -390,13 +376,21 @@ inline void state_machine() {
                 // Serial.print("RPM: ");
                 // Serial.println(mc_motor_position_information.get_motor_speed());
                 // Serial.println(calculated_torque);
-
-                mc_command_message.set_torque_command(calculated_torque);
-
-                mc_command_message.write(tx_msg.buf);
-                tx_msg.id = ID_MC_COMMAND_MESSAGE;
-                tx_msg.len = 8;
-                CAN.write(tx_msg);
+                uint8_t torquePart1 = calculated_torque % 256;
+                uint8_t torquePart2 = calculated_torque/256;
+                uint8_t angularVelocity1=0,angularVelocity2=0;
+                bool emraxDirection = true; //forward
+                bool inverterEnable = true; //go brrr
+                // if((brake1>=22000)||calculated_torque==0|| !mcu_status.get_no_accel_brake_implausability()){
+                //     torquePart1=0x0C;
+                //     torquePart2=0xFE; //50nm regen
+                // }
+                uint8_t torqueCommand[]={torquePart1,torquePart2,angularVelocity1,angularVelocity2,emraxDirection,inverterEnable,0,0};
+                CAN_message_t ctrlMsg;
+                ctrlMsg.len=8;
+                ctrlMsg.id=ID_MC_COMMAND_MESSAGE;
+                memcpy(ctrlMsg.buf, torqueCommand, sizeof(ctrlMsg.buf));
+                CAN.write(ctrlMsg);
             }
             break;
     }
@@ -479,6 +473,52 @@ inline void state_machine() {
 
 // }
 // }
+/* Handle changes in state */
+void set_state(MCU_STATE new_state) {
+    if (mcu_status.get_state() == new_state) {
+        return;
+    }
+
+    // exit logic
+    switch(mcu_status.get_state()){
+        case MCU_STATE::STARTUP: break;
+        case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: break;
+        case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: break;
+        case MCU_STATE::ENABLING_INVERTER: break;
+        case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
+            // make dashboard stop buzzer
+            mcu_status.set_activate_buzzer(false);
+           digitalWrite(BUZZER,LOW);
+            break;
+        case MCU_STATE::READY_TO_DRIVE: break;
+    }
+
+    mcu_status.set_state(new_state);
+
+    // entry logic
+    switch (new_state) {
+        case MCU_STATE::STARTUP: break;
+        case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: break;
+        case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: break;
+        case MCU_STATE::ENABLING_INVERTER: {
+            doStartup();
+            Serial.println("MCU Sent enable command");
+            timer_inverter_enable.reset();
+            break;
+        }
+        case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
+            // make dashboard sound buzzer
+            mcu_status.set_activate_buzzer(true);
+            digitalWrite(BUZZER,HIGH);
+            timer_ready_sound.reset();
+            Serial.println("RTDS enabled");
+            break;
+        case MCU_STATE::READY_TO_DRIVE:
+            Serial.println("Ready to drive");
+            break;
+    }
+}
+
 
 int calculate_torque() {
     int calculated_torque = 0;
@@ -604,6 +644,26 @@ void sendPrechargeStartMsg(){
       memcpy(ctrlMsg.buf, prechargeCmd, sizeof(ctrlMsg.buf));
       CAN.write(ctrlMsg);
 }
+/* Shared state functinality */
+
+// if TS is below HV threshold, return to Tractive System Not Active
+inline void check_TS_active() {
+    if (pm100Voltage.get_dc_bus_voltage() < MIN_HV_VOLTAGE) {
+        #if DEBUG
+        Serial.println("Setting state to TS Not Active, because TS is below HV threshold");
+        #endif
+        set_state(MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+    }
+}
+// if the inverter becomes disabled, return to Tractive system active
+inline void check_inverter_disabled() {
+    if (!pm100State.get_inverter_enable_state()) {
+        #if DEBUG
+        Serial.println("Setting state to TS Active because inverter is disabled");
+        #endif
+        set_state(MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
+    }
+}
 void keepInverterAlive(bool enable){ //do u want the MC on or not?
     if(mcControlTimer.check()){
     CAN_message_t ctrlMsg;
@@ -619,11 +679,11 @@ int figureOutMCStuff(){
     mcState=MC_internalState[0];
     return mcState;
 }
-int mcBusVoltage(){
+int getmcBusVoltage(){
     int busVoltage=MC_voltageInfo[0]+MC_voltageInfo[1]*256;
     return busVoltage;
 }
-int mcMotorRPM(){
+int getmcMotorRPM(){
     int emraxSpeed=MC_motorPosInfo[2]+MC_motorPosInfo[3]*256;
     if(emraxSpeed>65000){
         emraxSpeed=0;
