@@ -8,6 +8,8 @@
 #include <SPI.h>
 #include <string.h>
 #include <stdint.h>
+#include <KS2eCAN.h>
+#include <KS2eVCUgpios.h>
 // #include <drivers.h>
 //Pedalbox stuff
 #define BRAKE_ACTIVE 25000               // Threshold for brake pedal active  
@@ -30,7 +32,7 @@ float accel1{},accel2{},brake1{},brake2{};
 ADC_SPI ADC(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
 Metro mcControlTimer=Metro(50);
 class PM100Info{
-public:
+    public:
     class MC_internal_states {
     public:
         MC_internal_states() = default;
@@ -78,5 +80,66 @@ public:
         uint8_t inverter_enable;                    // @Parse @Flaglist(inverter_enable_state, inverter_enable_lockout)
         uint8_t direction_command;                  // @Parse @Hex
     };
+    class MC_voltage_information {
+    public:
+        MC_voltage_information() = default;
+        MC_voltage_information(uint8_t buf[8]) { load(buf); }
+
+        inline void load(uint8_t buf[])         { memcpy(this, buf, sizeof(*this)); }
+        inline void write(uint8_t buf[])  const { memcpy(buf, this, sizeof(*this)); }
+
+        inline int16_t get_dc_bus_voltage()   const { return dc_bus_voltage; }
+        inline int16_t get_output_voltage()   const { return output_voltage; }
+        inline int16_t get_phase_ab_voltage() const { return phase_ab_voltage; }
+        inline int16_t get_phase_bc_voltage() const { return phase_bc_voltage; }
+
+    #ifdef HT_DEBUG_EN
+        void print() {
+            Serial.println("\n\nMC VOLTAGE INFORMATION");
+            Serial.println(    "----------------------");
+            Serial.print("DC BUS VOLTAGE: ");   Serial.println(dc_bus_voltage / 10.0, 1);
+            Serial.print("OUTPUT VOLTAGE: ");   Serial.println(output_voltage / 10.0, 1);
+            Serial.print("PHASE AB VOLTAGE: "); Serial.println(phase_ab_voltage / 10.0, 1);
+            Serial.print("PHASE BC VOLTAGE: "); Serial.println(phase_bc_voltage / 10.0, 1);
+        }
+    #endif
+
+    private:
+        int16_t dc_bus_voltage;     // @Parse @Scale(10) @Unit(V)
+        int16_t output_voltage;     // @Parse @Scale(10) @Unit(V)
+        int16_t phase_ab_voltage;   // @Parse @Scale(10) @Unit(V)
+        int16_t phase_bc_voltage;   // @Parse @Scale(10) @Unit(V)
+    };
+            class MC_motor_position_information {
+    public:
+        MC_motor_position_information() = default;
+        MC_motor_position_information(uint8_t buf[8]) { load(buf); }
+
+        inline void load(uint8_t buf[])         { memcpy(this, buf, sizeof(*this)); }
+        inline void write(uint8_t buf[])  const { memcpy(buf, this, sizeof(*this)); }
+
+        inline int16_t get_motor_angle()                    const { return motor_angle; }
+        inline int16_t get_motor_speed()                    const { return motor_speed; }
+        inline int16_t get_electrical_output_frequency()    const { return electrical_output_frequency; }
+        inline int16_t get_delta_resolver_filtered()        const { return delta_resolver_filtered; }
+
+    #ifdef HT_DEBUG_EN
+        void print() {
+            Serial.println("\n\nMC Motor Position Information");
+            Serial.println(    "-----------------------------");
+            Serial.print("MOTOR ANGLE:         ");  Serial.println(motor_angle / 10.0, 1);
+            Serial.print("MOTOR SPEED:         ");  Serial.println(motor_speed);
+            Serial.print("ELEC OUTPUT FREQ:    ");  Serial.println(electrical_output_frequency);
+            Serial.print("DELTA RESOLVER FILT: ");  Serial.println(delta_resolver_filtered);
+        }
+    #endif
+
+    private:
+        int16_t motor_angle;                    // @Parse @Scale(10)
+        int16_t motor_speed;                    // @Parse @Unit(RPM)
+        int16_t electrical_output_frequency;    // @Parse @Scale(10) @Name(elec_output_freq)
+        int16_t delta_resolver_filtered;        // @Parse
+    };
+
 };
 #endif
