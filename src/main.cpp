@@ -45,7 +45,7 @@ int lastState;
 int rinehartState;
 int lastRinehartState;
 bool inverter_restart = false;
-//#define DEBUG 0
+#define DEBUG 1
 //objects
 #define NUM_TX_MAILBOXES 2
 #define NUM_RX_MAILBOXES 6
@@ -57,6 +57,7 @@ uint8_t disableWithZeros[] = {0, 0, 0, 0, 0, 0, 0, 0};  //The message to disable
 uint8_t enableNoTorque[] = {0, 0, 0, 0, 1, 1, 0, 0};    //The message to enable the motor with zero torque
 uint8_t enableSmallTorque[] = {0xD2, 0x04, 0, 0, 1, 1, 0, 0}; //The message to enable the motor with small torque
 uint8_t maxTorque;
+uint8_t colorTest[]={0,1,2};
 
 /*****PROTOTYPES*****/
 void state_machine();
@@ -92,6 +93,8 @@ void setup()
     pinMode(LAUNCHCONTROL, INPUT_PULLUP);
     pinMode(MC_RELAY, OUTPUT);
     pinMode(WSFL,INPUT_PULLUP);pinMode(WSFR,INPUT_PULLUP);
+    leds.begin();
+    leds.setBrightness(BRIGHTNESS);
     CAN.begin();
     CAN.setBaudRate(500000);
     DaqCAN.begin();
@@ -113,9 +116,17 @@ void setup()
     CAN.setMBFilter(MB4,ID_MC_MOTOR_POSITION_INFORMATION);
     CAN.mailboxStatus();
     testState=0;
-    digitalWrite(MC_RELAY,HIGH); keepInverterAlive(0);
+    digitalWrite(MC_RELAY,HIGH);
     mcu_status.set_inverter_powered(true);
+    keepInverterAlive(0);
+    delay(500);
+    set_state(MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
     mcu_status.set_max_torque(TORQUE_2);
+    setPixels(enableLights);
+    delay(1000);
+    setPixels(waitingRtdLights);
+    delay(1000);
+    setPixels(rtdLights);
 }
 void loop()
 {
@@ -133,20 +144,10 @@ void readBroadcast()
     CAN_message_t rxMsg;
     if (CAN.read(rxMsg))
     {   
-        
-        // Serial.print("  ID: 0x");
-        // Serial.print(rxMsg.id, HEX);
-        // Serial.print(" DATA: ");
-        // for (uint8_t i = 0; i < 8; i++)
-        // {
-        //     Serial.print(rxMsg.buf[i],HEX);
-        //     Serial.print(" ");
-        // }
         if (rxMsg.id == ID_MC_INTERNAL_STATES)
         {
             pm100State.load(rxMsg.buf);
             memcpy(MC_internalState,rxMsg.buf,sizeof(MC_internalState));
-           // Serial.print("<< Internal States");
         }
         if (rxMsg.id == ID_MC_FAULT_CODES)
         {
@@ -207,7 +208,9 @@ inline void state_machine() {
         case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
             keepInverterAlive(0);
             #if DEBUG
+            if(miscDebugTimer.check()){
             Serial.println("TS NOT ACTIVE");
+            }
             #endif
             // if TS is above HV threshold, move to Tractive System Active
             if (pm100Voltage.get_dc_bus_voltage() >= MIN_HV_VOLTAGE) {
@@ -358,7 +361,7 @@ inline void state_machine() {
                 // Implausibility exists, command 0 torque
 
                 #if DEBUG
-                if (timer_debug_torque.check()) {
+                // if (timer_debug_torque.check()) {
                    /* Serial.print("MCU REQUESTED TORQUE: ");
                     Serial.println(calculated_torque);
                     Serial.print("MCU NO IMPLAUS ACCEL: ");
@@ -370,7 +373,7 @@ inline void state_machine() {
                    /* Serial.printf("ssok: %d\n", mcu_status.get_software_is_ok());
                     Serial.printf("bms: %d\n", mcu_status.get_bms_ok_high());
                     Serial.printf("imd: %d\n", mcu_status.get_imd_ok_high());*/
-                }
+                //}
                 #endif
 
                 // Serial.print("RPM: ");
@@ -501,6 +504,7 @@ void set_state(MCU_STATE new_state) {
         case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: break;
         case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: break;
         case MCU_STATE::ENABLING_INVERTER: {
+            setPixels(enableLights);
             doStartup();
             Serial.println("MCU Sent enable command");
             timer_inverter_enable.reset();

@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <KS2eCAN.h>
 #include <KS2eVCUgpios.h>
+#include <VCUNeoPixelBullshitLMFAO.h>
 // #include <drivers.h>
 //Pedalbox stuff
 #define BRAKE_ACTIVE 25000               // Threshold for brake pedal active  
