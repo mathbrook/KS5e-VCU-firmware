@@ -33,6 +33,7 @@ Metro timer_sensor_can_update = Metro(5);
 Metro timer_restart_inverter = Metro(500, 1); // Allow the MCU to restart the inverter
 Metro timer_status_send = Metro(100);
 Metro timer_watchdog_timer = Metro(500);
+Metro updatePixelsTimer = Metro(200);
 elapsedMillis dischargeCountdown;
 PM100Info::MC_internal_states pm100State;
 PM100Info::MC_motor_position_information pm100Speed;
@@ -57,7 +58,7 @@ uint8_t disableWithZeros[] = {0, 0, 0, 0, 0, 0, 0, 0};  //The message to disable
 uint8_t enableNoTorque[] = {0, 0, 0, 0, 1, 1, 0, 0};    //The message to enable the motor with zero torque
 uint8_t enableSmallTorque[] = {0xD2, 0x04, 0, 0, 1, 1, 0, 0}; //The message to enable the motor with small torque
 uint8_t maxTorque;
-uint8_t colorTest[]={0,1,2};
+uint8_t PixelColorz[]={7,7,7};
 
 /*****PROTOTYPES*****/
 void state_machine();
@@ -130,6 +131,9 @@ void setup()
 }
 void loop()
 {
+    if(updatePixelsTimer.check()){
+        setPixels(PixelColorz);
+    }
     read_pedal_values();
     if (timer_restart_inverter.check() && inverter_restart) {
         inverter_restart = false;
@@ -501,10 +505,17 @@ void set_state(MCU_STATE new_state) {
     // entry logic
     switch (new_state) {
         case MCU_STATE::STARTUP: break;
-        case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: break;
-        case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: break;
+        case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: 
+            {uint8_t TSNA[] ={1,2,3};
+            memcpy(PixelColorz,TSNA,sizeof(PixelColorz));
+            break;}
+        case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
+            {uint8_t TSA[] ={3,4,5};
+            memcpy(PixelColorz,TSA,sizeof(PixelColorz));}
+            break;
         case MCU_STATE::ENABLING_INVERTER: {
-            setPixels(enableLights);
+{            uint8_t ENINV[] ={4,2,0};
+            memcpy(PixelColorz,ENINV,sizeof(PixelColorz));}
             doStartup();
             Serial.println("MCU Sent enable command");
             timer_inverter_enable.reset();
@@ -512,12 +523,17 @@ void set_state(MCU_STATE new_state) {
         }
         case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
             // make dashboard sound buzzer
+            {uint8_t ENINV[] ={2,2,2};
+            memcpy(PixelColorz,ENINV,sizeof(PixelColorz));}
             mcu_status.set_activate_buzzer(true);
             digitalWrite(BUZZER,HIGH);
             timer_ready_sound.reset();
             Serial.println("RTDS enabled");
             break;
         case MCU_STATE::READY_TO_DRIVE:
+
+            {uint8_t RTD[] ={3,3,3};
+            memcpy(PixelColorz,RTD,sizeof(PixelColorz));}
             Serial.println("Ready to drive");
             break;
     }
