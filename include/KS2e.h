@@ -11,21 +11,23 @@
 #include <KS2eCAN.h>
 #include <KS2eVCUgpios.h>
 #include <VCUNeoPixelBullshitLMFAO.h>
+#include <Adafruit_MCP4725.h>
 // #include <drivers.h>
 //Pedalbox stuff
-#define BRAKE_ACTIVE 25000               // Threshold for brake pedal active  
-#define MIN_ACCELERATOR_PEDAL_1 21100    // Low accelerator implausibility threshold
-#define START_ACCELERATOR_PEDAL_1 21700  // Position to start acceleration
-#define END_ACCELERATOR_PEDAL_1 26000    // Position to max out acceleration
-#define MAX_ACCELERATOR_PEDAL_1 26949    // High accelerator implausibility threshold
-#define MIN_ACCELERATOR_PEDAL_2 13700    // Low accelerator implausibility threshold
-#define START_ACCELERATOR_PEDAL_2 14200  // Position to start acceleration
-#define END_ACCELERATOR_PEDAL_2 17250    // Position to max out acceleration
-#define MAX_ACCELERATOR_PEDAL_2 17565    // High accelerator implausibility threshold
+#define BRAKE_ACTIVE 650               // Threshold for brake pedal active  
+#define MIN_ACCELERATOR_PEDAL_1 750    // Low accelerator implausibility threshold
+#define START_ACCELERATOR_PEDAL_1 860  // Position to start acceleration
+#define END_ACCELERATOR_PEDAL_1 1660    // Position to max out acceleration
+#define MAX_ACCELERATOR_PEDAL_1 1800    // High accelerator implausibility threshold
+#define MIN_ACCELERATOR_PEDAL_2 500    // Low accelerator implausibility threshold
+#define START_ACCELERATOR_PEDAL_2 586  // Position to start acceleration
+#define END_ACCELERATOR_PEDAL_2 1100    // Position to max out acceleration
+#define MAX_ACCELERATOR_PEDAL_2 1300    // High accelerator implausibility threshold
 #define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1)/2)
 #define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2)/2)
 #define DRIVER Matthew
 #define MIN_HV_VOLTAGE 600
+#define HT_DEBUG_EN
 //Torque Calculation Defines
 #define ALPHA 0.9772
 #define TORQUE_1 120
@@ -33,6 +35,7 @@
 float accel1{},accel2{},brake1{},brake2{};
 ADC_SPI ADC(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
 Metro mcControlTimer=Metro(50);
+Adafruit_MCP4725 dac;
 class PM100Info{
     public:
     class MC_internal_states {
@@ -87,7 +90,9 @@ class PM100Info{
         MC_voltage_information() = default;
         MC_voltage_information(uint8_t buf[8]) { load(buf); }
 
-        inline void load(uint8_t buf[])         { memcpy(this, buf, sizeof(*this)); }
+        inline void load(uint8_t buf[]){ 
+            memcpy(this, buf, sizeof(*this));
+        }
         inline void write(uint8_t buf[])  const { memcpy(buf, this, sizeof(*this)); }
 
         inline int16_t get_dc_bus_voltage()   const { return dc_bus_voltage; }
@@ -142,6 +147,37 @@ class PM100Info{
         int16_t electrical_output_frequency;    // @Parse @Scale(10) @Name(elec_output_freq)
         int16_t delta_resolver_filtered;        // @Parse
     };
+    class MC_temperatures_1 {
+    public:
+        MC_temperatures_1() = default;
+        MC_temperatures_1(uint8_t buf[8]) { load(buf); }
+
+        inline void load(uint8_t buf[])         { memcpy(this, buf, sizeof(*this)); }
+        inline void write(uint8_t buf[])  const { memcpy(buf, this, sizeof(*this)); }
+
+        inline int16_t get_module_a_temperature()           const { return module_a_temperature; }
+        inline int16_t get_module_b_temperature()           const { return module_b_temperature; }
+        inline int16_t get_module_c_temperature()           const { return module_c_temperature; }
+        inline int16_t get_gate_driver_board_temperature()  const { return gate_driver_board_temperature; }
+
+    #ifdef HT_DEBUG_EN
+        void print() {
+            Serial.println("\n\nMC TEMPERATURES 1");
+            Serial.println(    "-----------------");
+            Serial.print("MODULE A TEMP:          ");   Serial.println(module_a_temperature / 10.0, 1);
+            Serial.print("MODULE B TEMP:          ");   Serial.println(module_b_temperature / 10.0, 1);
+            Serial.print("MODULE C TEMP:          ");   Serial.println(module_c_temperature / 10.0, 1);
+            Serial.print("GATE DRIVER BOARD TEMP: ");   Serial.println(gate_driver_board_temperature / 10.0, 1);
+        }
+    #endif
+
+    private:
+        int16_t module_a_temperature;           // @Parse @Scale(10) @Unit(C)
+        int16_t module_b_temperature;           // @Parse @Scale(10) @Unit(C)
+        int16_t module_c_temperature;           // @Parse @Scale(10) @Unit(C)
+        int16_t gate_driver_board_temperature;  // @Parse @Scale(10) @Unit(C)
+    };
+
 
 };
 #endif
