@@ -12,6 +12,7 @@
 #include <KS2eVCUgpios.h>
 #include <VCUNeoPixelBullshitLMFAO.h>
 #include <Adafruit_MCP4725.h>
+#include "Adafruit_LEDBackpack.h"
 // #include <drivers.h>
 //Pedalbox stuff
 #define BRAKE_ACTIVE 650               // Threshold for brake pedal active  
@@ -32,7 +33,10 @@
 #define ALPHA 0.9772
 #define TORQUE_1 120
 #define TORQUE_2 240
+//Pump speed
+#define PUMP_SPEED 2048
 float accel1{},accel2{},brake1{},brake2{};
+Adafruit_7segment DashDisplay = Adafruit_7segment();
 ADC_SPI ADC(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
 Metro mcControlTimer=Metro(50);
 Adafruit_MCP4725 dac;

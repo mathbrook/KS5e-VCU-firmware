@@ -1,8 +1,13 @@
 #include <WS2812Serial.h>
-const int numled=3;
+const int numled=6;
+const int numledOnDash=6;
 byte drawingMemory[numled*3];         //  3 bytes per LED
 DMAMEM byte displayMemory[numled*12]; // 12 bytes per LED
-WS2812Serial leds(3, displayMemory, drawingMemory, 17,WS2812_GRB);
+byte DashdrawingMemory[numledOnDash*3];         //  3 bytes per LED
+DMAMEM byte DashdisplayMemory[numledOnDash*12]; // 12 bytes per LED
+WS2812Serial leds(numled, displayMemory, drawingMemory, 17,WS2812_GRB);
+WS2812Serial DashLeds(numledOnDash, DashdisplayMemory, DashdrawingMemory, 24,WS2812_GRB);
+
 int colorMax=6;
 #define RED    0xFF0000
 #define GREEN  0x00FF00
@@ -20,6 +25,12 @@ void setPixels(uint8_t color[3]){
     leds.show();
     }
 };
+void DashLedscolorWipe(int color){
+    for(int i=0;i<DashLeds.numPixels();i++){
+        DashLeds.setPixel(i,color);
+        DashLeds.show();
+    }
+}
 uint8_t enableLights[]={0,7,7};
 uint8_t waitingRtdLights[]={2,7,7};
 uint8_t rtdLights[]={3,7,7};

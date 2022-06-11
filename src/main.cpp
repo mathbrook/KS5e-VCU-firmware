@@ -61,7 +61,7 @@ uint8_t disableWithZeros[] = {0, 0, 0, 0, 0, 0, 0, 0};  //The message to disable
 uint8_t enableNoTorque[] = {0, 0, 0, 0, 1, 1, 0, 0};    //The message to enable the motor with zero torque
 uint8_t enableSmallTorque[] = {0xD2, 0x04, 0, 0, 1, 1, 0, 0}; //The message to enable the motor with small torque
 uint8_t maxTorque;
-uint8_t PixelColorz[]={7,7,7};
+uint8_t PixelColorz[]={7,7,7,7,7,7};
 
 /*****PROTOTYPES*****/
 void state_machine();
@@ -98,10 +98,13 @@ void setup()
     pinMode(LAUNCHCONTROL, INPUT_PULLUP);
     pinMode(MC_RELAY, OUTPUT);
     pinMode(WSFL,INPUT_PULLUP);pinMode(WSFR,INPUT_PULLUP);
-    if(!dac.begin()){Serial.println("L");};
-    dac.setVoltage(4095,false);
+    if(!dac.begin()){Serial.println("L dac");};
+    dac.setVoltage(PUMP_SPEED,false);
+    if(!DashDisplay.begin()){Serial.println("L dash");};
     leds.begin();
     leds.setBrightness(BRIGHTNESS);
+    DashLeds.begin();
+    DashLeds.setBrightness(BRIGHTNESS);
     CAN.begin();
     CAN.setBaudRate(500000);
     DaqCAN.begin();
@@ -131,18 +134,23 @@ void setup()
     set_state(MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
     mcu_status.set_max_torque(TORQUE_2);
     setPixels(enableLights);
-    delay(1000);
+    delay(100);
     setPixels(waitingRtdLights);
-    delay(1000);
+    delay(100);
     setPixels(rtdLights);
+    DashLedscolorWipe(GREEN);
 }
 void loop()
 {
-    
+    DashDisplay.print(10,DEC);
+    DashDisplay.writeDisplay();
+
     readBroadcast();
     if(updatePixelsTimer.check()){
         // Serial.println(getmcBusVoltage());
         setPixels(PixelColorz);
+        DashLedscolorWipe(GREEN);
+        
         // pm100Voltage.print();
         // pm100State.print();
         // pm100Speed.print();
@@ -445,15 +453,15 @@ void set_state(MCU_STATE new_state) {
     switch (new_state) {
         case MCU_STATE::STARTUP: break;
         case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: 
-            {uint8_t TSNA[] ={3,3,3};
+            {uint8_t TSNA[] ={3,3,3,3,3,3};
             memcpy(PixelColorz,TSNA,sizeof(PixelColorz));
             break;}
         case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
-            {uint8_t TSA[] ={0,0,0};
+            {uint8_t TSA[] ={0,0,0,0,0,0};
             memcpy(PixelColorz,TSA,sizeof(PixelColorz));}
             break;
         case MCU_STATE::ENABLING_INVERTER: {
-{            uint8_t ENINV[] ={5,5,5};
+{            uint8_t ENINV[] ={5,5,5,5,5,5};
             memcpy(PixelColorz,ENINV,sizeof(PixelColorz));}
             doStartup();
             Serial.println("MCU Sent enable command");
@@ -462,7 +470,7 @@ void set_state(MCU_STATE new_state) {
         }
         case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
             // make dashboard sound buzzer
-            {uint8_t ENINV[] ={2,1,2};
+            {uint8_t ENINV[] ={2,1,2,1,2,1};
             memcpy(PixelColorz,ENINV,sizeof(PixelColorz));}
             mcu_status.set_activate_buzzer(true);
             digitalWrite(BUZZER,HIGH);
@@ -471,7 +479,7 @@ void set_state(MCU_STATE new_state) {
             break;
         case MCU_STATE::READY_TO_DRIVE:
 
-            {uint8_t RTD[] ={3,3,3};
+            {uint8_t RTD[] ={3,3,3,3,3,3};
             memcpy(PixelColorz,RTD,sizeof(PixelColorz));}
             Serial.println("Ready to drive");
             break;
