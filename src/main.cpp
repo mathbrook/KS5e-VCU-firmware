@@ -48,6 +48,7 @@ const int maxState = 7;
 int lastState;
 int rinehartState;
 int lastRinehartState;
+int pixelColor;
 bool inverter_restart = false;
 #define DEBUG 1
 //objects
@@ -142,19 +143,30 @@ void setup()
 }
 void loop()
 {
-    DashDisplay.print(10,DEC);
-    DashDisplay.writeDisplay();
+    
 
     readBroadcast();
-    if(updatePixelsTimer.check()){
+    if(updatePixelsTimer.check()){ //5hz 
         // Serial.println(getmcBusVoltage());
-        setPixels(PixelColorz);
-        DashLedscolorWipe(GREEN);
+        //setPixels(PixelColorz);
+        DashDisplay.print(pm100Voltage.get_dc_bus_voltage(),DEC);
+        DashDisplay.writeDisplay();
+        DashLedscolorWipe(pixelColor);
+        if(digitalRead(TORQUEMODE)==LOW){
+            mcu_status.set_max_torque(TORQUE_1);
+            Serial.println("TOrque is set low");
+        }
+        if(digitalRead(TORQUEMODE)==HIGH){
+            Serial.println("Troque is set high");
+            mcu_status.set_max_torque(TORQUE_2);
+        }
+        Serial.print("rtd status: ");
+        Serial.println(digitalRead(RTDbutton));
+        }
         
         // pm100Voltage.print();
         // pm100State.print();
         // pm100Speed.print();
-    }
     read_pedal_values();
     if (timer_restart_inverter.check() && inverter_restart) {
         inverter_restart = false;
@@ -455,14 +467,17 @@ void set_state(MCU_STATE new_state) {
         case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: 
             {uint8_t TSNA[] ={3,3,3,3,3,3};
             memcpy(PixelColorz,TSNA,sizeof(PixelColorz));
+            pixelColor=GREEN;
             break;}
         case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
+            pixelColor=RED;
             {uint8_t TSA[] ={0,0,0,0,0,0};
             memcpy(PixelColorz,TSA,sizeof(PixelColorz));}
             break;
         case MCU_STATE::ENABLING_INVERTER: {
 {            uint8_t ENINV[] ={5,5,5,5,5,5};
             memcpy(PixelColorz,ENINV,sizeof(PixelColorz));}
+            pixelColor=YELLOW;
             doStartup();
             Serial.println("MCU Sent enable command");
             timer_inverter_enable.reset();
@@ -472,13 +487,14 @@ void set_state(MCU_STATE new_state) {
             // make dashboard sound buzzer
             {uint8_t ENINV[] ={2,1,2,1,2,1};
             memcpy(PixelColorz,ENINV,sizeof(PixelColorz));}
+            pixelColor=ORANGE;
             mcu_status.set_activate_buzzer(true);
             digitalWrite(BUZZER,HIGH);
             timer_ready_sound.reset();
             Serial.println("RTDS enabled");
             break;
         case MCU_STATE::READY_TO_DRIVE:
-
+        pixelColor=PINK;
             {uint8_t RTD[] ={3,3,3,3,3,3};
             memcpy(PixelColorz,RTD,sizeof(PixelColorz));}
             Serial.println("Ready to drive");

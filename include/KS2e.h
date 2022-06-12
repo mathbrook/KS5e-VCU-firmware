@@ -15,13 +15,13 @@
 #include "Adafruit_LEDBackpack.h"
 // #include <drivers.h>
 //Pedalbox stuff
-#define BRAKE_ACTIVE 650               // Threshold for brake pedal active  
-#define MIN_ACCELERATOR_PEDAL_1 750    // Low accelerator implausibility threshold
-#define START_ACCELERATOR_PEDAL_1 860  // Position to start acceleration
+#define BRAKE_ACTIVE 2100               // Threshold for brake pedal active  
+#define MIN_ACCELERATOR_PEDAL_1 850    // Low accelerator implausibility threshold
+#define START_ACCELERATOR_PEDAL_1 914  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_1 1660    // Position to max out acceleration
 #define MAX_ACCELERATOR_PEDAL_1 1800    // High accelerator implausibility threshold
-#define MIN_ACCELERATOR_PEDAL_2 500    // Low accelerator implausibility threshold
-#define START_ACCELERATOR_PEDAL_2 586  // Position to start acceleration
+#define MIN_ACCELERATOR_PEDAL_2 600    // Low accelerator implausibility threshold
+#define START_ACCELERATOR_PEDAL_2 630  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_2 1100    // Position to max out acceleration
 #define MAX_ACCELERATOR_PEDAL_2 1300    // High accelerator implausibility threshold
 #define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1)/2)
