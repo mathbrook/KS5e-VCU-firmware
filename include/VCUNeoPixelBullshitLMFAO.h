@@ -17,7 +17,7 @@ int colorMax=6;
 #define ORANGE 0xE05800
 #define WHITE  0xFF000000
 #define BLACK  0x0
-#define BRIGHTNESS 32
+#define BRIGHTNESS 64
 uint32_t colorList[]={RED,ORANGE,YELLOW,GREEN,BLUE,PINK,WHITE,BLACK};
 void setPixels(uint8_t color[3]){
     for(int i=0;i<numled;i++){

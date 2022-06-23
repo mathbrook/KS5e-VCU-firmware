@@ -21,8 +21,8 @@ bool rtdFlag=false;
 //torque limits
 //placeholder pedal position values
 uint8_t defaultInverterCmd[]={0,0,0,0,0,0,0,0};
-uint8_t MC_internalState[8], MC_voltageInfo[8], MC_faultState[8], MC_motorPosInfo[8];
-Metro timer_debug_raw_torque=Metro(10);
+uint8_t MC_internalState[8], MC_voltageInfo[8], MC_faultState[8], MC_motorPosInfo[8],BMS_packInfo[8];
+Metro timer_debug_raw_torque=Metro(100);
 Metro timer_debug_pedals=Metro(1000);
 Metro pchgMsgTimer=Metro(100);
 Metro miscDebugTimer=Metro(1000);
@@ -36,11 +36,13 @@ Metro timer_restart_inverter = Metro(500, 1); // Allow the MCU to restart the in
 Metro timer_status_send = Metro(100);
 Metro timer_watchdog_timer = Metro(500);
 Metro updatePixelsTimer = Metro(200);
+Metro pm100speedInspection = Metro(500);
 elapsedMillis dischargeCountdown;
 PM100Info::MC_internal_states pm100State{};
 PM100Info::MC_motor_position_information pm100Speed{};
 PM100Info::MC_voltage_information pm100Voltage{};
 PM100Info::MC_temperatures_1 pm100temp1{};
+PM100Info::MC_fault_codes pm100Faults{};
 MCU_status mcu_status{};
 //GPIOs
 const int rtdButtonPin=33,TorqueControl=34,LaunchControl=35,InverterRelay=14;
@@ -95,13 +97,15 @@ void setup()
     Serial.begin(115200);
     pinMode(RTDbutton,INPUT_PULLUP);
     pinMode(BUZZER,OUTPUT);digitalWrite(BUZZER,LOW);
-    pinMode(TORQUEMODE, INPUT_PULLUP);
+    pinMode(TORQUEMODE, INPUT);
     pinMode(LAUNCHCONTROL, INPUT_PULLUP);
     pinMode(MC_RELAY, OUTPUT);
     pinMode(WSFL,INPUT_PULLUP);pinMode(WSFR,INPUT_PULLUP);
     if(!dac.begin()){Serial.println("L dac");};
     dac.setVoltage(PUMP_SPEED,false);
     if(!DashDisplay.begin()){Serial.println("L dash");};
+    DashDisplay.print("yEET");
+    DashDisplay.writeDisplay();
     leds.begin();
     leds.setBrightness(BRIGHTNESS);
     DashLeds.begin();
@@ -120,7 +124,7 @@ void setup()
         CAN.setMB((FLEXCAN_MAILBOX)i,TX,STD);
     }
     CAN.setMBFilter(REJECT_ALL);
-    CAN.setMBFilter(MB0,0x69); //precharge circuit id
+    CAN.setMBFilter(MB0,0x69,ID_BMS_INFO); //precharge circuit id
     CAN.setMBFilter(MB1,ID_MC_VOLTAGE_INFORMATION);
     CAN.setMBFilter(MB2,ID_MC_FAULT_CODES);
     CAN.setMBFilter(MB3, ID_MC_INTERNAL_STATES);
@@ -134,11 +138,10 @@ void setup()
     delay(500);
     set_state(MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
     mcu_status.set_max_torque(TORQUE_2);
-    setPixels(enableLights);
-    delay(100);
-    setPixels(waitingRtdLights);
-    delay(100);
-    setPixels(rtdLights);
+    DashLedscolorWipe(WHITE);
+    delay(500);
+    DashLedscolorWipe(PINK);
+    delay(500);
     DashLedscolorWipe(GREEN);
 }
 void loop()
@@ -146,12 +149,28 @@ void loop()
     
 
     readBroadcast();
+    if(pm100speedInspection.check()){
+        DashDisplay.begin();
+        DashDisplay.clear();
+        pm100Speed.print();
+        DashDisplay.print(pm100Voltage.get_dc_bus_voltage(),DEC);
+        DashDisplay.writeDisplay();
+        pm100Faults.print();
+    }
     if(updatePixelsTimer.check()){ //5hz 
         // Serial.println(getmcBusVoltage());
         //setPixels(PixelColorz);
-        DashDisplay.print(pm100Voltage.get_dc_bus_voltage(),DEC);
-        DashDisplay.writeDisplay();
+        // 
+        //DashDisplay.begin();
+        // DashDisplay.print(BMS_packInfo[4]);
+        // 
         DashLedscolorWipe(pixelColor);
+        Serial.println(accel1);
+        Serial.println(accel2);
+        Serial.print("rtd status: ");
+        Serial.println(digitalRead(RTDbutton));
+        Serial.print("brake status: ");
+        Serial.println(brake1);
         if(digitalRead(TORQUEMODE)==LOW){
             mcu_status.set_max_torque(TORQUE_1);
             Serial.println("TOrque is set low");
@@ -160,13 +179,8 @@ void loop()
             Serial.println("Troque is set high");
             mcu_status.set_max_torque(TORQUE_2);
         }
-        Serial.print("rtd status: ");
-        Serial.println(digitalRead(RTDbutton));
         }
         
-        // pm100Voltage.print();
-        // pm100State.print();
-        // pm100Speed.print();
     read_pedal_values();
     if (timer_restart_inverter.check() && inverter_restart) {
         inverter_restart = false;
@@ -177,7 +191,7 @@ void loop()
 }
 void readBroadcast()
 {   
-    char lineBuffer[50];
+    char lineBuffer[200];
     CAN_message_t rxMsg;
     if (CAN.read(rxMsg) || AccumulatorCAN.read(rxMsg))
     {   
@@ -210,6 +224,9 @@ void readBroadcast()
             int tsVoltage=rxMsg.buf[3]+(rxMsg.buf[4]*100);
             sprintf(lineBuffer, "precharging: state: %d ACV: %dv TSV: %dv\n",pchgState,accVoltage,tsVoltage);
             //Serial.print(lineBuffer);
+        }
+        if (rxMsg.id == ID_BMS_INFO){
+            memcpy(BMS_packInfo,rxMsg.buf,sizeof(BMS_packInfo));
         }
         if(pchgState==2){precharge_success=true;}else if((now-pchgAliveTimer>=100) || pchgState==0 ||pchgState==1||pchgState==3){precharge_success=false;}
         // Serial.println("");
@@ -359,7 +376,7 @@ inline void state_machine() {
                 // BSE check
                 // EV.5.6
                 // FSAE T.4.3.4
-                if (brake1 < 200 || brake1 > 2000) {
+                if (brake1 < 200 || brake1 > 4000) {
                     mcu_status.set_no_brake_implausability(false);
                 }
                 else{
@@ -478,6 +495,7 @@ void set_state(MCU_STATE new_state) {
 {            uint8_t ENINV[] ={5,5,5,5,5,5};
             memcpy(PixelColorz,ENINV,sizeof(PixelColorz));}
             pixelColor=YELLOW;
+            tryToClearMcFault();
             doStartup();
             Serial.println("MCU Sent enable command");
             timer_inverter_enable.reset();
@@ -535,20 +553,20 @@ int calculate_torque() {
     }
     //#if DEBUG
     if (timer_debug_raw_torque.check()) {
-        Serial.print("TORQUE REQUEST DELTA PERCENT: "); // Print the % difference between the 2 accelerator sensor requests
-        Serial.println(abs(torque1 - torque2) / (double) max_torque * 100);
-        Serial.print("MCU RAW TORQUE: ");
-        Serial.println(calculated_torque);
-        Serial.print("TORQUE 1: ");
-        Serial.println(torque1);
-        Serial.print("TORQUE 2: ");
-        Serial.println(torque2);
-        Serial.print("Accel 1: ");
-        Serial.println(accel1);
-        Serial.print("Accel 2: ");
-        Serial.println(accel2);
-        Serial.print("Brake1 : ");
-        Serial.println(brake1);
+        // Serial.print("TORQUE REQUEST DELTA PERCENT: "); // Print the % difference between the 2 accelerator sensor requests
+        // Serial.println(abs(torque1 - torque2) / (double) max_torque * 100);
+        // Serial.print("MCU RAW TORQUE: ");
+        // Serial.println(calculated_torque);
+        // Serial.print("TORQUE 1: ");
+        // Serial.println(torque1);
+        // Serial.print("TORQUE 2: ");
+        // Serial.println(torque2);
+        // Serial.print("Accel 1: ");
+        // Serial.println(accel1);
+        // Serial.print("Accel 2: ");
+        // Serial.println(accel2);
+        // Serial.print("Brake1 : ");
+        // Serial.println(brake1);
     }
     //#endif
      return calculated_torque;
@@ -595,12 +613,6 @@ void sendPrechargeStartMsg(){
       CAN_message_t ctrlMsg;
       ctrlMsg.len=8;
       ctrlMsg.id=420;
-
-      // MC_command_message mc_command_message(0,0,1,1,1,0);
-      
-      // mc_command_message.set_torque_command(calculated_torque);
-      // mc_command_message.set_discharge_enable(true);
-      // mc_command_message.set_inverter_enable(true);
       memcpy(ctrlMsg.buf, prechargeCmd, sizeof(ctrlMsg.buf));
       AccumulatorCAN.write(ctrlMsg);
 }
@@ -651,14 +663,14 @@ int getmcMotorRPM(){
     return emraxSpeed;
 }
 void  tryToClearMcFault(){
-    if(mcControlTimer.check()){
     CAN_message_t ctrlMsg;
       ctrlMsg.len=8;
       ctrlMsg.id=ID_MC_READ_WRITE_PARAMETER_COMMAND;
       uint8_t clearFaultMsg[]={20,0,1,0,0,0,0,0};
       memcpy(ctrlMsg.buf, clearFaultMsg, sizeof(ctrlMsg.buf));
-      CAN.write(ctrlMsg);
-}
+      for(int i=0;i<3;i++){
+        CAN.write(ctrlMsg);
+      }
 }
 void forceMCdischarge(){
     dischargeCountdown=0;

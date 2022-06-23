@@ -2,9 +2,9 @@
 #define WSFR 29 //Input Pullup
 #define SDCSENSE 20 //Input ADC
 #define MC_RELAY 14 //Output
-#define RTDbutton 33 //Input Pullup
+#define RTDbutton 34 //Input Pullup
 #define BUZZER 15 //Output
-#define TORQUEMODE 34 //Input Pullup
+#define TORQUEMODE 33 //Input Pullup
 #define LAUNCHCONTROL 35 //Input Pullup
 #define NEOPIXELPIN 17 //lol
 /*
