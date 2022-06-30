@@ -42,14 +42,13 @@ PM100Info::MC_internal_states pm100State{};
 PM100Info::MC_motor_position_information pm100Speed{};
 PM100Info::MC_voltage_information pm100Voltage{};
 PM100Info::MC_temperatures_1 pm100temp1{};
+PM100Info::MC_temperatures_2 pm100temp2{};
+PM100Info::MC_temperatures_3 pm100temp3{};
 PM100Info::MC_fault_codes pm100Faults{};
 MCU_status mcu_status{};
+PM100Info::MCU_pedal_readings VCUPedalReadings{};
 //GPIOs
-const int rtdButtonPin=33,TorqueControl=34,LaunchControl=35,InverterRelay=14;
-const int maxState = 7;
-int lastState;
-int rinehartState;
-int lastRinehartState;
+//const int rtdButtonPin=33,TorqueControl=34,LaunchControl=35,InverterRelay=14;
 int pixelColor;
 bool inverter_restart = false;
 #define DEBUG 1
@@ -75,16 +74,14 @@ void writeEnableFWDNoTorque();
 void writeEnableSmallTorque();
 void doStartup();
 void readBroadcast();
-void blinkLED();
 int calculate_torque();
 void sendPrechargeStartMsg();
 void keepInverterAlive(bool enable);
 int figureOutMCStuff();
 int getmcBusVoltage();
 int getmcMotorRPM();
-void tryToClearMcFault();
-void forceMCdischarge();
-void testStateMachine();
+void tryToClearMcFault(); 
+void forceMCdischarge(); //unused, sketchy
 void read_pedal_values();
 void set_state(MCU_STATE new_state);
 void check_TS_active();
@@ -108,12 +105,10 @@ void setup()
     DashDisplay.writeDisplay();
     leds.begin();
     leds.setBrightness(BRIGHTNESS);
-    DashLeds.begin();
-    DashLeds.setBrightness(BRIGHTNESS);
     CAN.begin();
     CAN.setBaudRate(500000);
     DaqCAN.begin();
-    DaqCAN.setBaudRate(500000);
+    DaqCAN.setBaudRate(1000000);
     AccumulatorCAN.begin();
     AccumulatorCAN.setBaudRate(500000);
     CAN.setMaxMB(NUM_TX_MAILBOXES+NUM_RX_MAILBOXES);
@@ -123,15 +118,30 @@ void setup()
     for (int i = NUM_RX_MAILBOXES; i<(NUM_TX_MAILBOXES + NUM_RX_MAILBOXES); i++){
         CAN.setMB((FLEXCAN_MAILBOX)i,TX,STD);
     }
-    CAN.setMBFilter(REJECT_ALL);
-    CAN.setMBFilter(MB0,0x69,ID_BMS_INFO); //precharge circuit id
-    CAN.setMBFilter(MB1,ID_MC_VOLTAGE_INFORMATION);
-    CAN.setMBFilter(MB2,ID_MC_FAULT_CODES);
-    CAN.setMBFilter(MB3, ID_MC_INTERNAL_STATES);
-    CAN.setMBFilter(MB4,ID_MC_MOTOR_POSITION_INFORMATION);
-    CAN.setMBFilter(MB5,ID_MC_TEMPERATURES_1,ID_MC_TEMPERATURES_2,ID_MC_TEMPERATURES_3);
+    AccumulatorCAN.setMaxMB(NUM_TX_MAILBOXES+NUM_RX_MAILBOXES);
+    for (int i = 0; i<(NUM_RX_MAILBOXES-1); i++){//leave one free for ext ID
+        AccumulatorCAN.setMB((FLEXCAN_MAILBOX)i,RX,STD);
+    }
+    for (int i = NUM_RX_MAILBOXES; i<(NUM_TX_MAILBOXES + NUM_RX_MAILBOXES); i++){
+        AccumulatorCAN.setMB((FLEXCAN_MAILBOX)i,TX,STD);
+    }
+    AccumulatorCAN.setMB((FLEXCAN_MAILBOX)5,RX,EXT);
+    // CAN.setMBFilter(REJECT_ALL);
+    // CAN.setMBFilterRange(MB0,0,0x7FF);
+    //CAN.setMBFilter(MB0,0x69,ID_BMS_INFO); //precharge circuit id
+    // CAN.setMBFilter(MB1,ID_MC_VOLTAGE_INFORMATION);
+    // CAN.setMBFilter(MB2,ID_MC_FAULT_CODES);
+    // CAN.setMBFilter(MB3, ID_MC_INTERNAL_STATES);
+    // CAN.setMBFilter(MB4,ID_MC_MOTOR_POSITION_INFORMATION);
+    // CAN.setMBFilter(MB5,ID_MC_TEMPERATURES_1,ID_MC_TEMPERATURES_2,ID_MC_TEMPERATURES_3);
     CAN.mailboxStatus();
-    testState=0;
+    AccumulatorCAN.setMBFilter(REJECT_ALL);
+    AccumulatorCAN.setMBFilter(MB0,0x69,ID_BMS_INFO,0x6B2);
+    // AccumulatorCAN.setMBFilter(MB1,0x69,ID_BMS_INFO);
+    // AccumulatorCAN.setMBFilter(MB2,0x69,ID_BMS_INFO);
+    // AccumulatorCAN.setMBFilter(MB3,0x69,ID_BMS_INFO);
+    // AccumulatorCAN.setMBFilter(MB4,0x69,ID_BMS_INFO);
+    // AccumulatorCAN.setMBFilter(MB5,0x69,ID_BMS_INFO);
     digitalWrite(MC_RELAY,HIGH);
     mcu_status.set_inverter_powered(true);
     keepInverterAlive(0);
@@ -146,8 +156,6 @@ void setup()
 }
 void loop()
 {
-    
-
     readBroadcast();
     if(pm100speedInspection.check()){
         DashDisplay.begin();
@@ -155,7 +163,10 @@ void loop()
         pm100Speed.print();
         DashDisplay.print(pm100Voltage.get_dc_bus_voltage(),DEC);
         DashDisplay.writeDisplay();
-        pm100Faults.print();
+        //pm100Faults.print();
+        pm100temp1.print();
+        pm100temp2.print();
+        pm100temp3.print();
     }
     if(updatePixelsTimer.check()){ //5hz 
         // Serial.println(getmcBusVoltage());
@@ -165,20 +176,20 @@ void loop()
         // DashDisplay.print(BMS_packInfo[4]);
         // 
         DashLedscolorWipe(pixelColor);
-        Serial.println(accel1);
-        Serial.println(accel2);
-        Serial.print("rtd status: ");
-        Serial.println(digitalRead(RTDbutton));
-        Serial.print("brake status: ");
-        Serial.println(brake1);
-        if(digitalRead(TORQUEMODE)==LOW){
-            mcu_status.set_max_torque(TORQUE_1);
-            Serial.println("TOrque is set low");
-        }
-        if(digitalRead(TORQUEMODE)==HIGH){
-            Serial.println("Troque is set high");
-            mcu_status.set_max_torque(TORQUE_2);
-        }
+        // Serial.println(accel1);
+        // Serial.println(accel2);
+        // Serial.print("rtd status: ");
+        // Serial.println(digitalRead(RTDbutton));
+        // Serial.print("brake status: ");
+        // Serial.println(brake1);
+        // if(digitalRead(TORQUEMODE)==LOW){
+        //     mcu_status.set_max_torque(TORQUE_1);
+        //     Serial.println("TOrque is set low");
+        // }
+        // if(digitalRead(TORQUEMODE)==HIGH){
+        //     Serial.println("Troque is set high");
+        //     mcu_status.set_max_torque(TORQUE_2);
+        // }
         }
         
     read_pedal_values();
@@ -188,6 +199,29 @@ void loop()
         mcu_status.set_inverter_powered(true);
     }
     state_machine();
+    if (timer_sensor_can_update.check()) {
+        CAN_message_t tx_msg;
+    // Update the pedal readings to send over CAN
+        VCUPedalReadings.set_accelerator_pedal_1(accel1);
+        VCUPedalReadings.set_accelerator_pedal_2(accel2);
+        VCUPedalReadings.set_brake_transducer_1(brake1);
+        VCUPedalReadings.set_brake_transducer_2(brake1);
+
+        // Send Main Control Unit pedal reading message
+        VCUPedalReadings.write(tx_msg.buf);
+        tx_msg.id = ID_VCU_PEDAL_READINGS;
+        tx_msg.len = sizeof(VCUPedalReadings);
+        DaqCAN.write(tx_msg);
+    }
+    if (timer_can_update.check()) {
+    // Send Main Control Unit status message
+    CAN_message_t tx_msg;
+    mcu_status.write(tx_msg.buf);
+    tx_msg.id = ID_VCU_STATUS;
+    tx_msg.len = sizeof(mcu_status);
+    DaqCAN.write(tx_msg);
+
+  }
 }
 void readBroadcast()
 {   
@@ -217,6 +251,12 @@ void readBroadcast()
         if (rxMsg.id== ID_MC_TEMPERATURES_1){
             pm100temp1.load(rxMsg.buf);
         }
+        if (rxMsg.id== ID_MC_TEMPERATURES_2){
+            pm100temp2.load(rxMsg.buf);
+        }
+        if (rxMsg.id== ID_MC_TEMPERATURES_3){
+            pm100temp3.load(rxMsg.buf);
+        }
         if (rxMsg.id == 0x69){
             pchgAliveTimer=millis();
             pchgState=rxMsg.buf[0];
@@ -230,6 +270,7 @@ void readBroadcast()
         }
         if(pchgState==2){precharge_success=true;}else if((now-pchgAliveTimer>=100) || pchgState==0 ||pchgState==1||pchgState==3){precharge_success=false;}
         // Serial.println("");
+        DaqCAN.write(rxMsg);
         
     }
 }
@@ -452,6 +493,7 @@ inline void state_machine() {
                 ctrlMsg.id=ID_MC_COMMAND_MESSAGE;
                 memcpy(ctrlMsg.buf, torqueCommand, sizeof(ctrlMsg.buf));
                 CAN.write(ctrlMsg);
+                DaqCAN.write(ctrlMsg);
             }
             break;
     }
@@ -568,6 +610,11 @@ int calculate_torque() {
         // Serial.print("Brake1 : ");
         // Serial.println(brake1);
     }
+    if(abs(pm100Speed.get_motor_speed())<=50){
+        if(calculated_torque>=600){
+            calculated_torque=600; //ideally limit torque at low RPMs, see how high this number can be raised
+        }
+    }
     //#endif
      return calculated_torque;
 }
@@ -595,11 +642,11 @@ if (timer_debug_pedals.check()) {
     /*#if DEBUG
     if (timer_debug.check()) {
         Serial.print("MCU PEDAL ACCEL 1: ");
-        Serial.println(mcu_pedal_readings.get_accelerator_pedal_1());
+        Serial.println(VCUPedalReadings.get_accelerator_pedal_1());
         Serial.print("MCU PEDAL ACCEL 2: ");
-        Serial.println(mcu_pedal_readings.get_accelerator_pedal_2());
+        Serial.println(VCUPedalReadings.get_accelerator_pedal_2());
         Serial.print("MCU PEDAL BRAKE: ");
-        Serial.println(mcu_pedal_readings.get_brake_transducer_1());
+        Serial.println(VCUPedalReadings.get_brake_transducer_1());
         Serial.print("MCU BRAKE ACT: ");
         Serial.println(mcu_status.get_brake_pedal_active());
         Serial.print("MCU STATE: ");
@@ -644,6 +691,7 @@ void keepInverterAlive(bool enable){ //do u want the MC on or not?
       uint8_t heartbeatMsg[]={0,0,0,0,1,enable,0,0};
       memcpy(ctrlMsg.buf, heartbeatMsg, sizeof(ctrlMsg.buf));
       CAN.write(ctrlMsg);
+      DaqCAN.write(ctrlMsg);
     }
 }
 int figureOutMCStuff(){
@@ -670,6 +718,7 @@ void  tryToClearMcFault(){
       memcpy(ctrlMsg.buf, clearFaultMsg, sizeof(ctrlMsg.buf));
       for(int i=0;i<3;i++){
         CAN.write(ctrlMsg);
+        DaqCAN.write(ctrlMsg);
       }
 }
 void forceMCdischarge(){

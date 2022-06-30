@@ -15,15 +15,15 @@
 #include "Adafruit_LEDBackpack.h"
 // #include <drivers.h>
 //Pedalbox stuff
-#define BRAKE_ACTIVE 2500               // Threshold for brake pedal active  
-#define MIN_ACCELERATOR_PEDAL_1 850    // Low accelerator implausibility threshold
+#define BRAKE_ACTIVE 2300               // Threshold for brake pedal active  
+#define MIN_ACCELERATOR_PEDAL_1 200    // Low accelerator implausibility threshold
 #define START_ACCELERATOR_PEDAL_1 904  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_1 1820    // Position to max out acceleration
-#define MAX_ACCELERATOR_PEDAL_1 2000    // High accelerator implausibility threshold
-#define MIN_ACCELERATOR_PEDAL_2 600    // Low accelerator implausibility threshold
+#define MAX_ACCELERATOR_PEDAL_1 2500    // High accelerator implausibility threshold
+#define MIN_ACCELERATOR_PEDAL_2 200    // Low accelerator implausibility threshold
 #define START_ACCELERATOR_PEDAL_2 620  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_2 1250    // Position to max out acceleration
-#define MAX_ACCELERATOR_PEDAL_2 1500    // High accelerator implausibility threshold
+#define MAX_ACCELERATOR_PEDAL_2 2000    // High accelerator implausibility threshold
 #define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1)/2)
 #define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2)/2)
 #define DRIVER Matthew
@@ -31,8 +31,8 @@
 #define HT_DEBUG_EN
 //Torque Calculation Defines
 #define ALPHA 0.9772
-#define TORQUE_1 60
-#define TORQUE_2 100
+#define TORQUE_1 100    
+#define TORQUE_2 160
 //Pump speed
 #define PUMP_SPEED 2048
 float accel1{},accel2{},brake1{},brake2{};
@@ -181,6 +181,67 @@ class PM100Info{
         int16_t module_c_temperature;           // @Parse @Scale(10) @Unit(C)
         int16_t gate_driver_board_temperature;  // @Parse @Scale(10) @Unit(C)
     };
+    class MC_temperatures_2 {
+public:
+    MC_temperatures_2() = default;
+    MC_temperatures_2(uint8_t buf[8]) { load(buf); }
+
+    inline void load(uint8_t buf[])         { memcpy(this, buf, sizeof(*this)); }
+    inline void write(uint8_t buf[])  const { memcpy(buf, this, sizeof(*this)); }
+
+    inline int16_t get_control_board_temperature()  const { return control_board_temperature; }
+    inline int16_t get_rtd_1_temperature()          const { return rtd_1_temperature; }
+    inline int16_t get_rtd_2_temperature()          const { return rtd_2_temperature; }
+    inline int16_t get_rtd_3_temperature()          const { return rtd_3_temperature; }
+
+#ifdef HT_DEBUG_EN
+    void print() {
+        Serial.println("\n\nMC TEMPERATURES 2");
+        Serial.println(    "-----------------");
+        Serial.print("CONTROL BOARD TEMP: ");   Serial.println(control_board_temperature / 10.0, 1);
+        Serial.print("RTD 1 TEMP:         ");   Serial.println(rtd_1_temperature / 10.0, 1);
+        Serial.print("RTD 2 TEMP:         ");   Serial.println(rtd_2_temperature / 10.0, 1);
+        Serial.print("RTD 3 TEMP:         ");   Serial.println(rtd_3_temperature / 10.0, 1);
+    }
+#endif
+
+private:
+    int16_t control_board_temperature;  // @Parse @Scale(10) @Unit(C)
+    int16_t rtd_1_temperature;          // @Parse @Scale(10) @Unit(C)
+    int16_t rtd_2_temperature;          // @Parse @Scale(10) @Unit(C)
+    int16_t rtd_3_temperature;          // @Parse @Scale(10) @Unit(C)
+};
+class MC_temperatures_3 {
+public:
+    MC_temperatures_3() = default;
+    MC_temperatures_3(uint8_t buf[8]) { load(buf); }
+
+    inline void load(uint8_t buf[])         { memcpy(this, buf, sizeof(*this)); }
+    inline void write(uint8_t buf[])  const { memcpy(buf, this, sizeof(*this)); }
+
+    inline int16_t get_rtd_4_temperature()  const { return rtd_4_temperature; }
+    inline int16_t get_rtd_5_temperature()  const { return rtd_5_temperature; }
+    inline int16_t get_motor_temperature()  const { return motor_temperature; }
+    inline int16_t get_torque_shudder()     const { return torque_shudder; }
+
+#ifdef HT_DEBUG_EN
+    void print() {
+        Serial.println("\n\nMC TEMPERATURES 3");
+        Serial.println(    "-----------------");
+        Serial.print("RTD 4 TEMP:     ");   Serial.println(rtd_4_temperature);
+        Serial.print("RTD 5 TEMP:     ");   Serial.println(rtd_5_temperature);
+        Serial.print("MOTOR TEMP:     ");   Serial.println(motor_temperature / 10.0, 1);
+        Serial.print("TORQUE SHUDDER: ");   Serial.println(torque_shudder / 10.0, 1);
+    }
+#endif
+
+private:
+    int16_t rtd_4_temperature;  // @Parse @Scale(10) @Unit(C)
+    int16_t rtd_5_temperature;  // @Parse @Scale(10) @Unit(C)
+    int16_t motor_temperature;  // @Parse @Scale(10) @Unit(C)
+    int16_t torque_shudder;     // @Parse @Scale(10) @Unit(N-m)
+};
+
     class MC_fault_codes {
 public:
     MC_fault_codes() = default;
@@ -278,6 +339,37 @@ private:
     uint16_t post_fault_hi; // @Parse @Flagset @Hex @Sparse
     uint16_t run_fault_lo;  // @Parse @Flagset @Hex @Sparse
     uint16_t run_fault_hi;  // @Parse @Flagset @Hex @Sparse
+};
+class MCU_pedal_readings {
+public:
+    MCU_pedal_readings() = default;
+
+    MCU_pedal_readings(const uint8_t buf[8]) { load(buf); }
+
+    inline void load(const uint8_t buf[8]) { memcpy(this, buf, sizeof(*this)); }
+    inline void write(uint8_t buf[8]) const { memcpy(buf, this, sizeof(*this)); }
+
+    // Getters
+    inline uint16_t get_accelerator_pedal_1() const { return accelerator_pedal_1; }
+    inline uint16_t get_accelerator_pedal_2() const { return accelerator_pedal_2; }
+    inline uint16_t get_brake_transducer_1()  const { return brake_transducer_1; }
+    inline uint16_t get_brake_transducer_2()  const { return brake_transducer_2; }
+
+    // Setters
+    inline void set_accelerator_pedal_1(uint16_t reading) { accelerator_pedal_1 = reading; }
+    inline void set_accelerator_pedal_2(uint16_t reading) { accelerator_pedal_2 = reading; }
+    inline void set_brake_transducer_1(uint16_t reading)  { brake_transducer_1  = reading; }
+    inline void set_brake_transducer_2(uint16_t reading)  { brake_transducer_2  = reading; }
+
+private:
+    // @Parse
+    uint16_t accelerator_pedal_1;
+    // @Parse
+    uint16_t accelerator_pedal_2;
+    // @Parse
+    uint16_t brake_transducer_1;
+    // @Parse
+    uint16_t brake_transducer_2;
 };
 
 };
