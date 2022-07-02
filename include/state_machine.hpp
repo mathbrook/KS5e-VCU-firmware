@@ -11,8 +11,11 @@ class StateMachine {
 
     void init_state_machine();
     void handle_state_machine(MCU_STATE& mcu_stat, );
+    
 
   private:
+    void keepInverterAlive(bool stat);
+    void sendPrechargeStartMsg();
     Inverter * pm100;
 
 };
