@@ -10,19 +10,7 @@ void StateMachine::sendPrechargeStartMsg()
     AccumulatorCAN.write(ctrlMsg);
 }
 
-void StateMachine::keepInverterAlive(bool enable)
-{ // do u want the MC on or not?
-    if (mcControlTimer.check())
-    {
-        CAN_message_t ctrlMsg;
-        ctrlMsg.len = 8;
-        ctrlMsg.id = ID_MC_COMMAND_MESSAGE;
-        uint8_t heartbeatMsg[] = {0, 0, 0, 0, 1, enable, 0, 0};
-        memcpy(ctrlMsg.buf, heartbeatMsg, sizeof(ctrlMsg.buf));
-        CAN_.write(ctrlMsg);
-        DaqCAN_.write(ctrlMsg);
-    }
-}
+void StateMachine::
 
 /* Handle changes in state */
 void set_state(MCU_STATE new_state)

@@ -37,14 +37,8 @@ Metro timer_status_send = Metro(100);
 Metro timer_watchdog_timer = Metro(500);
 Metro updatePixelsTimer = Metro(200);
 Metro pm100speedInspection = Metro(500);
-elapsedMillis dischargeCountdown;
-PM100Info::MC_internal_states pm100State{};
-PM100Info::MC_motor_position_information pm100Speed{};
-PM100Info::MC_voltage_information pm100Voltage{};
-PM100Info::MC_temperatures_1 pm100temp1{};
-PM100Info::MC_temperatures_2 pm100temp2{};
-PM100Info::MC_temperatures_3 pm100temp3{};
-PM100Info::MC_fault_codes pm100Faults{};
+
+
 MCU_status mcu_status{};
 PM100Info::MCU_pedal_readings VCUPedalReadings{};
 // GPIOs
@@ -53,14 +47,12 @@ int pixelColor;
 bool inverter_restart = false;
 #define DEBUG 1
 // objects
-#define NUM_TX_MAILBOXES 2
-#define NUM_RX_MAILBOXES 6
+
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> CAN;
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> DaqCAN;
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> AccumulatorCAN;
 uint8_t state = 0;                                            // basic state machine state
-uint8_t disableWithZeros[] = {0, 0, 0, 0, 0, 0, 0, 0};        // The message to disable the controller/cancel lockout
-uint8_t enableNoTorque[] = {0, 0, 0, 0, 1, 1, 0, 0};          // The message to enable the motor with zero torque
+
 uint8_t enableSmallTorque[] = {0xD2, 0x04, 0, 0, 1, 1, 0, 0}; // The message to enable the motor with small torque
 uint8_t maxTorque;
 uint8_t PixelColorz[] = {7, 7, 7, 7, 7, 7};
@@ -114,35 +106,7 @@ void setup()
     DashDisplay.writeDisplay();
     leds.begin();
     leds.setBrightness(BRIGHTNESS);
-    CAN.begin();
-    CAN.setBaudRate(500000);
-    DaqCAN.begin();
-    DaqCAN.setBaudRate(1000000);
-    AccumulatorCAN.begin();
-    AccumulatorCAN.setBaudRate(500000);
-    CAN.setMaxMB(NUM_TX_MAILBOXES + NUM_RX_MAILBOXES);
-    for (int i = 0; i < NUM_RX_MAILBOXES; i++)
-    {
-        CAN.setMB((FLEXCAN_MAILBOX)i, RX, STD);
-    }
-    for (int i = NUM_RX_MAILBOXES; i < (NUM_TX_MAILBOXES + NUM_RX_MAILBOXES); i++)
-    {
-        CAN.setMB((FLEXCAN_MAILBOX)i, TX, STD);
-    }
-    AccumulatorCAN.setMaxMB(NUM_TX_MAILBOXES + NUM_RX_MAILBOXES);
-    for (int i = 0; i < (NUM_RX_MAILBOXES - 1); i++)
-    { // leave one free for ext ID
-        AccumulatorCAN.setMB((FLEXCAN_MAILBOX)i, RX, STD);
-    }
-    for (int i = NUM_RX_MAILBOXES; i < (NUM_TX_MAILBOXES + NUM_RX_MAILBOXES); i++)
-    {
-        AccumulatorCAN.setMB((FLEXCAN_MAILBOX)i, TX, STD);
-    }
-    AccumulatorCAN.setMB((FLEXCAN_MAILBOX)5, RX, EXT);
 
-    CAN.mailboxStatus();
-    AccumulatorCAN.setMBFilter(REJECT_ALL);
-    AccumulatorCAN.setMBFilter(MB0, 0x69, ID_BMS_INFO, 0x6B2);
 
     digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
@@ -248,7 +212,7 @@ void readBroadcast()
         {
             pm100temp3.load(rxMsg.buf);
         }
-        if (rxMsg.id == 0x69)
+        if (rxMsg.id == 0x69) // accumulator
         {
             pchgAliveTimer = millis();
             pchgState = rxMsg.buf[0];
@@ -257,10 +221,12 @@ void readBroadcast()
             sprintf(lineBuffer, "precharging: state: %d ACV: %dv TSV: %dv\n", pchgState, accVoltage, tsVoltage);
             // Serial.print(lineBuffer);
         }
-        if (rxMsg.id == ID_BMS_INFO)
+        if (rxMsg.id == ID_BMS_INFO) // accumulator
         {
             memcpy(BMS_packInfo, rxMsg.buf, sizeof(BMS_packInfo));
         }
+
+        
         if (pchgState == 2)
         {
             precharge_success = true;
@@ -272,32 +238,6 @@ void readBroadcast()
         // Serial.println("");
         DaqCAN.write(rxMsg);
     }
-}
-void writeControldisableWithZeros()
-{
-    CAN_message_t ctrlMsg;
-    ctrlMsg.len = 8;
-    ctrlMsg.id = 0xC0; // OUR CONTROLLER
-    memcpy(ctrlMsg.buf, disableWithZeros, sizeof(ctrlMsg.buf));
-    if (CAN.write(ctrlMsg) > 0)
-    {
-        Serial.println("****DISABLE****");
-    }
-}
-void writeEnableNoTorque()
-{
-    CAN_message_t ctrlMsg;
-    ctrlMsg.len = 8;
-    ctrlMsg.id = 0xC0; // OUR CONTROLLER
-    memcpy(ctrlMsg.buf, enableNoTorque, sizeof(ctrlMsg.buf));
-    CAN.write(ctrlMsg);
-    Serial.println("----ENABLE----");
-}
-void doStartup()
-{
-    writeEnableNoTorque();
-    writeControldisableWithZeros();
-    writeEnableNoTorque();
 }
 
 /* Handle changes in state */
@@ -519,40 +459,8 @@ int getmcMotorRPM()
     }
     return emraxSpeed;
 }
-void tryToClearMcFault()
-{
-    CAN_message_t ctrlMsg;
-    ctrlMsg.len = 8;
-    ctrlMsg.id = ID_MC_READ_WRITE_PARAMETER_COMMAND;
-    uint8_t clearFaultMsg[] = {20, 0, 1, 0, 0, 0, 0, 0};
-    memcpy(ctrlMsg.buf, clearFaultMsg, sizeof(ctrlMsg.buf));
-    for (int i = 0; i < 3; i++)
-    {
-        CAN.write(ctrlMsg);
-        DaqCAN.write(ctrlMsg);
-    }
-}
-void forceMCdischarge()
-{
-    dischargeCountdown = 0;
-    while (dischargeCountdown <= 100)
-    {
-        if (mcControlTimer.check() == 1)
-        {
-            CAN_message_t ctrlMsg;
-            ctrlMsg.len = 8;
-            ctrlMsg.id = ID_MC_COMMAND_MESSAGE;
-            uint8_t dischgMsg[] = {0, 0, 0, 0, 1, 0b0000010, 0, 0}; // bit one?
-            memcpy(ctrlMsg.buf, dischgMsg, sizeof(ctrlMsg.buf));
-            CAN.write(ctrlMsg);
-            // writeEnableNoTorque();
-        }
-    }
-    for (int i = 0; i <= 10; i++)
-    {
-        writeControldisableWithZeros();
-    }
-}
+
+
 void reset_inverter()
 {
     inverter_restart = true;

@@ -30,6 +30,7 @@ class PedalHandler {
 
 
   private:
+    PM100Info::MCU_pedal_readings VCUPedalReadings;
     
     
 
