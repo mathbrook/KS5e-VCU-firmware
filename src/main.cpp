@@ -84,7 +84,6 @@ void setup()
     mcu_status.set_max_torque(TORQUE_2);
     delay(500);
 
-    // TODO init state machine
     state_machine.init_state_machine(mcu_status);
     
 }
