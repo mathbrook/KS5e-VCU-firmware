@@ -1,7 +1,7 @@
 #ifndef STATE_MACHINE_HPP
 #define STATE_MACHINE_HPP
 #include <Arduino.h>
-#include "MCU_status.h"
+#include "MCU_status.hpp"
 #include "inverter.hpp"
 #include "accumulator.hpp"
 #include "pedal_handler.hpp"

@@ -5,6 +5,7 @@ void StateMachine::init_state_machine(MCU_status &mcu_status)
 {
     set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
     pedals->init_pedal_handler();
+    dash_->init_dashboard();
 }
 
 /* Handle changes in state */
