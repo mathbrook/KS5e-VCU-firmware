@@ -1,6 +1,7 @@
 /*Testing live rinehart torque control with MCP3204 and teensy 4.1*/
 
 #include <KS2e.h>
+#include "KS2eVCUgpios.hpp"
 /******DEFINES*******/
 // #define STARTUP 0
 // #define TRACTIVE_SYSTEM_NOT_ACTIVE 1
@@ -35,26 +36,17 @@ Metro timer_watchdog_timer = Metro(500);
 Metro updatePixelsTimer = Metro(200);
 Metro pm100speedInspection = Metro(500);
 MCU_status mcu_status{};
-PM100Info::MCU_pedal_readings VCUPedalReadings{};
 // GPIOs
 // const int rtdButtonPin=33,TorqueControl=34,LaunchControl=35,InverterRelay=14;
 int pixelColor;
 bool inverter_restart = false;
-#define DEBUG 1
+
+
 // objects
 
-uint8_t state = 0;                                            // basic state machine state
+uint8_t state = 0; // basic state machine state
 
-uint8_t enableSmallTorque[] = {0xD2, 0x04, 0, 0, 1, 1, 0, 0}; // The message to enable the motor with small torque
 uint8_t maxTorque;
-uint8_t PixelColorz[] = {7, 7, 7, 7, 7, 7};
-
-/*****PROTOTYPES*****/
-void idle();
-void writeEnableFWDNoTorque();
-void writeEnableSmallTorque();
-void readBroadcast();
-
 
 void setup()
 {
@@ -74,53 +66,30 @@ void setup()
         Serial.println("L dac");
     };
     dac.setVoltage(PUMP_SPEED, false);
-    if (!DashDisplay.begin())
-    {
-        Serial.println("L dash");
-    };
-    DashDisplay.print("yEET");
-    DashDisplay.writeDisplay();
-    leds.begin();
-    leds.setBrightness(BRIGHTNESS);
-
 
     digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
+    mcu_status.set_max_torque(TORQUE_2);
     keepInverterAlive(0);
     delay(500);
-    
-    mcu_status.set_max_torque(TORQUE_2);
-    DashLedscolorWipe(WHITE);
-    delay(500);
-    DashLedscolorWipe(PINK);
-    delay(500);
-    DashLedscolorWipe(GREEN);
 }
 
 void loop()
 {
-    readBroadcast();
     if (pm100speedInspection.check())
     {
-        DashDisplay.begin();
-        DashDisplay.clear();
+
         pm100Speed.print();
-        DashDisplay.print(pm100Voltage.get_dc_bus_voltage(), DEC);
-        DashDisplay.writeDisplay();
+
         // pm100Faults.print();
         pm100temp1.print();
         pm100temp2.print();
         pm100temp3.print();
     }
-    if (updatePixelsTimer.check())
-    { // 5hz
-        DashLedscolorWipe(pixelColor);
-    }
 
-    
     state_machine();
 
-    // TODO move these 
+    // TODO move these
     if (timer_sensor_can_update.check())
     {
         CAN_message_t tx_msg;
@@ -145,51 +114,4 @@ void loop()
         tx_msg.len = sizeof(mcu_status);
         DaqCAN.write(tx_msg);
     }
-
-
 }
-
-
-// TODO finish moving these
-void readBroadcast()
-{
-    char lineBuffer[200];
-    CAN_message_t rxMsg;
-    if (AccumulatorCAN.read(rxMsg))
-    {
-        if (rxMsg.id == 0x69) // accumulator
-        {
-            pchgAliveTimer = millis();
-            pchgState = rxMsg.buf[0];
-            int accVoltage = rxMsg.buf[1] + (rxMsg.buf[2] * 100);
-            int tsVoltage = rxMsg.buf[3] + (rxMsg.buf[4] * 100);
-            sprintf(lineBuffer, "precharging: state: %d ACV: %dv TSV: %dv\n", pchgState, accVoltage, tsVoltage);
-            // Serial.print(lineBuffer);
-        }
-        if (rxMsg.id == ID_BMS_INFO) // accumulator
-        {
-            memcpy(BMS_packInfo, rxMsg.buf, sizeof(BMS_packInfo));
-        }
-
-        
-        if (pchgState == 2)
-        {
-            precharge_success = true;
-        }
-        else if ((now - pchgAliveTimer >= 100) || pchgState == 0 || pchgState == 1 || pchgState == 3)
-        {
-            precharge_success = false;
-        }
-        // Serial.println("");
-        DaqCAN.write(rxMsg);
-    }
-}
-
-
-
-
-
-
-
-
-

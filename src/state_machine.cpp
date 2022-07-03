@@ -37,57 +37,49 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
     mcu_status.set_state(new_state);
 
     // entry logic
+    // TODO unfuck the other pixel setting
     switch (new_state)
     {
     case MCU_STATE::STARTUP:
         break;
     case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
     {
-        uint8_t TSNA[] = {3, 3, 3, 3, 3, 3};
-        memcpy(PixelColorz, TSNA, sizeof(PixelColorz));
-        pixelColor = GREEN;
+        dash_->set_dashboard_led_color(GREEN);
+        dash_->DashLedscolorWipe();
         break;
     }
     case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
-        pixelColor = RED;
-        {
-            uint8_t TSA[] = {0, 0, 0, 0, 0, 0};
-            memcpy(PixelColorz, TSA, sizeof(PixelColorz));
-        }
+        dash_->set_dashboard_led_color(RED);
+        dash_->DashLedscolorWipe();
         break;
     case MCU_STATE::ENABLING_INVERTER:
     {
-        {
-            uint8_t ENINV[] = {5, 5, 5, 5, 5, 5};
-            memcpy(PixelColorz, ENINV, sizeof(PixelColorz));
-        }
-        pixelColor = YELLOW;
-
+        dash_->set_dashboard_led_color(YELLOW);
+        dash_->DashLedscolorWipe();
         pm100->tryToClearMcFault();
         pm100->doStartup();
-        Serial.println("MCU Sent enable command");
-
+        #if DEBUG
+        Serial.println("MCU Sent enable command to inverter");
+        #endif
         break;
     }
     case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
         // make dashboard sound buzzer
-        {
-            uint8_t ENINV[] = {2, 1, 2, 1, 2, 1};
-            memcpy(PixelColorz, ENINV, sizeof(PixelColorz));
-        }
-        pixelColor = ORANGE;
+        dash_->set_dashboard_led_color(ORANGE);
+        dash_->DashLedscolorWipe();
         mcu_status.set_activate_buzzer(true);
         digitalWrite(BUZZER, HIGH);
         timer_ready_sound->reset();
+    #if DEBUG
         Serial.println("RTDS enabled");
+    #endif
         break;
     case MCU_STATE::READY_TO_DRIVE:
-        pixelColor = PINK;
-        {
-            uint8_t RTD[] = {3, 3, 3, 3, 3, 3};
-            memcpy(PixelColorz, RTD, sizeof(PixelColorz));
-        }
+        dash_->set_dashboard_led_color(PINK);
+        dash_->DashLedscolorWipe();
+        #if DEBUG
         Serial.println("Ready to drive");
+        #endif
         break;
     }
 }
@@ -97,10 +89,39 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     switch (mcu_status.get_state())
     {
     case MCU_STATE::STARTUP:
+    {
         break;
+    }
     case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
+    {
+        if (!accumulator->GetIfPrechargeAttempted())
+        {
+            accumulator->sendPrechargeStartMsg();
+        }
 
-        accumulator->sendPrechargeStartMsg();
+        bool accumulator_ready;
+        if (accumulator->check_precharge_success() && (!accumulator->check_precharge_timeout()))
+        {
+            accumulator_ready = true;
+        }
+        else if ((!accumulator->check_precharge_timeout()) && (!accumulator->check_precharge_success()))
+        {
+            // if the accumulator hasnt finished precharge and it hasnt timed out yet, break
+            break;
+        }
+        else if (accumulator->check_precharge_timeout() && (!accumulator->check_precharge_success()))
+        {
+            // attempt pre-charge again if the pre-charge has timed out
+            // TODO add in re-try limitation number
+            accumulator->sendPrechargeStartMsg();
+            break;
+        }
+        else
+        {
+            // accumulator has timed out but it also pre-charged, continue
+            accumulator_ready = true;
+        }
+
 #if DEBUG
         if (miscDebugTimer.check())
         {
@@ -108,7 +129,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
         }
 #endif
         // if TS is above HV threshold, move to Tractive System Active
-        if (pm100->check_TS_active())
+        if (pm100->check_TS_active() && accumulator_ready)
         {
 #if DEBUG
             Serial.println("Setting state to TS Active from TS Not Active");
@@ -116,8 +137,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
             set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
         }
         break;
-
+    }
     case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
+    {
         if (!pm100->check_TS_active())
         {
             set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -133,8 +155,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
             set_state(mcu_status, MCU_STATE::ENABLING_INVERTER);
         }
         break;
-
+    }
     case MCU_STATE::ENABLING_INVERTER:
+    {
         if (!pm100->check_TS_active())
         {
             set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -183,8 +206,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
             set_state(mcu_status, MCU_STATE::READY_TO_DRIVE);
         }
         break;
-
+    }
     case MCU_STATE::READY_TO_DRIVE:
+    {
         if (!pm100->check_TS_active())
         {
             set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -197,14 +221,13 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
             break; // TODO idk if we should break here or not but it sure seems like it
         }
 
-
         int calculated_torque = 0;
         bool accel_is_plausible = false;
         bool brake_is_plausible = false;
         bool accel_and_brake_plausible = false;
 
         const bool brake_is_active = pedals->read_pedal_values();
-        
+
         // FSAE EV.5.5
         // FSAE T.4.2.10
         pedals->verify_pedals(brake_is_active, accel_is_plausible, brake_is_plausible, accel_and_brake_plausible);
@@ -255,8 +278,11 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
         break;
     }
+    }
 
     // things that are done every loop go here:
     pm100->updateInverterCAN();
-    accumulator->
+    accumulator->updateAccumulatorCAN();
+
+    // TODO update the dash here properly
 }

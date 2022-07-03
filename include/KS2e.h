@@ -9,16 +9,14 @@
 #include <string.h>
 #include <stdint.h>
 #include <KS2eCAN.h>
-#include <KS2eVCUgpios.hpp>
-#include <VCUNeoPixelBullshitLMFAO.h>
+
+
 #include <Adafruit_MCP4725.h>
-#include "Adafruit_LEDBackpack.h"
+
 
 // #include <drivers.h>
 
 
-Adafruit_7segment DashDisplay = Adafruit_7segment();
-Metro mcControlTimer = Metro(50);
 Adafruit_MCP4725 dac;
 
 #endif

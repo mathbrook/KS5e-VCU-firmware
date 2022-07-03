@@ -5,11 +5,12 @@
 #include "inverter.hpp"
 #include "accumulator.hpp"
 #include "pedal_handler.hpp"
+#include "dashboard.hpp"
 #include <Metro.h>
 
 class StateMachine {
   public:             
-    StateMachine(Inverter * inv, Accumulator * acc, Metro * rs_tim) : pm100(inv), accumulator(acc), timer_ready_sound(rs_tim) {};
+    StateMachine(Inverter * inv, Accumulator * acc, Metro * rs_tim, Dashboard * dash) : pm100(inv), accumulator(acc), timer_ready_sound(rs_tim), dash_(dash) {};
 
     void init_state_machine(MCU_status &mcu_status);
     void handle_state_machine(MCU_status &mcu_status);
@@ -22,6 +23,7 @@ class StateMachine {
     Inverter * pm100;
     Accumulator * accumulator;
     PedalHandler * pedals;
+    Dashboard * dash_;
 };
 
 #endif

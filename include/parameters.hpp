@@ -1,6 +1,8 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
+
+#define DEBUG 1
 // TODO may wanna do this another way
 
 // Pedalbox stuff
