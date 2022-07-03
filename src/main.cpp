@@ -23,7 +23,7 @@ bool rtdFlag=false;
 uint8_t defaultInverterCmd[]={0,0,0,0,0,0,0,0};
 uint8_t MC_internalState[8], MC_voltageInfo[8], MC_faultState[8], MC_motorPosInfo[8],BMS_packInfo[8];
 Metro timer_debug_raw_torque=Metro(100);
-Metro timer_debug_pedals=Metro(1000);
+Metro timer_debug_pedals=Metro(500);
 Metro pchgMsgTimer=Metro(100);
 Metro miscDebugTimer=Metro(1000);
 Metro timer_inverter_enable = Metro(2000); // Timeout failed inverter enable
@@ -51,14 +51,14 @@ PM100Info::MCU_pedal_readings VCUPedalReadings{};
 //const int rtdButtonPin=33,TorqueControl=34,LaunchControl=35,InverterRelay=14;
 int pixelColor;
 bool inverter_restart = false;
-#define DEBUG 1
+//#define DEBUG 1
 //objects
 #define NUM_TX_MAILBOXES 2
 #define NUM_RX_MAILBOXES 6
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> CAN;
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> DaqCAN;
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> AccumulatorCAN;
-uint8_t state = 0;                                      //basic state machine state
+//uint8_t state = 0;                                      //basic state machine state
 uint8_t disableWithZeros[] = {0, 0, 0, 0, 0, 0, 0, 0};  //The message to disable the controller/cancel lockout
 uint8_t enableNoTorque[] = {0, 0, 0, 0, 1, 1, 0, 0};    //The message to enable the motor with zero torque
 uint8_t enableSmallTorque[] = {0xD2, 0x04, 0, 0, 1, 1, 0, 0}; //The message to enable the motor with small torque
@@ -147,7 +147,7 @@ void setup()
     keepInverterAlive(0);
     delay(500);
     set_state(MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
-    mcu_status.set_max_torque(TORQUE_2);
+    mcu_status.set_max_torque(TORQUE_1);
     DashLedscolorWipe(WHITE);
     delay(500);
     DashLedscolorWipe(PINK);
@@ -160,13 +160,13 @@ void loop()
     if(pm100speedInspection.check()){
         DashDisplay.begin();
         DashDisplay.clear();
-        pm100Speed.print();
+        //pm100Speed.print();
         DashDisplay.print(pm100Voltage.get_dc_bus_voltage(),DEC);
         DashDisplay.writeDisplay();
         //pm100Faults.print();
-        pm100temp1.print();
-        pm100temp2.print();
-        pm100temp3.print();
+        // pm100temp1.print();
+        // pm100temp2.print();
+        // pm100temp3.print();
     }
     if(updatePixelsTimer.check()){ //5hz 
         // Serial.println(getmcBusVoltage());
@@ -176,12 +176,13 @@ void loop()
         // DashDisplay.print(BMS_packInfo[4]);
         // 
         DashLedscolorWipe(pixelColor);
-        // Serial.println(accel1);
-        // Serial.println(accel2);
+        Serial.println(accel1);
+        Serial.println(accel2);
         // Serial.print("rtd status: ");
-        // Serial.println(digitalRead(RTDbutton));
-        // Serial.print("brake status: ");
-        // Serial.println(brake1);
+        rtdButtonPressed=digitalRead(RTDbutton);
+        Serial.println(rtdButtonPressed);
+        Serial.print("brake status: ");
+        Serial.println(brake1);
         // if(digitalRead(TORQUEMODE)==LOW){
         //     mcu_status.set_max_torque(TORQUE_1);
         //     Serial.println("TOrque is set low");
@@ -327,7 +328,7 @@ inline void state_machine() {
             keepInverterAlive(0);
 
             // if start button has been pressed and brake pedal is held down, transition to the next state
-            if (digitalRead(RTDbutton)==0 && mcu_status.get_brake_pedal_active()) {
+            if (!rtdButtonPressed && mcu_status.get_brake_pedal_active()) {
                 #if DEBUG
                 Serial.println("Setting state to Enabling Inverter");
                 #endif
@@ -610,11 +611,11 @@ int calculate_torque() {
         // Serial.print("Brake1 : ");
         // Serial.println(brake1);
     }
-    if(abs(pm100Speed.get_motor_speed())<=50){
-        if(calculated_torque>=600){
-            calculated_torque=600; //ideally limit torque at low RPMs, see how high this number can be raised
-        }
-    }
+    // if(abs(pm100Speed.get_motor_speed())<=50){
+    //     if(calculated_torque>=600){
+    //         calculated_torque=600; //ideally limit torque at low RPMs, see how high this number can be raised
+    //     }
+    // }
     //#endif
      return calculated_torque;
 }
@@ -628,9 +629,9 @@ inline void read_pedal_values() {
 
     #if DEBUG
 if (timer_debug_pedals.check()) {
-   Serial.print("ACCEL 1: "); Serial.println(accel1);
-   Serial.print("ACCEL 2: "); Serial.println(accel2);
-   Serial.print("BRAKE 1: "); Serial.println(brake1);
+//    Serial.print("ACCEL 1: "); Serial.println(accel1);
+//    Serial.print("ACCEL 2: "); Serial.println(accel2);
+//    Serial.print("BRAKE 1: "); Serial.println(brake1);
 }
   //  Serial.print("BRAKE 2: "); Serial.println(filtered_brake2_reading);
     #endif
