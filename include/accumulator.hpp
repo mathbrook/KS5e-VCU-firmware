@@ -4,9 +4,14 @@
 
 class Accumulator {
     public:
-        Accumulator();
+        Accumulator(Metro *pch_timer): pchgMsgTimer(pch_timer) {};
+        void updateAccumulatorCAN();
         void sendPrechargeStartMsg();
     private:
+        Metro * pchgMsgTimer;
+        int pchgState;
+        unsigned long pchgAliveTimer;
+        uint8_t BMS_packInfo[8];
 
 };
 

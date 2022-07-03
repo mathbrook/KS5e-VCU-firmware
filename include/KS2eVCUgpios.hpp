@@ -1,3 +1,6 @@
+#ifndef KS2EVCUGPIOS_HPP
+#define KS2EVCUGPIOS_HPP
+
 #define WSFL 28 //Input Pullup
 #define WSFR 29 //Input Pullup
 #define SDCSENSE 20 //Input ADC
@@ -7,6 +10,7 @@
 #define TORQUEMODE 33 //Input Pullup
 #define LAUNCHCONTROL 35 //Input Pullup
 #define NEOPIXELPIN 17 //lol
+
 /*
  * ADC pin definitions
  */
@@ -15,3 +19,4 @@
 #define ADC_ACCEL_1_CHANNEL 0
 #define ADC_ACCEL_2_CHANNEL 1
 
+#endif

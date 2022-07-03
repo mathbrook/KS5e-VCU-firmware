@@ -1,9 +1,15 @@
-#ifndef STATE_MACHINE_HPP
-#define STATE_MACHINE_HPP
+#ifndef PEDAL_HANDLER_HPP
+#define PEDAL_HANDLER_HPP
 #include <Arduino.h>
-#include "MCU_status.h"
-#include "inverter.hpp"
+#include <ADC_SPI.h>
+#include <SPI.h>
 #include <Metro.h>
+#include <stdint.h>
+
+#include "MCU_status.h"
+#include "pedal_readings.hpp"
+#include "parameters.hpp"
+#include "KS2eVCUgpios.hpp"
 
 // check that the pedals are reading within 10% of each other
 // sum of the two readings should be within 10% of the average travel
@@ -19,20 +25,24 @@
 
 class PedalHandler {
   public:             
-    PedalHandler pedal_handler() {};
+    PedalHandler(Metro * pedal_debug_tim) : timer_debug_raw_torque(pedal_debug_tim) {};
 
     void init_pedal_handler();
     
-    void read_pedal_values();
 
     bool is_accel_pedal_plausible();
     bool is_brake_pedal_plausible();
-
+    int calculate_torque(int16_t & motor_speed, uint8_t & max_torque);
+    bool verify_pedals(const bool & brake_pedal_active, bool & accel_is_plausible, bool & brake_is_plausible, bool & accel_and_brake_plausible);
+    bool read_pedal_values();
 
   private:
-    PM100Info::MCU_pedal_readings VCUPedalReadings;
+    MCU_pedal_readings VCUPedalReadings;
     
-    
+    ADC_SPI pedal_ADC;
+    float accel1_, accel2_, brake1_, brake2_;
+
+    Metro * timer_debug_raw_torque;
 
 };
 

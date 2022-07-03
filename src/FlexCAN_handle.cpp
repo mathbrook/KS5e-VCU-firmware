@@ -59,9 +59,11 @@ int WriteToDaqCAN(CAN_message_t &msg)
 
 int ReadInverterCAN(CAN_message_t &msg)
 {
+    DaqCAN_.write(msg);
     return Inverter_CAN_.read(msg);
 }
 int ReadAccumulatorCAN(CAN_message_t &msg)
 {
+    DaqCAN_.write(msg);
     return AccumulatorCAN_.read(msg);
 }

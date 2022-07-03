@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Metro.h>
 
+#include "parameters.hpp"
 #include "inverter/mc_fault_codes.hpp"
 #include "inverter/mc_internal_states.hpp"
 #include "inverter/mc_motor_position_information.hpp"
@@ -16,29 +17,40 @@ uint8_t enableNoTorque[] = {0, 0, 0, 0, 1, 1, 0, 0};   // The message to enable 
 class Inverter
 {
 public:
-  // this is a member init list: https://www.youtube.com/watch?v=1nfuYMXjZsA
-  Inverter(Metro *mcTimer) : mcTim(mcTimer) {}
+    // this is a member init list: https://www.youtube.com/watch?v=1nfuYMXjZsA
+    Inverter(Metro *mc_kick_timer, Metro *en_tim, Metro *comm_timer) : mcTim(mc_kick_timer), timer_inverter_enable(en_tim), timer_motor_controller_send(comm_timer){};
 
-  void inverter_init();
-  void doStartup();
-  void keepInverterAlive(bool enable);
-  void forceMCdischarge();
-  void updateInverterCAN();
+    void inverter_init();
+    void doStartup();
+    void inverter_kick(bool enable);
+    void forceMCdischarge();
+    void updateInverterCAN();
+    void reset_inverter();
+    int getmcBusVoltage();
+    int getmcMotorRPM();
+    bool check_TS_active();
+    bool check_inverter_disabled();
+    bool command_torque(uint8_t torqueCommand[8]);
+    void tryToClearMcFault();
+    void enable_inverter();
+    bool check_inverter_ready();
+    bool check_inverter_enable_timeout();
 
 private:
-  void writeControldisableWithZeros();
-  void writeEnableNoTorque();
-  void tryToClearMcFault();
+    void writeControldisableWithZeros();
+    void writeEnableNoTorque();
 
-  MC_internal_states pm100State{};
-  MC_motor_position_information pm100Speed{};
-  MC_voltage_information pm100Voltage{};
-  MC_temperatures_1 pm100temp1{};
-  MC_temperatures_2 pm100temp2{};
-  MC_temperatures_3 pm100temp3{};
-  MC_fault_codes pm100Faults{};
+    MC_internal_states pm100State{};
+    MC_motor_position_information pm100Speed{};
+    MC_voltage_information pm100Voltage{};
+    MC_temperatures_1 pm100temp1{};
+    MC_temperatures_2 pm100temp2{};
+    MC_temperatures_3 pm100temp3{};
+    MC_fault_codes pm100Faults{};
 
-  Metro *mcTim;
+    Metro *mcTim;
+    Metro *timer_inverter_enable;
+    Metro *timer_motor_controller_send;
 };
 
 #endif
