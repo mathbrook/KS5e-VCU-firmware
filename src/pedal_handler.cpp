@@ -100,7 +100,7 @@ bool PedalHandler::read_pedal_values()
     return (brake1_ >= BRAKE_ACTIVE);
 }
 
-bool PedalHandler::verify_pedals(const bool &brake_pedal_active, bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible)
+void PedalHandler::verify_pedals(const bool &brake_pedal_active, bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible)
 {
 
     if (accel1_ < MIN_ACCELERATOR_PEDAL_1 || accel1_ > MAX_ACCELERATOR_PEDAL_1)
@@ -171,4 +171,5 @@ bool PedalHandler::verify_pedals(const bool &brake_pedal_active, bool &accel_is_
     {
         accel_and_brake_plausible = true;
     }
+
 }
