@@ -1,5 +1,5 @@
-#ifndef KS2ECAN_H
-#define KS2ECAN_H
+#ifndef KS2ECAN_HPP
+#define KS2ECAN_HPP
 /*
  * CAN ID definitions
  */

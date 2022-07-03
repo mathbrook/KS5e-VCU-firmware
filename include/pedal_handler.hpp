@@ -6,7 +6,6 @@
 #include <Metro.h>
 #include <stdint.h>
 
-#include "MCU_status.h"
 #include "pedal_readings.hpp"
 #include "parameters.hpp"
 #include "KS2eVCUgpios.hpp"

@@ -1,14 +1,15 @@
-/*Testing live rinehart torque control with MCP3204 and teensy 4.1*/
+// library includes
 #include <WS2812Serial.h>
 #include <Arduino.h>
 #include <FlexCAN_T4.h>
 #include <Metro.h>
-#include <MCU_status.h>
 #include <string.h>
 #include <stdint.h>
 #include <Adafruit_MCP4725.h>
 
-#include <KS2eCAN.h>
+// our includes
+#include "MCU_status.hpp"
+#include "KS2eCAN.hpp"
 #include "KS2eVCUgpios.hpp"
 #include "FlexCAN_util.hpp"
 #include "parameters.hpp"

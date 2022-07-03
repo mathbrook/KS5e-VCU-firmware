@@ -1,7 +1,7 @@
 #ifndef FLEXCAN_IS_SHIT_HPP
 #define FLEXCAN_IS_SHIT_HPP
 #include "FlexCAN_T4.h"
-#include "KS2eCAN.h"
+#include "KS2eCAN.hpp"
 
 // global wrapper around flexcan_t4 because it is a shit driver that should feel bad
 int WriteToDaqCAN(CAN_message_t &msg);
