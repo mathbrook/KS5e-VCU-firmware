@@ -11,11 +11,27 @@
 #include "inverter/mc_temperatures.hpp"
 #include "inverter/mc_voltage_information.hpp"
 
-uint8_t disableWithZeros[] = {0, 0, 0, 0, 0, 0, 0, 0}; // The message to disable the controller/cancel lockout
-uint8_t enableNoTorque[] = {0, 0, 0, 0, 1, 1, 0, 0};   // The message to enable the motor with zero torque
-
 class Inverter
 {
+
+private:
+    Metro *mcTim;
+    Metro *timer_inverter_enable;
+    Metro *timer_motor_controller_send;
+
+    void writeControldisableWithZeros();
+    void writeEnableNoTorque();
+    uint8_t disableWithZeros[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // The message to disable the controller/cancel lockout
+    uint8_t enableNoTorque[8] = {0, 0, 0, 0, 1, 1, 0, 0};   // The message to enable the motor with zero torque
+
+    MC_internal_states pm100State{};
+    MC_motor_position_information pm100Speed{};
+    MC_voltage_information pm100Voltage{};
+    MC_temperatures_1 pm100temp1{};
+    MC_temperatures_2 pm100temp2{};
+    MC_temperatures_3 pm100temp3{};
+    MC_fault_codes pm100Faults{};
+
 public:
     // this is a member init list: https://www.youtube.com/watch?v=1nfuYMXjZsA
     Inverter(Metro *mc_kick_timer, Metro *en_tim, Metro *comm_timer) : mcTim(mc_kick_timer), timer_inverter_enable(en_tim), timer_motor_controller_send(comm_timer){};
@@ -35,22 +51,7 @@ public:
     void enable_inverter();
     bool check_inverter_ready();
     bool check_inverter_enable_timeout();
-
-private:
-    void writeControldisableWithZeros();
-    void writeEnableNoTorque();
-
-    MC_internal_states pm100State{};
-    MC_motor_position_information pm100Speed{};
-    MC_voltage_information pm100Voltage{};
-    MC_temperatures_1 pm100temp1{};
-    MC_temperatures_2 pm100temp2{};
-    MC_temperatures_3 pm100temp3{};
-    MC_fault_codes pm100Faults{};
-
-    Metro *mcTim;
-    Metro *timer_inverter_enable;
-    Metro *timer_motor_controller_send;
+    void debug_print();
 };
 
 #endif

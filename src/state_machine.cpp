@@ -1,8 +1,10 @@
 #include "state_machine.hpp"
 
+// initializes the mcu status and pedal handler
 void StateMachine::init_state_machine(MCU_status &mcu_status)
 {
     set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+    pedals->init_pedal_handler();
 }
 
 /* Handle changes in state */
@@ -58,9 +60,9 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
         dash_->DashLedscolorWipe();
         pm100->tryToClearMcFault();
         pm100->doStartup();
-        #if DEBUG
+#if DEBUG
         Serial.println("MCU Sent enable command to inverter");
-        #endif
+#endif
         break;
     }
     case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
@@ -70,16 +72,16 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
         mcu_status.set_activate_buzzer(true);
         digitalWrite(BUZZER, HIGH);
         timer_ready_sound->reset();
-    #if DEBUG
+#if DEBUG
         Serial.println("RTDS enabled");
-    #endif
+#endif
         break;
     case MCU_STATE::READY_TO_DRIVE:
         dash_->set_dashboard_led_color(PINK);
         dash_->DashLedscolorWipe();
-        #if DEBUG
+#if DEBUG
         Serial.println("Ready to drive");
-        #endif
+#endif
         break;
     }
 }
@@ -121,13 +123,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
             // accumulator has timed out but it also pre-charged, continue
             accumulator_ready = true;
         }
-
-#if DEBUG
-        if (miscDebugTimer.check())
-        {
-            Serial.println("TS NOT ACTIVE");
-        }
-#endif
         // if TS is above HV threshold, move to Tractive System Active
         if (pm100->check_TS_active() && accumulator_ready)
         {
@@ -283,6 +278,14 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // things that are done every loop go here:
     pm100->updateInverterCAN();
     accumulator->updateAccumulatorCAN();
+
+#if DEBUG
+    if(debug_->check())
+    {
+        pm100->debug_print();
+    }
+    
+#endif
 
     // TODO update the dash here properly
 }

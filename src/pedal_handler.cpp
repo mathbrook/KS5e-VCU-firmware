@@ -1,5 +1,6 @@
 #include "pedal_handler.hpp"
 
+// initializes pedal's ADC
 void PedalHandler::init_pedal_handler()
 {
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
@@ -69,7 +70,7 @@ bool PedalHandler::read_pedal_values()
     brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
 
 #if DEBUG
-    if (timer_debug_pedals.check())
+    if (timer_debug_raw_torque->check())
     {
         Serial.print("ACCEL 1: ");
         Serial.println(accel1_);
@@ -79,7 +80,22 @@ bool PedalHandler::read_pedal_values()
         Serial.println(brake1_);
     }
 #endif
+    VCUPedalReadings.set_accelerator_pedal_1(accel1_);
+    VCUPedalReadings.set_accelerator_pedal_2(accel2_);
+    VCUPedalReadings.set_brake_transducer_1(brake1_);
+    VCUPedalReadings.set_brake_transducer_2(brake1_);
+    CAN_message_t tx_msg;
 
+    // Send Main Control Unit pedal reading message
+    VCUPedalReadings.write(tx_msg.buf);
+    tx_msg.id = ID_VCU_PEDAL_READINGS;
+    tx_msg.len = sizeof(VCUPedalReadings);
+
+    // write out the actual accel command over CAN
+    if (pedal_out->check())
+    {
+        WriteToDaqCAN(tx_msg);
+    }
     // only uses front brake pedal
     return (brake1_ >= BRAKE_ACTIVE);
 }

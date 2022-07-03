@@ -1,32 +1,62 @@
 /*Testing live rinehart torque control with MCP3204 and teensy 4.1*/
+#include <WS2812Serial.h>
+#include <Arduino.h>
+#include <FlexCAN_T4.h>
+#include <Metro.h>
+#include <MCU_status.h>
+#include <string.h>
+#include <stdint.h>
+#include <Adafruit_MCP4725.h>
 
-#include <KS2e.h>
+#include <KS2eCAN.h>
 #include "KS2eVCUgpios.hpp"
-/******DEFINES*******/
-// #define STARTUP 0
-// #define TRACTIVE_SYSTEM_NOT_ACTIVE 1
-// #define TRACTIVE_SYSTEM_ACTIVE 2
-// #define ENABLING_INVERTER 3
-// #define WAITING_RTD 4
-// #define RTD 5
-// #define mcFaulted 6
-// #define rebootMC 7
-#define HT_DEBUG_EN
-unsigned long pchgAliveTimer = 0;
-unsigned long now = 0;
-int testState;
-bool inverterState, rtdButtonPressed = false;
-bool precharge_success = false;
-bool rtdFlag = false;
-// torque limits
-// placeholder pedal position values
-uint8_t defaultInverterCmd[] = {0, 0, 0, 0, 0, 0, 0, 0};
-uint8_t MC_internalState[8], MC_voltageInfo[8], MC_faultState[8], MC_motorPosInfo[8];
-Metro timer_debug_pedals = Metro(1000);
+#include "FlexCAN_util.hpp"
+#include "parameters.hpp"
+#include "inverter.hpp"
+#include "accumulator.hpp"
+#include "state_machine.hpp"
+#include "FlexCAN_util.hpp"
+
+// Metro timers for inverter:
+Metro timer_mc_kick_timer = Metro(50, 1);
+Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
+Metro timer_motor_controller_send = Metro(50, 1);
+
+// timers for the accumulator:
 Metro pchgMsgTimer = Metro(100);
+
+// timers for the pedals:
+Metro timer_debug_pedals_raw = Metro(1000, 1);
+Metro pedal_debug = Metro(100, 1);
+
+// timers for the dashboard:
+Metro pm100speedInspection = Metro(500, 1);
+
+// timers for the state machine:
+Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
+Metro debug_tim = Metro(1000, 1);
+// dashboard led handling
+// TODO unfuck this
+const int numled=3+6;
+const int numledOnDash=6;
+byte drawingMemory[numled*3];         //  3 bytes per LED
+DMAMEM byte displayMemory[numled*12]; // 12 bytes per LED
+byte DashdrawingMemory[numledOnDash*3];         //  3 bytes per LED
+DMAMEM byte DashdisplayMemory[numledOnDash*12]; // 12 bytes per LED
+WS2812Serial leds(numled, displayMemory, drawingMemory, 17, WS2812_GRB);
+
+// objects
+Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send);
+Accumulator accum(&pchgMsgTimer);
+PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug);
+Dashboard dash(leds, &pm100speedInspection);
+StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals);
+Adafruit_MCP4725 pump_dac; 
+MCU_status mcu_status;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Metro miscDebugTimer = Metro(1000);
-Metro timer_inverter_enable = Metro(2000); // Timeout failed inverter enable
-Metro timer_motor_controller_send = Metro(50);
+
 Metro timer_coloumb_count_send = Metro(1000);
 Metro timer_can_update = Metro(100);
 Metro timer_sensor_can_update = Metro(5);
@@ -34,22 +64,13 @@ Metro timer_restart_inverter = Metro(500, 1); // Allow the MCU to restart the in
 Metro timer_status_send = Metro(100);
 Metro timer_watchdog_timer = Metro(500);
 Metro updatePixelsTimer = Metro(200);
-Metro pm100speedInspection = Metro(500);
-MCU_status mcu_status{};
-// GPIOs
-// const int rtdButtonPin=33,TorqueControl=34,LaunchControl=35,InverterRelay=14;
-int pixelColor;
-bool inverter_restart = false;
 
 
-// objects
 
-uint8_t state = 0; // basic state machine state
-
-uint8_t maxTorque;
 
 void setup()
 {
+    InitCAN();
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
     Serial.begin(115200);
@@ -61,50 +82,26 @@ void setup()
     pinMode(MC_RELAY, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
     pinMode(WSFR, INPUT_PULLUP);
-    if (!dac.begin())
+    if (!pump_dac.begin())
     {
-        Serial.println("L dac");
-    };
-    dac.setVoltage(PUMP_SPEED, false);
-
+        Serial.println("L pump_dac");
+    }
+    pump_dac.setVoltage(PUMP_SPEED, false);
     digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
     mcu_status.set_max_torque(TORQUE_2);
-    keepInverterAlive(0);
     delay(500);
+
+    // TODO init state machine
+    state_machine.init_state_machine(mcu_status);
+    
 }
 
 void loop()
 {
-    if (pm100speedInspection.check())
-    {
 
-        pm100Speed.print();
+    state_machine.handle_state_machine(mcu_status);
 
-        // pm100Faults.print();
-        pm100temp1.print();
-        pm100temp2.print();
-        pm100temp3.print();
-    }
-
-    state_machine();
-
-    // TODO move these
-    if (timer_sensor_can_update.check())
-    {
-        CAN_message_t tx_msg;
-        // Update the pedal readings to send over CAN
-        VCUPedalReadings.set_accelerator_pedal_1(accel1);
-        VCUPedalReadings.set_accelerator_pedal_2(accel2);
-        VCUPedalReadings.set_brake_transducer_1(brake1);
-        VCUPedalReadings.set_brake_transducer_2(brake1);
-
-        // Send Main Control Unit pedal reading message
-        VCUPedalReadings.write(tx_msg.buf);
-        tx_msg.id = ID_VCU_PEDAL_READINGS;
-        tx_msg.len = sizeof(VCUPedalReadings);
-        DaqCAN.write(tx_msg);
-    }
     if (timer_can_update.check())
     {
         // Send Main Control Unit status message
@@ -112,6 +109,6 @@ void loop()
         mcu_status.write(tx_msg.buf);
         tx_msg.id = ID_VCU_STATUS;
         tx_msg.len = sizeof(mcu_status);
-        DaqCAN.write(tx_msg);
+        WriteToDaqCAN(tx_msg);
     }
 }

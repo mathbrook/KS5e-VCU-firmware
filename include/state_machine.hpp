@@ -8,22 +8,23 @@
 #include "dashboard.hpp"
 #include <Metro.h>
 
-class StateMachine {
-  public:             
-    StateMachine(Inverter * inv, Accumulator * acc, Metro * rs_tim, Dashboard * dash) : pm100(inv), accumulator(acc), timer_ready_sound(rs_tim), dash_(dash) {};
+class StateMachine
+{
+private:
+    Inverter *pm100;
+    Accumulator *accumulator;
+    Metro *timer_ready_sound; // Time to play RTD sound
+    Dashboard *dash_;
+    Metro *debug_;
+    PedalHandler *pedals;
+    void set_state(MCU_status &mcu_status, MCU_STATE new_state);
+    void sendPrechargeStartMsg();
+
+public:
+    StateMachine(Inverter *inv, Accumulator *acc, Metro *rs_tim, Dashboard *dash, Metro *debug, PedalHandler *pedals) : pm100(inv), accumulator(acc), timer_ready_sound(rs_tim), dash_(dash), debug_(debug), pedals(pedals){};
 
     void init_state_machine(MCU_status &mcu_status);
     void handle_state_machine(MCU_status &mcu_status);
-    
-
-  private:
-    void set_state(MCU_status &mcu_status, MCU_STATE new_state);
-    void sendPrechargeStartMsg();
-    Metro * timer_ready_sound; // Time to play RTD sound
-    Inverter * pm100;
-    Accumulator * accumulator;
-    PedalHandler * pedals;
-    Dashboard * dash_;
 };
 
 #endif

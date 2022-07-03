@@ -60,6 +60,14 @@ void Inverter::updateInverterCAN()
     }
 }
 
+void Inverter::debug_print()
+{
+    pm100Speed.print();
+    pm100temp1.print();
+    pm100temp2.print();
+    pm100temp3.print();
+}
+
 void Inverter::writeControldisableWithZeros()
 {
     CAN_message_t ctrlMsg;
@@ -100,6 +108,8 @@ bool Inverter::command_torque(uint8_t torqueCommand[8])
             return false;
         }
     }
+
+    return true;
 }
 
 // check if the inverter enable timer has timed out (returns true if it has)
