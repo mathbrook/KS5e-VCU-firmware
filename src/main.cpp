@@ -38,7 +38,7 @@ Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(1000, 1);
 
 // timers for VCU state out:
-Metro timer_can_update = Metro(100);
+Metro timer_can_update = Metro(100, 1);
 
 // dashboard led handling
 // TODO unfuck this
@@ -57,16 +57,23 @@ PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug);
 Dashboard dash(leds, &pm100speedInspection);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals);
 Adafruit_MCP4725 pump_dac; 
-MCU_status mcu_status;
+MCU_status mcu_status = MCU_status();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void setup()
 {
+
+    Serial.begin(115200);
+    delay(5000);
+    
+    Serial.println("setup");
     InitCAN();
+
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
-    Serial.begin(115200);
+    Serial.println("initted mcu status");
+    
     pinMode(RTDbutton, INPUT_PULLUP);
     pinMode(BUZZER, OUTPUT);
     digitalWrite(BUZZER, LOW);
@@ -75,17 +82,21 @@ void setup()
     pinMode(MC_RELAY, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
     pinMode(WSFR, INPUT_PULLUP);
-    if (!pump_dac.begin())
-    {
-        Serial.println("L pump_dac");
-    }
-    pump_dac.setVoltage(PUMP_SPEED, false);
+    // if (!pump_dac.begin())
+    // {
+    //     Serial.println("L pump_dac");
+    // }
+    // pump_dac.setVoltage(PUMP_SPEED, false);
     digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
     mcu_status.set_max_torque(TORQUE_2);
-    delay(500);
+    Serial.println("initted mcu fully");
+    delay(2000);
+    Serial.println("initting state machine");
 
+    delay(2000);
     state_machine.init_state_machine(mcu_status);
+    Serial.println("state machine inited");
     
 }
 

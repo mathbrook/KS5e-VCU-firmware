@@ -6,7 +6,7 @@ void Dashboard::init_dashboard()
     {
         Serial.println("L dash");
     };
-    DashDisplay.print("yEET");
+    DashDisplay.print("COPE");
     DashDisplay.writeDisplay();
     
     leds.begin();

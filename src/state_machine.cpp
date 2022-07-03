@@ -3,14 +3,20 @@
 // initializes the mcu status and pedal handler
 void StateMachine::init_state_machine(MCU_status &mcu_status)
 {
-    set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+    Serial.println("setting state");
+    delay(1000);
+    set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE); // this is where it is failing rn
+    Serial.println("initting pedals");
+    delay(1000);
     pedals->init_pedal_handler();
+    Serial.println("initting dash");
     dash_->init_dashboard();
 }
 
 /* Handle changes in state */
 void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 {
+    Serial.println("getting state");
     if (mcu_status.get_state() == new_state)
     {
         return;
@@ -20,6 +26,11 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
     switch (mcu_status.get_state())
     {
     case MCU_STATE::STARTUP:
+#if DEBUG
+        delay(100);
+        Serial.println("in startup, breaking");
+        delay(100);
+#endif
         break;
     case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
         pm100->tryToClearMcFault();
@@ -36,7 +47,11 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
     case MCU_STATE::READY_TO_DRIVE:
         break;
     }
-
+#if DEBUG
+    delay(200);
+    Serial.println("actually setting state");
+    delay(200);
+#endif
     mcu_status.set_state(new_state);
 
     // entry logic
@@ -47,8 +62,16 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
         break;
     case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
     {
-        dash_->set_dashboard_led_color(GREEN);
-        dash_->DashLedscolorWipe();
+#if DEBUG
+        Serial.println("attempting to set dash shit");
+        delay(100);
+#endif
+        // dash_->set_dashboard_led_color(GREEN); // this is causing problems rn
+        // dash_->DashLedscolorWipe();
+#if DEBUG
+        Serial.println("set dash shit");
+        delay(100);
+#endif
         break;
     }
     case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
