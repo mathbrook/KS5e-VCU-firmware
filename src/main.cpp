@@ -35,6 +35,10 @@ Metro pm100speedInspection = Metro(500, 1);
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(1000, 1);
+
+// timers for VCU state out:
+Metro timer_can_update = Metro(100);
+
 // dashboard led handling
 // TODO unfuck this
 const int numled=3+6;
@@ -53,20 +57,8 @@ Dashboard dash(leds, &pm100speedInspection);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals);
 Adafruit_MCP4725 pump_dac; 
 MCU_status mcu_status;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Metro miscDebugTimer = Metro(1000);
-
-Metro timer_coloumb_count_send = Metro(1000);
-Metro timer_can_update = Metro(100);
-Metro timer_sensor_can_update = Metro(5);
-Metro timer_restart_inverter = Metro(500, 1); // Allow the MCU to restart the inverter
-Metro timer_status_send = Metro(100);
-Metro timer_watchdog_timer = Metro(500);
-Metro updatePixelsTimer = Metro(200);
-
-
-
 
 void setup()
 {
