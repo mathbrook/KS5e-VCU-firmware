@@ -62,10 +62,10 @@ void Inverter::updateInverterCAN()
 
 void Inverter::debug_print()
 {
-    pm100Speed.print();
-    pm100temp1.print();
-    pm100temp2.print();
-    pm100temp3.print();
+    // pm100Speed.print();
+    // pm100temp1.print();
+    // pm100temp2.print();
+    // pm100temp3.print();
 }
 
 void Inverter::writeControldisableWithZeros()
@@ -115,8 +115,12 @@ bool Inverter::command_torque(uint8_t torqueCommand[8])
 // check if the inverter enable timer has timed out (returns true if it has)
 bool Inverter::check_inverter_ready()
 {
+    #if DEBUG
+    Serial.println("checking if inverter is ready");
+    #endif
     if (pm100State.get_inverter_enable_state())
     {
+        Serial.println("resting inverter reset timer");
         timer_inverter_enable->reset();
     }
     return pm100State.get_inverter_enable_state();
@@ -203,7 +207,7 @@ bool Inverter::check_TS_active()
     if ((getmcBusVoltage() < MIN_HV_VOLTAGE))
     {
 #if DEBUG
-        Serial.println("Setting state to TS Not Active, because TS is below HV threshold");
+        // Serial.println("Setting state to TS Not Active, because TS is below HV threshold");
 #endif
         // set_state(MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
         return false;

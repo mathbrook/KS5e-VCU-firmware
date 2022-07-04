@@ -9,8 +9,8 @@ void Dashboard::init_dashboard()
     DashDisplay.print("COPE");
     DashDisplay.writeDisplay();
     
-    leds.begin();
-    leds.setBrightness(BRIGHTNESS);
+    leds->begin();
+    leds->setBrightness(BRIGHTNESS);
 
     set_dashboard_led_color(WHITE);
     DashLedscolorWipe();
@@ -39,10 +39,10 @@ void Dashboard::refresh_dash(int voltage)
 
 void Dashboard::DashLedscolorWipe()
 {
-    for (int i = 0; i < leds.numPixels(); i++)
+    for (int i = 0; i < leds->numPixels(); i++)
     {
-        leds.setPixel(i, led_color_);
-        leds.show();
+        leds->setPixel(i, led_color_);
+        leds->show();
     }
 }
 uint8_t enableLights[] = {0, 7, 7};

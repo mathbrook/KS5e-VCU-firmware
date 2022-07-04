@@ -5,12 +5,12 @@ void StateMachine::init_state_machine(MCU_status &mcu_status)
 {
     Serial.println("setting state");
     delay(1000);
+    dash_->init_dashboard();                                      // do this before setting state
     set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE); // this is where it is failing rn
     Serial.println("initting pedals");
     delay(1000);
     pedals->init_pedal_handler();
     Serial.println("initting dash");
-    dash_->init_dashboard();
 }
 
 /* Handle changes in state */
@@ -66,8 +66,8 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
         Serial.println("attempting to set dash shit");
         delay(100);
 #endif
-        // dash_->set_dashboard_led_color(GREEN); // this is causing problems rn
-        // dash_->DashLedscolorWipe();
+        dash_->set_dashboard_led_color(GREEN); // this is causing problems rn
+        dash_->DashLedscolorWipe();
 #if DEBUG
         Serial.println("set dash shit");
         delay(100);
@@ -159,6 +159,12 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
     case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
     {
+
+#if DEBUG
+
+        // Serial.println("TRACTIVE_SYSTEM_ACTIVE");
+        // Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton), mcu_status.get_brake_pedal_active());
+#endif
         if (!pm100->check_TS_active())
         {
             set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -177,6 +183,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
     case MCU_STATE::ENABLING_INVERTER:
     {
+        Serial.println("ENABLING INVERTER");
         if (!pm100->check_TS_active())
         {
             set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -204,6 +211,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
         break;
 
     case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
+        Serial.println("WAITING READY TO DRIVER");
         if (!pm100->check_TS_active())
         {
             set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -228,6 +236,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
     case MCU_STATE::READY_TO_DRIVE:
     {
+        Serial.println("READY_TO_DRIVE");
         if (!pm100->check_TS_active())
         {
             set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -245,10 +254,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
         bool brake_is_plausible = false;
         bool accel_and_brake_plausible = false;
 
-        const bool brake_is_active = pedals->read_pedal_values();
-
         // FSAE EV.5.5
         // FSAE T.4.2.10
+        bool brake_is_active;
         pedals->verify_pedals(brake_is_active, accel_is_plausible, brake_is_plausible, accel_and_brake_plausible);
 
         mcu_status.set_no_accel_implausability(accel_is_plausible);
@@ -302,13 +310,18 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // things that are done every loop go here:
     pm100->updateInverterCAN();
     accumulator->updateAccumulatorCAN();
-
-#if DEBUG
-    if(debug_->check())
+    if (pedal_check_->check())
     {
+        mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
+    }
+#if DEBUG
+    if (debug_->check())
+    {
+        Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton), mcu_status.get_brake_pedal_active());
+        dash_->refresh_dash(pm100->getmcBusVoltage());
         pm100->debug_print();
     }
-    
+
 #endif
 
     // TODO update the dash here properly

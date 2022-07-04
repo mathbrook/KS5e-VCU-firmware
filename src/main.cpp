@@ -36,6 +36,7 @@ Metro pm100speedInspection = Metro(500, 1);
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(1000, 1);
+Metro pedal_check = Metro(100, 1);
 
 // timers for VCU state out:
 Metro timer_can_update = Metro(100, 1);
@@ -54,8 +55,8 @@ WS2812Serial leds(numled, displayMemory, drawingMemory, 17, WS2812_GRB);
 Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send);
 Accumulator accum(&pchgMsgTimer);
 PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug);
-Dashboard dash(leds, &pm100speedInspection);
-StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals);
+Dashboard dash(&leds, &pm100speedInspection);
+StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals, &pedal_check);
 Adafruit_MCP4725 pump_dac; 
 MCU_status mcu_status = MCU_status();
 

@@ -1,7 +1,7 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
-#define HT_DEBUG_EN
+// #define HT_DEBUG_EN
 #define DEBUG 1
 // TODO may wanna do this another way
 
@@ -22,7 +22,7 @@
 
 #define MIN_HV_VOLTAGE 600 // apparently this is divided by ten?
 
-#define HT_DEBUG_EN
+// #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
 #define TORQUE_1 100

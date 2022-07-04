@@ -17,11 +17,12 @@ private:
     Dashboard *dash_;
     Metro *debug_;
     PedalHandler *pedals;
+    Metro *pedal_check_;
     void set_state(MCU_status &mcu_status, MCU_STATE new_state);
     void sendPrechargeStartMsg();
 
 public:
-    StateMachine(Inverter *inv, Accumulator *acc, Metro *rs_tim, Dashboard *dash, Metro *debug, PedalHandler *pedals) : pm100(inv), accumulator(acc), timer_ready_sound(rs_tim), dash_(dash), debug_(debug), pedals(pedals){};
+    StateMachine(Inverter *inv, Accumulator *acc, Metro *rs_tim, Dashboard *dash, Metro *debug, PedalHandler *pedals, Metro * ped_t) : pm100(inv), accumulator(acc), timer_ready_sound(rs_tim), dash_(dash), debug_(debug), pedals(pedals), pedal_check_(ped_t) {};
 
     void init_state_machine(MCU_status &mcu_status);
     void handle_state_machine(MCU_status &mcu_status);

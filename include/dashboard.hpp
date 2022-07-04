@@ -12,7 +12,7 @@ class Dashboard
 {
 
 private:
-    WS2812Serial leds;
+    WS2812Serial * leds;
     Metro *timer;
     Adafruit_7segment DashDisplay = Adafruit_7segment();
     uint8_t enableLights[3] = {0, 7, 7};
@@ -21,7 +21,7 @@ private:
     int led_color_;
 
 public:
-    Dashboard(WS2812Serial &leds, Metro *pm100tim) : leds(leds), timer(pm100tim) {}
+    Dashboard(WS2812Serial *leds, Metro *pm100tim) : leds(leds), timer(pm100tim) {}
 
     void init_dashboard();
     void DashLedscolorWipe();
