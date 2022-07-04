@@ -87,7 +87,6 @@ void Inverter::writeEnableNoTorque()
     ctrlMsg.id = 0xC0; // OUR CONTROLLER
     memcpy(ctrlMsg.buf, enableNoTorque, sizeof(ctrlMsg.buf));
     WriteCANToInverter(ctrlMsg);
-    Serial.println("----ENABLE----");
 }
 
 // returns false if the command was unable to be sent
@@ -112,20 +111,22 @@ bool Inverter::command_torque(uint8_t torqueCommand[8])
     return true;
 }
 
-// check if the inverter enable timer has timed out (returns true if it has)
+// 
 bool Inverter::check_inverter_ready()
 {
     #if DEBUG
     // Serial.println("checking if inverter is ready");
-    pm100State.print();
+    // pm100State.print();
     #endif
     
-    if (pm100State.get_inverter_enable_state())
+    bool inverter_is_enabled = pm100State.get_inverter_enable_state();
+    Serial.println(inverter_is_enabled);
+    if (inverter_is_enabled)
     {
         Serial.println("resting inverter reset timer");
         timer_inverter_enable->reset();
     }
-    return pm100State.get_inverter_enable_state();
+    return inverter_is_enabled;
 }
 
 // check to see if the enverter has been enabled
@@ -219,19 +220,10 @@ bool Inverter::check_TS_active()
         return true;
     }
 }
-// if the inverter becomes disabled, return to Tractive system active
+// if the inverter becomes disabled, return to Tractive system active.
+// returns true if the inverter is disabled
 bool Inverter::check_inverter_disabled()
 {
-    if (!pm100State.get_inverter_enable_state())
-    {
-#if DEBUG
-        Serial.println("Setting state to TS Active because inverter is disabled");
-#endif
-        // set_state(MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+    Serial.println(pm100State.get_inverter_enable_state());
+    return (!pm100State.get_inverter_enable_state());
 }

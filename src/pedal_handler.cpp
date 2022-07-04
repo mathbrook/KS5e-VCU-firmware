@@ -6,7 +6,7 @@ void PedalHandler::init_pedal_handler()
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
 }
 
-int16_t PedalHandler::calculate_torque(int16_t &motor_speed, int16_t &max_torque)
+int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 {
     int calculated_torque = 0;
     int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
@@ -69,9 +69,14 @@ bool PedalHandler::read_pedal_values()
     float raw_accel1 = pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
     float raw_accel2 = pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
 
-    accel1_ = ALPHA * accel1_ + (1 - ALPHA) * raw_accel1;
-    accel2_ = ALPHA * accel2_ + (1 - ALPHA) * raw_accel2;
-    brake1_ = ALPHA * brake1_ + (1 - ALPHA) * raw_brake;
+    // accel1_ = ALPHA * accel1_ + (1 - ALPHA) * raw_accel1;
+    // accel2_ = ALPHA * accel2_ + (1 - ALPHA) * raw_accel2;
+    // brake1_ = ALPHA * brake1_ + (1 - ALPHA) * raw_brake;
+    accel1_ = raw_accel1;
+    accel2_ = raw_accel2;
+    brake1_ = raw_brake;
+
+
 #if DEBUG
     // Serial.println("reading pedal vals");
     // Serial.printf("val %f\n", brake1_);
