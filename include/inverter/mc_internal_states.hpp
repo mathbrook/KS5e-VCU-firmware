@@ -26,7 +26,7 @@ class MC_internal_states {
         inline bool get_inverter_enable_lockout()               const { return inverter_enable & 0x80; }
         inline bool get_direction_command()                     const { return direction_command; }
 
-    #ifdef HT_DEBUG_EN
+    // #ifdef HT_DEBUG_EN
         void print() {
         Serial.println("\n\nMC INTERNAL STATES");
         Serial.println(    "------------------");
@@ -39,7 +39,7 @@ class MC_internal_states {
         Serial.print("INVERTER LOCKOUT:                ");  Serial.println((uint32_t) get_inverter_enable_lockout());
         Serial.print("DIRECTION COMMAND:               ");  Serial.println(direction_command);
         }
-    #endif
+    // #endif
 
     private:
         uint16_t vsm_state;                         // @Parse @Hex

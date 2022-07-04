@@ -30,7 +30,7 @@ private:
 
     MCU_pedal_readings VCUPedalReadings;
     ADC_SPI pedal_ADC;
-    float accel1_, accel2_, brake1_, brake2_;
+    float accel1_{}, accel2_{}, brake1_{}, brake2_{};
 
 public:
     PedalHandler(Metro *pedal_debug_tim, Metro *deb) : timer_debug_raw_torque(pedal_debug_tim), pedal_out(deb){};

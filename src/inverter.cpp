@@ -116,8 +116,10 @@ bool Inverter::command_torque(uint8_t torqueCommand[8])
 bool Inverter::check_inverter_ready()
 {
     #if DEBUG
-    Serial.println("checking if inverter is ready");
+    // Serial.println("checking if inverter is ready");
+    pm100State.print();
     #endif
+    
     if (pm100State.get_inverter_enable_state())
     {
         Serial.println("resting inverter reset timer");

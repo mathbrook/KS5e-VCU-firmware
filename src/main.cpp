@@ -20,7 +20,7 @@
 
 // Metro timers for inverter:
 Metro timer_mc_kick_timer = Metro(50, 1);
-Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
+Metro timer_inverter_enable = Metro(10000, 1); // Timeout failed inverter enable
 Metro timer_motor_controller_send = Metro(50, 1);
 
 // timers for the accumulator:
@@ -35,8 +35,8 @@ Metro pm100speedInspection = Metro(500, 1);
 
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
-Metro debug_tim = Metro(1000, 1);
-Metro pedal_check = Metro(100, 1);
+Metro debug_tim = Metro(100, 1);
+Metro pedal_check = Metro(1, 1);
 
 // timers for VCU state out:
 Metro timer_can_update = Metro(100, 1);
