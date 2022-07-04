@@ -113,7 +113,7 @@ bool PedalHandler::read_pedal_values()
     return brake_is_active_;
 }
 
-void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible)
+void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible, bool &impl_occ)
 {
 
     if (accel1_ < MIN_ACCELERATOR_PEDAL_1 || accel1_ > MAX_ACCELERATOR_PEDAL_1)
@@ -184,9 +184,17 @@ void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausi
         (accel2_ < ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2) / 20 + START_ACCELERATOR_PEDAL_2)))
     {
         accel_and_brake_plausible = true;
-    }else
+        implausibility_occured_ = false; // only here do we want to reset this flag
+    } else
     {
-        accel_and_brake_plausible=true;
+        accel_and_brake_plausible = true;
     }
+
+    if((!accel_and_brake_plausible) || (!brake_is_plausible) || (!accel_is_plausible))
+    {
+        implausibility_occured_ = true;
+    }
+
+    impl_occ =implausibility_occured_;
 
 }

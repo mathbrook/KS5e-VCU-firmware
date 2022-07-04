@@ -113,6 +113,7 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
       }
 
       bool accumulator_ready;
+      // TODO might wanna check this out and make sure that this shit works, idk if it does
       if (accumulator->check_precharge_success() && (!accumulator->check_precharge_timeout()))
       {
         accumulator_ready = true;
@@ -224,6 +225,7 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
       break;
     }
     case MCU_STATE::READY_TO_DRIVE: {
+      // pm100->inverter_kick(1);
       if (!pm100->check_TS_active())
       {
         set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -240,16 +242,17 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
       bool accel_is_plausible = false;
       bool brake_is_plausible = false;
       bool accel_and_brake_plausible = false;
+      bool impl_occ = true;
 
       // FSAE EV.5.5
       // FSAE T.4.2.10
-      pedals->verify_pedals(accel_is_plausible, brake_is_plausible, accel_and_brake_plausible);
+      pedals->verify_pedals(accel_is_plausible, brake_is_plausible, accel_and_brake_plausible, impl_occ);
 
       mcu_status.set_no_accel_implausability(!accel_is_plausible);
       mcu_status.set_no_brake_implausability(!brake_is_plausible);
       mcu_status.set_no_accel_brake_implausability(!accel_and_brake_plausible);
 
-      if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible)
+      if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
       {
         uint8_t max_t = mcu_status.get_max_torque();
         int max_t_actual = max_t * 10;
@@ -260,6 +263,9 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
       else
       {
         Serial.println("not calculating torque");
+        // Serial.printf("fault occured %d\n", impl_occ);
+        Serial.print("implausibility occured: ");
+        Serial.println(impl_occ);
         Serial.printf("no brake implausibility: %d\n", mcu_status.get_no_brake_implausability());
         Serial.printf("no accel implausibility: %d\n", mcu_status.get_no_accel_implausability());
         Serial.printf("no accel brake implausibility: %d\n", mcu_status.get_no_accel_brake_implausability());
