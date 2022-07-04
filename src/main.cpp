@@ -91,7 +91,7 @@ void setup()
     // pump_dac.setVoltage(PUMP_SPEED, false);
     digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
-    mcu_status.set_max_torque(TORQUE_2);
+    mcu_status.set_max_torque(TORQUE_1);
 
     state_machine.init_state_machine(mcu_status);
 

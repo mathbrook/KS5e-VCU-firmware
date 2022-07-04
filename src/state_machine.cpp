@@ -68,6 +68,9 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
         dash_->DashLedscolorWipe();
         pm100->tryToClearMcFault();
         pm100->doStartup();
+        Serial.print("Inverter enable timer status: ");
+        Serial.println(pm100->check_inverter_enable_timeout());
+        
 #if DEBUG
         Serial.println("MCU Sent enable command to inverter");
 #endif
@@ -96,6 +99,10 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 
 void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
+    // things that are done every loop go here:
+    pm100->updateInverterCAN();
+    accumulator->updateAccumulatorCAN();
+    mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
     switch (mcu_status.get_state())
     {
     case MCU_STATE::STARTUP:
@@ -221,6 +228,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
     case MCU_STATE::READY_TO_DRIVE:
     {
+        pm100->inverter_kick(1);
         //   Serial.println("READY_TO_DRIVE");
         if (!pm100->check_TS_active())
         {
@@ -250,8 +258,10 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
         if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible)
         {
             uint8_t max_t = mcu_status.get_max_torque();
+            int16_t max_t_actual = max_t * (int16_t)10;
+
             int16_t motor_speed = pm100->getmcMotorRPM();
-            calculated_torque = pedals->calculate_torque(motor_speed, max_t);
+            calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
             Serial.println(calculated_torque);
         }
         else
@@ -276,6 +286,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
          Serial.printf("imd: %d\n", mcu_status.get_imd_ok_high());*/
 //}
 #endif
+
         uint8_t torquePart1 = calculated_torque % 256;
         uint8_t torquePart2 = calculated_torque / 256;
         uint8_t angularVelocity1 = 0, angularVelocity2 = 0;
@@ -290,12 +301,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
     }
 
-    // things that are done every loop go here:
-    pm100->updateInverterCAN();
-    accumulator->updateAccumulatorCAN();
-    if(pedal_check_->check()){
-        mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
-    }
     
 #if DEBUG
     if (debug_->check())

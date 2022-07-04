@@ -6,7 +6,7 @@ void PedalHandler::init_pedal_handler()
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
 }
 
-int PedalHandler::calculate_torque(int16_t &motor_speed, uint8_t &max_torque)
+int16_t PedalHandler::calculate_torque(int16_t &motor_speed, int16_t &max_torque)
 {
     int calculated_torque = 0;
     int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
@@ -77,15 +77,15 @@ bool PedalHandler::read_pedal_values()
     // Serial.printf("val %f\n", brake1_);
     // Serial.printf("raw val %f\n", raw_brake);
     
-    if (timer_debug_raw_torque->check())
-    {
+    // if (timer_debug_raw_torque->check())
+    // {
         // Serial.print("ACCEL 1: ");
         // Serial.println(accel1_);
         // Serial.print("ACCEL 2: ");
         // Serial.println(accel2_);
         // Serial.print("BRAKE 1: ");
         // Serial.println(brake1_);
-    }
+  //  }
 #endif
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
     VCUPedalReadings.set_accelerator_pedal_2(accel2_);
@@ -179,9 +179,9 @@ void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausi
         (accel2_ < ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2) / 20 + START_ACCELERATOR_PEDAL_2)))
     {
         accel_and_brake_plausible = true;
-    } else {
-        // Serial.println("yo wtf");
-        accel_and_brake_plausible = true;
+    }else
+    {
+        accel_and_brake_plausible=true;
     }
 
 }

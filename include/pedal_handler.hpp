@@ -38,7 +38,7 @@ public:
 
     bool is_accel_pedal_plausible();
     bool is_brake_pedal_plausible();
-    int calculate_torque(int16_t &motor_speed, uint8_t &max_torque);
+    int16_t calculate_torque(int16_t &motor_speed, int16_t &max_torque);
     void verify_pedals(bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible);
     bool read_pedal_values();
 };

@@ -8,14 +8,14 @@
 // Pedalbox stuff
 
 #define BRAKE_ACTIVE 2100             // Threshold for brake pedal active
-#define MIN_ACCELERATOR_PEDAL_1 200   // Low accelerator implausibility threshold
-#define START_ACCELERATOR_PEDAL_1 904 // Position to start acceleration
-#define END_ACCELERATOR_PEDAL_1 1820  // Position to max out acceleration
-#define MAX_ACCELERATOR_PEDAL_1 2500  // High accelerator implausibility threshold
-#define MIN_ACCELERATOR_PEDAL_2 200   // Low accelerator implausibility threshold
-#define START_ACCELERATOR_PEDAL_2 620 // Position to start acceleration
-#define END_ACCELERATOR_PEDAL_2 1250  // Position to max out acceleration
-#define MAX_ACCELERATOR_PEDAL_2 2000  // High accelerator implausibility threshold
+#define MIN_ACCELERATOR_PEDAL_1 200    // Low accelerator implausibility threshold
+#define START_ACCELERATOR_PEDAL_1 940  // Position to start acceleration
+#define END_ACCELERATOR_PEDAL_1 1830    // Position to max out acceleration
+#define MAX_ACCELERATOR_PEDAL_1 2500    // High accelerator implausibility threshold
+#define MIN_ACCELERATOR_PEDAL_2 200    // Low accelerator implausibility threshold
+#define START_ACCELERATOR_PEDAL_2 650  // Position to start acceleration
+#define END_ACCELERATOR_PEDAL_2 1230    // Position to max out acceleration
+#define MAX_ACCELERATOR_PEDAL_2 2000    // High accelerator implausibility threshold
 #define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1) / 2)
 #define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2) / 2)
 
