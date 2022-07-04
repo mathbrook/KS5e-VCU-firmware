@@ -79,12 +79,12 @@ bool PedalHandler::read_pedal_values()
     
     if (timer_debug_raw_torque->check())
     {
-        Serial.print("ACCEL 1: ");
-        Serial.println(accel1_);
-        Serial.print("ACCEL 2: ");
-        Serial.println(accel2_);
-        Serial.print("BRAKE 1: ");
-        Serial.println(brake1_);
+        // Serial.print("ACCEL 1: ");
+        // Serial.println(accel1_);
+        // Serial.print("ACCEL 2: ");
+        // Serial.println(accel2_);
+        // Serial.print("BRAKE 1: ");
+        // Serial.println(brake1_);
     }
 #endif
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
@@ -104,26 +104,27 @@ bool PedalHandler::read_pedal_values()
         WriteToDaqCAN(tx_msg);
     }
     // only uses front brake pedal
-    return (brake1_ >= BRAKE_ACTIVE);
+    brake_is_active_ = (brake1_ >= BRAKE_ACTIVE);
+    return brake_is_active_;
 }
 
-void PedalHandler::verify_pedals(const bool &brake_pedal_active, bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible)
+void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible)
 {
 
     if (accel1_ < MIN_ACCELERATOR_PEDAL_1 || accel1_ > MAX_ACCELERATOR_PEDAL_1)
     {
         accel_is_plausible = false;
 #if DEBUG
-        Serial.println("T.4.2.10 1");
-        Serial.println(accel1_);
+        // Serial.println("T.4.2.10 1");
+        // Serial.println(accel1_);
 #endif
     }
     else if (accel2_ < MIN_ACCELERATOR_PEDAL_2 || accel2_ > MAX_ACCELERATOR_PEDAL_2)
     {
         accel_is_plausible = false;
 #if DEBUG
-        Serial.println("T.4.2.10 2");
-        Serial.println(accel2_);
+        // Serial.println("T.4.2.10 2");
+        // Serial.println(accel2_);
 #endif
     }
     // check that the pedals are reading within 10% of each other
@@ -133,18 +134,18 @@ void PedalHandler::verify_pedals(const bool &brake_pedal_active, bool &accel_is_
              (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2) / 20)
     {
 #if DEBUG
-        Serial.println("T.4.2.4");
-        Serial.printf("computed - %f\n", accel1_ - (4096 - accel2_));
-        Serial.printf("standard - %d\n", (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2) / 20);
+        // Serial.println("T.4.2.4");
+        // Serial.printf("computed - %f\n", accel1_ - (4096 - accel2_));
+        // Serial.printf("standard - %d\n", (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2) / 20);
 #endif
         accel_is_plausible = false;
     }
     else
     {
 #if DEBUG
-        Serial.println("T.4.2.4");
-        Serial.printf("computed - %f\n", accel1_ - (4096 - accel2_));
-        Serial.printf("standard - %d\n", (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2) / 20);
+        // Serial.println("T.4.2.4");
+        // Serial.printf("computed - %f\n", accel1_ - (4096 - accel2_));
+        // Serial.printf("standard - %d\n", (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2) / 20);
 #endif
         // mcu_status.set_no_accel_implausability(true);
         accel_is_plausible = true;
@@ -168,14 +169,18 @@ void PedalHandler::verify_pedals(const bool &brake_pedal_active, bool &accel_is_
         (
             (accel1_ > ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1) / 4 + START_ACCELERATOR_PEDAL_1)) ||
             (accel2_ > ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2) / 4 + START_ACCELERATOR_PEDAL_2))) &&
-        brake_pedal_active)
+        brake_is_active_)
     {
+        Serial.println("dawg, dont press em both");
         accel_and_brake_plausible = false;
     }
     else if (
         (accel1_ < ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1) / 20 + START_ACCELERATOR_PEDAL_1)) &&
         (accel2_ < ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2) / 20 + START_ACCELERATOR_PEDAL_2)))
     {
+        accel_and_brake_plausible = true;
+    } else {
+        // Serial.println("yo wtf");
         accel_and_brake_plausible = true;
     }
 

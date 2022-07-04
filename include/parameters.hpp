@@ -7,7 +7,7 @@
 
 // Pedalbox stuff
 
-#define BRAKE_ACTIVE 2300             // Threshold for brake pedal active
+#define BRAKE_ACTIVE 2100             // Threshold for brake pedal active
 #define MIN_ACCELERATOR_PEDAL_1 200   // Low accelerator implausibility threshold
 #define START_ACCELERATOR_PEDAL_1 904 // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_1 1820  // Position to max out acceleration

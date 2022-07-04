@@ -21,7 +21,7 @@
 // Metro timers for inverter:
 Metro timer_mc_kick_timer = Metro(50, 1);
 Metro timer_inverter_enable = Metro(10000, 1); // Timeout failed inverter enable
-Metro timer_motor_controller_send = Metro(50, 1);
+Metro timer_motor_controller_send = Metro(50);
 
 // timers for the accumulator:
 Metro pchgMsgTimer = Metro(100);
@@ -29,6 +29,7 @@ Metro pchgMsgTimer = Metro(100);
 // timers for the pedals:
 Metro timer_debug_pedals_raw = Metro(1000, 1);
 Metro pedal_debug = Metro(100, 1);
+Metro pedal_check = Metro(40, 1);
 
 // timers for the dashboard:
 Metro pm100speedInspection = Metro(500, 1);
@@ -36,7 +37,7 @@ Metro pm100speedInspection = Metro(500, 1);
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(100, 1);
-Metro pedal_check = Metro(1, 1);
+
 
 // timers for VCU state out:
 Metro timer_can_update = Metro(100, 1);
@@ -66,7 +67,7 @@ void setup()
 {
 
     Serial.begin(115200);
-    delay(5000);
+    delay(1000);
     
     Serial.println("setup");
     InitCAN();
@@ -91,14 +92,9 @@ void setup()
     digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
     mcu_status.set_max_torque(TORQUE_2);
-    Serial.println("initted mcu fully");
-    delay(2000);
-    Serial.println("initting state machine");
 
-    delay(2000);
     state_machine.init_state_machine(mcu_status);
-    Serial.println("state machine inited");
-    
+
 }
 
 void loop()
