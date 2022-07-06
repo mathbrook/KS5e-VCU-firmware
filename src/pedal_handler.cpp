@@ -50,14 +50,15 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         // Serial.print("Brake1_ : ");
         // Serial.println(brake1_);
     }
-    if (abs(motor_speed) <= 50)
-    {
-        if (calculated_torque >= 600)
-        {
-            calculated_torque = 600; // ideally limit torque at low RPMs, see how high this number can be raised
-        }
-    }
     //#endif
+    //keep this in our pocket for now V
+    // if (abs(motor_speed) <= 50)
+    // {
+    //     if (calculated_torque >= 600)
+    //     {
+    //         calculated_torque = 600; // ideally limit torque at low RPMs, see how high this number can be raised
+    //     }
+    // }
     return calculated_torque;
 }
 
@@ -82,15 +83,15 @@ bool PedalHandler::read_pedal_values()
     // Serial.printf("val %f\n", brake1_);
     // Serial.printf("raw val %f\n", raw_brake);
     
-    // if (timer_debug_raw_torque->check())
-    // {
-        // Serial.print("ACCEL 1: ");
-        // Serial.println(accel1_);
-        // Serial.print("ACCEL 2: ");
-        // Serial.println(accel2_);
-        // Serial.print("BRAKE 1: ");
-        // Serial.println(brake1_);
-  //  }
+//     if (timer_debug_raw_torque->check()) 
+//     {
+//         Serial.print("ACCEL 1: ");
+//         Serial.println(accel1_);
+//         Serial.print("ACCEL 2: ");
+//         Serial.println(accel2_);
+//         Serial.print("BRAKE 1: ");
+//         Serial.println(brake1_);
+//    }
 #endif
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
     VCUPedalReadings.set_accelerator_pedal_2(accel2_);

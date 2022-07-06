@@ -17,10 +17,15 @@ void Accumulator::sendPrechargeStartMsg()
     WriteCANToAccumulator(ctrlMsg);
 }
 
+
 // returns true if precharge has succeeeded or not
 bool Accumulator::check_precharge_success()
 {
     return (pchgState == 2);
+}
+void Accumulator::resetPchgState(){
+    pchgState=0;
+    return;
 }
 
 // returns true if the precharge has timed out on the BMS
@@ -45,6 +50,10 @@ void Accumulator::updateAccumulatorCAN()
             int accVoltage = rxMsg.buf[1] + (rxMsg.buf[2] * 100);
             int tsVoltage = rxMsg.buf[3] + (rxMsg.buf[4] * 100);
             sprintf(lineBuffer, "precharging: state: %d ACV: %dv TSV: %dv\n", pchgState, accVoltage, tsVoltage);
+            #ifdef ACCDEBUG
+            Serial.print(millis());
+            Serial.println(lineBuffer);
+            #endif
             break;
         }
         case (ID_BMS_INFO):

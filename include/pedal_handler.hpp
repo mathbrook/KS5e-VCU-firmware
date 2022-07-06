@@ -28,7 +28,7 @@ private:
     Metro *timer_debug_raw_torque;
     Metro *pedal_out;
     bool brake_is_active_;
-    MCU_pedal_readings VCUPedalReadings;
+   
     ADC_SPI pedal_ADC;
     float accel1_, accel2_, brake1_, brake2_;
 
@@ -37,7 +37,7 @@ private:
 public:
     PedalHandler(Metro *pedal_debug_tim, Metro *deb) : timer_debug_raw_torque(pedal_debug_tim), pedal_out(deb){};
     void init_pedal_handler();
-
+    MCU_pedal_readings VCUPedalReadings;
     bool is_accel_pedal_plausible();
     bool is_brake_pedal_plausible();
     int calculate_torque(int16_t &motor_speed, int &max_torque);

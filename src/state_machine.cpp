@@ -1,5 +1,5 @@
 #include "state_machine.hpp"
-
+//#define ACCDEBUG
 // initializes the mcu status and pedal handler
 void StateMachine::init_state_machine(MCU_status& mcu_status)
 {
@@ -27,6 +27,7 @@ void StateMachine::set_state(MCU_status& mcu_status, MCU_STATE new_state)
       break;
     }
     case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: {
+      accumulator->resetPchgState(); //dealing with sus behavior, precharge timed out but would stay "ready"
       break;
     }
     case MCU_STATE::ENABLING_INVERTER: {
@@ -39,6 +40,7 @@ void StateMachine::set_state(MCU_status& mcu_status, MCU_STATE new_state)
       break;
     }
     case MCU_STATE::READY_TO_DRIVE: {
+      accumulator->resetPchgState();
       break;
     }
   }
@@ -109,36 +111,50 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
       pm100->inverter_kick(0);
       if (!accumulator->GetIfPrechargeAttempted())
       {
-        accumulator->sendPrechargeStartMsg();
+        accumulator->sendPrechargeStartMsg(); //we dont actually need to send this-precharge is automatic
+        #ifdef ACCDEBUG
+        Serial.println("Sent precharge start msg");
+        #endif
       }
 
-      bool accumulator_ready;
+      bool accumulator_ready=false;
       // TODO might wanna check this out and make sure that this shit works, idk if it does
       if (accumulator->check_precharge_success() && (!accumulator->check_precharge_timeout()))
       {
         accumulator_ready = true;
+        #ifdef ACCDEBUG
+        //Serial.println("Precharge is ready and not timed out");
+        #endif
       }
       else if ((!accumulator->check_precharge_timeout()) && (!accumulator->check_precharge_success()))
       {
         // if the accumulator hasnt finished precharge and it hasnt timed out yet, break
+        #ifdef ACCDEBUG
+        Serial.println("Precharge not ready yet");
+        Serial.println(accumulator_ready);
+        #endif
         break;
       }
       else if (accumulator->check_precharge_timeout() && (!accumulator->check_precharge_success()))
       {
         // attempt pre-charge again if the pre-charge has timed out
         // TODO add in re-try limitation number
-        accumulator->sendPrechargeStartMsg();
+        //accumulator->sendPrechargeStartMsg();
+        #ifdef ACCDEBUG
+        Serial.println("Sent precharge start msg AGAIN");
+        Serial.println(accumulator_ready);
+        #endif
         break;
       }
-      else
-      {
-        // accumulator has timed out but it also pre-charged, continue
-        accumulator_ready = true;
-      }
+      // else
+      // {
+      //   // accumulator has timed out but it also pre-charged, continue
+      //   accumulator_ready = true;
+      // }
       // if TS is above HV threshold, move to Tractive System Active
       if (pm100->check_TS_active() && accumulator_ready)
       {
-#if DEBUG
+#if DEBUGF
         Serial.println("Setting state to TS Active from TS Not Active");
 #endif
         set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
@@ -154,6 +170,8 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
 #endif
       if (!pm100->check_TS_active())
       {
+        set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+      }else if(accumulator->check_precharge_timeout()){
         set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
       }
       pm100->inverter_kick(0);
@@ -173,6 +191,9 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
       pm100->inverter_kick(1);
       if (!pm100->check_TS_active())
       {
+        set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+        break;
+      }else if(accumulator->check_precharge_timeout()){
         set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
         break;
       }
@@ -237,6 +258,10 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
         set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
         break;  // TODO idk if we should break here or not but it sure seems like it
       }
+      if(accumulator->check_precharge_timeout()){ //if the precharge hearbeat has timed out, we know it is no longer enabled-> the SDC is open
+        set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+        break;
+      }
 
       int calculated_torque = 0;
       bool accel_is_plausible = false;
@@ -263,7 +288,6 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
       else
       {
         Serial.println("not calculating torque");
-        // Serial.printf("fault occured %d\n", impl_occ);
         Serial.print("implausibility occured: ");
         Serial.println(impl_occ);
         Serial.printf("no brake implausibility: %d\n", mcu_status.get_no_brake_implausability());
@@ -285,17 +309,21 @@ void StateMachine::handle_state_machine(MCU_status& mcu_status)
        Serial.printf("imd: %d\n", mcu_status.get_imd_ok_high());*/
 //}
 #endif
-
+      //TODO make this less retarded
       uint8_t torquePart1 = calculated_torque % 256;
       uint8_t torquePart2 = calculated_torque / 256;
       uint8_t angularVelocity1 = 0, angularVelocity2 = 0;
       bool emraxDirection = true;  // forward
       bool inverterEnable = true;  // go brrr
+      //TODO actual regen mapping and not on/off, this was jerky on dyno
+      // if(pedals->VCUPedalReadings.get_brake_transducer_1()>=1950){
+      //   torquePart1=0x9C;
+      //   torquePart2=0xFf; //-10nm sussy regen
+      // }
       uint8_t torqueCommand[] = {
         torquePart1, torquePart2, angularVelocity1, angularVelocity2, emraxDirection, inverterEnable, 0, 0
       };
       pm100->command_torque(torqueCommand);
-
       break;
     }
   }

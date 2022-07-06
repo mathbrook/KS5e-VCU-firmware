@@ -7,7 +7,6 @@ class Accumulator
 
 private:
     Metro *pchgTimeout;
-
     bool preChargeAttempted_;
     int pchgState;
     unsigned long pchgAliveTimer;
@@ -20,6 +19,7 @@ public:
     bool check_precharge_success();
     bool check_precharge_timeout();
     bool GetIfPrechargeAttempted();
+    void resetPchgState();
 };
 
 #endif

@@ -226,3 +226,4 @@ bool Inverter::check_inverter_disabled()
 {;
     return (!pm100State.get_inverter_enable_state());
 }
+

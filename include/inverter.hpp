@@ -10,6 +10,7 @@
 #include "inverter/mc_motor_position_information.hpp"
 #include "inverter/mc_temperatures.hpp"
 #include "inverter/mc_voltage_information.hpp"
+#include "inverter/mc_command_message.hpp"
 
 class Inverter
 {
@@ -21,9 +22,10 @@ private:
 
     void writeControldisableWithZeros();
     void writeEnableNoTorque();
+
     uint8_t disableWithZeros[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // The message to disable the controller/cancel lockout
     uint8_t enableNoTorque[8] = {0, 0, 0, 0, 1, 1, 0, 0};   // The message to enable the motor with zero torque
-
+    MC_command_message pm100Msg{};
     MC_internal_states pm100State{};
     MC_motor_position_information pm100Speed{};
     MC_voltage_information pm100Voltage{};
@@ -52,6 +54,7 @@ public:
     bool check_inverter_ready();
     bool check_inverter_enable_timeout();
     void debug_print();
+    void commandRegen();
 };
 
 #endif

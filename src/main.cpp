@@ -24,7 +24,8 @@ Metro timer_inverter_enable = Metro(10000, 1); // Timeout failed inverter enable
 Metro timer_motor_controller_send = Metro(50, 1);
 
 // timers for the accumulator:
-Metro pchgMsgTimer = Metro(100);
+Metro pchgMsgTimer = Metro(1000);
+//Metro pchgTimeout = Metro(500);
 
 // timers for the pedals:
 Metro timer_debug_pedals_raw = Metro(1000, 1);
