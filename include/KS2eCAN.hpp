@@ -1,6 +1,9 @@
+#ifndef KS2ECAN_HPP
+#define KS2ECAN_HPP
 /*
  * CAN ID definitions
  */
+
 #define ID_MC_TEMPERATURES_1 0xA0
 #define ID_MC_TEMPERATURES_2 0xA1
 #define ID_MC_TEMPERATURES_3 0xA2
@@ -23,3 +26,8 @@
 #define ID_VCU_STATUS						0xC3
 #define ID_VCU_PEDAL_READINGS				0xC4
 #define ID_BMS_INFO 0x6B1
+// number of rx and tx mailboxes
+#define NUM_TX_MAILBOXES 2
+#define NUM_RX_MAILBOXES 6
+
+#endif
