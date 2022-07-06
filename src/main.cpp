@@ -45,12 +45,9 @@ Metro timer_can_update = Metro(100, 1);
 
 // dashboard led handling
 // TODO unfuck this
-const int numled=3+6;
-const int numledOnDash=6;
+const int numled=9;
 byte drawingMemory[numled*3];         //  3 bytes per LED
 DMAMEM byte displayMemory[numled*12]; // 12 bytes per LED
-byte DashdrawingMemory[numledOnDash*3];         //  3 bytes per LED
-DMAMEM byte DashdisplayMemory[numledOnDash*12]; // 12 bytes per LED
 WS2812Serial leds(numled, displayMemory, drawingMemory, 17, WS2812_GRB);
 
 // objects
