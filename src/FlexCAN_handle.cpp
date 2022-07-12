@@ -1,6 +1,5 @@
 #include "FlexCAN_util.hpp"
 
-
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Inverter_CAN_;
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> DaqCAN_;
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> AccumulatorCAN_;
@@ -43,13 +42,11 @@ int WriteCANToInverter(CAN_message_t &msg)
 {
     DaqCAN_.write(msg);
     return Inverter_CAN_.write(msg);
-    
 }
 int WriteCANToAccumulator(CAN_message_t &msg)
 {
     DaqCAN_.write(msg);
     return AccumulatorCAN_.write(msg);
-    
 }
 
 int WriteToDaqCAN(CAN_message_t &msg)
@@ -59,11 +56,20 @@ int WriteToDaqCAN(CAN_message_t &msg)
 
 int ReadInverterCAN(CAN_message_t &msg)
 {
-    DaqCAN_.write(msg);
-    return Inverter_CAN_.read(msg);
+    int temp = Inverter_CAN_.read(msg);
+    if (temp)
+    {
+        DaqCAN_.write(msg);
+    }
+
+    return temp;
 }
 int ReadAccumulatorCAN(CAN_message_t &msg)
 {
-    DaqCAN_.write(msg);
-    return AccumulatorCAN_.read(msg);
+    int temp = AccumulatorCAN_.read(msg);
+    if (temp)
+    { // only write anything if we have actually received something lol
+        DaqCAN_.write(msg);
+    }
+    return temp;
 }
