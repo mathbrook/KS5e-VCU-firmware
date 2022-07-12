@@ -7,6 +7,7 @@
 #include "pedal_handler.hpp"
 #include "dashboard.hpp"
 #include <Metro.h>
+#include "parameters.hpp"
 
 class StateMachine
 {
