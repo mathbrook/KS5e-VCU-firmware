@@ -8,6 +8,7 @@ void PedalHandler::set_sensor_ranges(float accel1limitlo, float accel1limithi, f
     brake1LIMITHI_ = calculateADCVolts(brakelimit1hi);
     a1Range=accel1LIMITHI_-accel1LIMITLO_; //help
     a2Range=accel2LIMITHI_-accel2LIMITLO_;
+    Serial.printf("A1 lo hi: %f %f/nA2 lo hi: %f %f",accel1LIMITLO_,accel1LIMITHI_,accel2LIMITLO_,accel2LIMITHI_);
 }
 
 // initializes pedal's ADC
@@ -64,13 +65,13 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     }
     //#endif
     //keep this in our pocket for now V
-    //if (abs(motor_speed) <= 50)
-    // {
-    //     if (calculated_torque >= 600)
-    //     {
-    //         calculated_torque = 600; // ideally limit torque at low RPMs, see how high this number can be raised
-    //     }
-    // }
+    if (abs(motor_speed) <= 1000)
+    {
+        if (calculated_torque >= 600)
+        {
+            calculated_torque = 600; // ideally limit torque at low RPMs, see how high this number can be raised
+        }
+    }
     uint32_t calculated_power =  (calculated_torque/10)*motor_speed*0.104725;
     if(calculated_power>80000){
         calculated_torque=((80000*9.54)/motor_speed)*10;
@@ -101,15 +102,16 @@ bool PedalHandler::read_pedal_values()
     // Serial.printf("val %f\n", brake1_);
     // Serial.printf("raw val %f\n", raw_brake);
     
-//     if (timer_debug_raw_torque->check()) 
-//     {
-//         Serial.print("ACCEL 1: ");
-//         Serial.println(accel1_);
-//         Serial.print("ACCEL 2: ");
-//         Serial.println(accel2_);
-//         Serial.print("BRAKE 1: ");
-//         Serial.println(brake1_);
-//    }
+    if (timer_debug_raw_torque->check()) 
+    {
+        Serial.print("ACCEL 1: ");
+        Serial.println(accel1_);
+        Serial.print("ACCEL 2: ");
+        Serial.println(accel2_);
+        Serial.print("BRAKE 1: ");
+        Serial.println(brake1_);
+        Serial.printf("TORQUE VALUES IF YOU WERE CALCULATING IT CURRENTLY: \n T1: %f\nT2: %f\n",(map(accel1_, accel1LIMITLO_, accel1LIMITHI_, 0, 2400)),(map(accel2_, accel2LIMITLO_, accel2LIMITHI_, 0, 2400)));
+   }
 #endif
     VCUPedalReadings.set_accelerator_pedal_1(uint16_t(accel1_*100));
     VCUPedalReadings.set_accelerator_pedal_2(uint16_t(accel2_*100));

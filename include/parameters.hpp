@@ -2,7 +2,7 @@
 #define PARAMETERS_HPP
 
 // #define HT_DEBUG_EN
-#define DEBUG 1
+#define DEBUG 0
 // TODO may wanna do this another way
 // Sensor	Hi	    Lo  	V Hi	    V Lo	    Range	    RATIO
 // Accel1	1830	940	    2.233886719	1.147460938	1.086425781	0.651685393
