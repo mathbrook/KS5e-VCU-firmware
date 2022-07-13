@@ -17,6 +17,7 @@ void Inverter::updateInverterCAN()
 
     if (ReadInverterCAN(rxMsg))
     {
+        WriteToDaqCAN(rxMsg);
         switch (rxMsg.id)
         {
         case (ID_MC_INTERNAL_STATES):
