@@ -1,5 +1,6 @@
 #include "FlexCAN_util.hpp"
 
+
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Inverter_CAN_;
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> DaqCAN_;
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> AccumulatorCAN_;
@@ -57,28 +58,23 @@ int WriteCANToAccumulator(CAN_message_t &msg)
     DaqCAN_.write(msg);
     return AccumulatorCAN_.write(msg);
 }
-
+bool writeCANToJUSTAccumulator(CAN_message_t &msg){
+    return AccumulatorCAN_.write(msg);  
+}
 int WriteToDaqCAN(CAN_message_t &msg)
 {
+    #ifdef DEBUG
+    Serial.print("Daq Message Out ID: ");
+    Serial.println(msg.id,HEX);
+    #endif
     return DaqCAN_.write(msg);
 }
 
 int ReadInverterCAN(CAN_message_t &msg)
 {
-    int temp = Inverter_CAN_.read(msg);
-    if (temp)
-    {
-        DaqCAN_.write(msg);
-    }
-
-    return temp;
+    return Inverter_CAN_.read(msg);
 }
 int ReadAccumulatorCAN(CAN_message_t &msg)
 {
-    int temp = AccumulatorCAN_.read(msg);
-    if (temp)
-    { // only write anything if we have actually received something lol
-        DaqCAN_.write(msg);
-    }
-    return temp;
+    return AccumulatorCAN_.read(msg);
 }
