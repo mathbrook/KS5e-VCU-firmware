@@ -331,19 +331,8 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
      Serial.printf("imd: %d\n", mcu_status.get_imd_ok_high());*/
 //}
 #endif
-    uint8_t torquePart1 = calculated_torque % 256;
-    uint8_t torquePart2 = calculated_torque / 256;
-    uint8_t angularVelocity1 = 0, angularVelocity2 = 0;
-    bool emraxDirection = true; // forward
-    bool inverterEnable = true; // go brrr
-    // TODO actual regen mapping and not on/off, this was jerky on dyno
-    //  if(pedals->VCUPedalReadings.get_brake_transducer_1()>=1950){
-    //    torquePart1=0x9C;
-    //    torquePart2=0xFf; //-10nm sussy regen
-    //  }
-    uint8_t torqueCommand[] = {
-        torquePart1, torquePart2, angularVelocity1, angularVelocity2, emraxDirection, inverterEnable, 0, 0};
-      pm100->command_torque(torqueCommand);
+    
+      pm100->command_torque(calculated_torque);
 
     break;
   }

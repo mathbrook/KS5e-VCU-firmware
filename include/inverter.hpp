@@ -48,7 +48,7 @@ public:
     int getmcMotorRPM();
     bool check_TS_active();
     bool check_inverter_disabled();
-    bool command_torque(uint8_t torqueCommand[8]);
+    bool command_torque(int torque);
     void tryToClearMcFault();
     void enable_inverter();
     bool check_inverter_ready();
