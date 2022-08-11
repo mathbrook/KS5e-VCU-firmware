@@ -64,17 +64,12 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         // Serial.println(brake1_);
     }
     //#endif
-    //keep this in our pocket for now V
     if (abs(motor_speed) <= 1000)
     {
         if (calculated_torque >= 600)
         {
             calculated_torque = 600; // ideally limit torque at low RPMs, see how high this number can be raised
         }
-    }
-    uint32_t calculated_power =  (calculated_torque/10)*motor_speed*0.104725;
-    if(calculated_power>80000){
-        calculated_torque=((80000*9.54)/motor_speed)*10;
     }
     return calculated_torque;
 }
@@ -83,25 +78,14 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 bool PedalHandler::read_pedal_values()
 {
     /* Filter ADC readings */
-    float raw_brake = pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
-    float raw_accel1 = pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
-    float raw_accel2 = pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
 
-    // accel1_ = ALPHA * accel1_ + (1 - ALPHA) * raw_accel1;
-    // accel2_ = ALPHA * accel2_ + (1 - ALPHA) * raw_accel2;
-    // brake1_ = ALPHA * brake1_ + (1 - ALPHA) * raw_brake;
-    accel1_ = calculateADCVolts(raw_accel1); //calculating sensor voltages
-    accel2_ = calculateADCVolts(raw_accel2);
-    brake1_ = calculateADCVolts(raw_brake);
-    ratioA1=accel1_/a1Range;
-    ratioA2=accel2_/a2Range;
-    //ratioooo
+    accel1_ = ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
+    accel2_ = ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
+    brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+
+
 
 #if DEBUG
-    // Serial.println("reading pedal vals");
-    // Serial.printf("val %f\n", brake1_);
-    // Serial.printf("raw val %f\n", raw_brake);
-    
     if (timer_debug_raw_torque->check()) 
     {
         Serial.print("ACCEL 1: ");
@@ -110,7 +94,11 @@ bool PedalHandler::read_pedal_values()
         Serial.println(accel2_);
         Serial.print("BRAKE 1: ");
         Serial.println(brake1_);
-        Serial.printf("TORQUE VALUES IF YOU WERE CALCULATING IT CURRENTLY: \n T1: %f\nT2: %f\n",(map(accel1_, accel1LIMITLO_, accel1LIMITHI_, 0, 2400)),(map(accel2_, accel2LIMITLO_, accel2LIMITHI_, 0, 2400)));
+        int max_torque = 2400;
+        int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
+        int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
+
+        Serial.printf("TORQUE VALUES IF YOU WERE CALCULATING IT CURRENTLY: \n T1: %d\nT2: %d\n",torque1,torque2);
    }
 #endif
     VCUPedalReadings.set_accelerator_pedal_1(uint16_t(accel1_*100));
