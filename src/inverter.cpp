@@ -1,6 +1,6 @@
 #include "inverter.hpp"
 #include "FlexCAN_util.hpp"
-
+#define HT_DEBUG_EN
 // inverter has got to be crunk up before yeeting
 void Inverter::doStartup()
 {
@@ -17,6 +17,7 @@ void Inverter::updateInverterCAN()
 
     if (ReadInverterCAN(rxMsg))
     {
+        WriteToDaqCAN(rxMsg);
         switch (rxMsg.id)
         {
         case (ID_MC_INTERNAL_STATES):
@@ -62,10 +63,10 @@ void Inverter::updateInverterCAN()
 
 void Inverter::debug_print()
 {
-    // pm100Speed.print();
-    // pm100temp1.print();
-    // pm100temp2.print();
-    // pm100temp3.print();
+    pm100Speed.print();
+    pm100temp1.print();
+    pm100temp2.print();
+    pm100temp3.print();
 }
 
 void Inverter::writeControldisableWithZeros()
