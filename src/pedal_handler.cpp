@@ -1,16 +1,29 @@
 #include "pedal_handler.hpp"
+void PedalHandler::set_sensor_ranges(float accel1limitlo, float accel1limithi, float accel2limitlo, float accel2limithi, float brakelimit1hi)
+{
+    accel1LIMITLO_ = calculateADCVolts(accel1limitlo);
+    accel1LIMITHI_ = calculateADCVolts(accel1limithi);
+    accel2LIMITLO_ = calculateADCVolts(accel2limitlo);
+    accel2LIMITHI_ = calculateADCVolts(accel2limithi);
+    brake1LIMITHI_ = calculateADCVolts(brakelimit1hi);
+    a1Range=accel1LIMITHI_-accel1LIMITLO_; //help
+    a2Range=accel2LIMITHI_-accel2LIMITLO_;
+    Serial.printf("A1 lo hi: %f %f/nA2 lo hi: %f %f",accel1LIMITLO_,accel1LIMITHI_,accel2LIMITLO_,accel2LIMITHI_);
+}
 
 // initializes pedal's ADC
 void PedalHandler::init_pedal_handler()
 {
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
+    //calculate sensor ranges
+    set_sensor_ranges(START_ACCELERATOR_PEDAL_1,END_ACCELERATOR_PEDAL_1,START_ACCELERATOR_PEDAL_2,END_ACCELERATOR_PEDAL_2,BRAKE_ACTIVE);
 }
 
 int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 {
     int calculated_torque = 0;
-    int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
-    int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
+    int torque1 = map(round(accel1_), accel1LIMITLO_, accel1LIMITHI_, 0, max_torque);
+    int torque2 = map(round(accel2_), accel2LIMITLO_, accel2LIMITHI_, 0, max_torque);
 
     // torque values are greater than the max possible value, set them to max
     if (torque1 > max_torque)
@@ -51,19 +64,12 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         // Serial.println(brake1_);
     }
     //#endif
-if (abs(motor_speed) <= 1000)
+    if (abs(motor_speed) <= 1000)
     {
-        if (calculated_torque >= 600) //60NM
+        if (calculated_torque >= 600)
         {
             calculated_torque = 600; // ideally limit torque at low RPMs, see how high this number can be raised
         }
-    }
-    uint32_t calculated_power =  (calculated_torque/10)*motor_speed*0.104725;
-    if(calculated_power>80000){
-        calculated_torque=((80000*9.54)/motor_speed)*10;
-    }
-    if(calculated_torque<100){
-        calculated_torque=0;
     }
     return calculated_torque;
 }
@@ -76,6 +82,7 @@ bool PedalHandler::read_pedal_values()
     accel1_ = ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
     accel2_ = ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
     brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+
 
 
 #if DEBUG
@@ -94,10 +101,10 @@ bool PedalHandler::read_pedal_values()
         Serial.printf("TORQUE VALUES IF YOU WERE CALCULATING IT CURRENTLY: \n T1: %d\nT2: %d\n",torque1,torque2);
    }
 #endif
-    VCUPedalReadings.set_accelerator_pedal_1(accel1_);
-    VCUPedalReadings.set_accelerator_pedal_2(accel2_);
-    VCUPedalReadings.set_brake_transducer_1(brake1_);
-    VCUPedalReadings.set_brake_transducer_2(brake1_);
+    VCUPedalReadings.set_accelerator_pedal_1(uint16_t(accel1_*100));
+    VCUPedalReadings.set_accelerator_pedal_2(uint16_t(accel2_*100));
+    VCUPedalReadings.set_brake_transducer_1(uint16_t(brake1_*100));
+    VCUPedalReadings.set_brake_transducer_2(uint16_t(brake1_*100));
     CAN_message_t tx_msg;
 
     // Send Main Control Unit pedal reading message
@@ -118,7 +125,7 @@ bool PedalHandler::read_pedal_values()
 void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible, bool &impl_occ)
 {
 
-    if (accel1_ < MIN_ACCELERATOR_PEDAL_1 || accel1_ > MAX_ACCELERATOR_PEDAL_1)
+    if (accel1_ < SENSOR_LO || accel1_ > SENSOR_HI)
     {
         accel_is_plausible = false;
 #if DEBUG
@@ -126,7 +133,7 @@ void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausi
         // Serial.println(accel1_);
 #endif
     }
-    else if (accel2_ < MIN_ACCELERATOR_PEDAL_2 || accel2_ > MAX_ACCELERATOR_PEDAL_2)
+    else if (accel2_ < SENSOR_LO || accel2_ > SENSOR_HI)
     {
         accel_is_plausible = false;
 #if DEBUG
@@ -137,8 +144,8 @@ void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausi
     // check that the pedals are reading within 10% of each other
     // sum of the two readings should be within 10% of the average travel
     // T.4.2.4
-    else if ((accel1_ - (4096 - accel2_)) >
-             (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2) / 20)
+    else if ((accel1_ - (5.0 - accel2_)) >
+             (accel1LIMITHI_ - accel1LIMITLO_ + accel2LIMITLO_ - accel1LIMITHI_) / 20)
     {
 #if DEBUG
         // Serial.println("T.4.2.4");
@@ -199,4 +206,7 @@ void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausi
 
     impl_occ =implausibility_occured_;
 
+}
+float PedalHandler::calculateADCVolts(float adcReading){
+    return ((adcReading/4096)*5);
 }
