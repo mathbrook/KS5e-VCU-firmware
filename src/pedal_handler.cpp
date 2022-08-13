@@ -51,20 +51,20 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         // Serial.println(brake1_);
     }
     //#endif
-if (abs(motor_speed) <= 1000)
-    {
-        if (calculated_torque >= 1600) //60NM
-        {
-            calculated_torque = 1600; // ideally limit torque at low RPMs, see how high this number can be raised
-        }
-    }
-    uint32_t calculated_power =  (calculated_torque/10)*motor_speed*0.104725;
-    if(calculated_power>80000){
-        calculated_torque=((80000*9.54)/motor_speed)*10;
-    }
-    if(calculated_torque<100){
-        calculated_torque=0;
-    }
+// if (abs(motor_speed) <= 1000)
+//     {
+//         if (calculated_torque >= 1600) //60NM
+//         {
+//             calculated_torque = 1600; // ideally limit torque at low RPMs, see how high this number can be raised
+//         }
+//     }
+//     uint32_t calculated_power =  (calculated_torque/10)*motor_speed*0.104725;
+//     if(calculated_power>80000){
+//         calculated_torque=((80000*9.54)/motor_speed)*10;
+//     }
+//     if(calculated_torque<100){
+//         calculated_torque=0;
+//     }
     return calculated_torque;
 }
 
@@ -73,9 +73,12 @@ bool PedalHandler::read_pedal_values()
 {
     /* Filter ADC readings */
 
-    accel1_ = ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
-    accel2_ = ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
-    brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+    // accel1_ = ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
+    // accel2_ = ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
+    // brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+    accel1_ = pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
+    accel2_ = pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
+    brake1_ = pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
 
 
 #if DEBUG

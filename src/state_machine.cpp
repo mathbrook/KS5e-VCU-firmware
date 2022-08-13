@@ -338,7 +338,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   }
   }
 
-#if DEBUG
   if (debug_->check())
   {
     // Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton),
@@ -357,7 +356,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
   }
 
-#endif
 
   // TODO update the dash here properly
 }
