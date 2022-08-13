@@ -345,6 +345,16 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // mcu_status.get_brake_pedal_active());
     dash_->refresh_dash(pm100->getmcBusVoltage());
     // pm100->debug_print();
+    switch(digitalRead(TORQUEMODE)){
+      case 0:{
+        mcu_status.set_max_torque(TORQUE_1);
+        break;
+      }
+      case 1:{
+        mcu_status.set_max_torque(TORQUE_2);
+        break;
+      }
+    }
   }
 
 #endif

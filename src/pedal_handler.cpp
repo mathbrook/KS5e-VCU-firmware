@@ -53,9 +53,9 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     //#endif
 if (abs(motor_speed) <= 1000)
     {
-        if (calculated_torque >= 600) //60NM
+        if (calculated_torque >= 1600) //60NM
         {
-            calculated_torque = 600; // ideally limit torque at low RPMs, see how high this number can be raised
+            calculated_torque = 1600; // ideally limit torque at low RPMs, see how high this number can be raised
         }
     }
     uint32_t calculated_power =  (calculated_torque/10)*motor_speed*0.104725;
