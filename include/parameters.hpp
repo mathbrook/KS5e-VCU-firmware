@@ -39,6 +39,6 @@
 #define ORANGE 0xE05800
 #define WHITE  0xFF000000
 #define BLACK  0x0
-#define BRIGHTNESS 64
+#define BRIGHTNESS 255
 
 #endif
