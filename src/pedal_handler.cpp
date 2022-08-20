@@ -85,11 +85,17 @@ bool PedalHandler::read_pedal_values()
     if (timer_debug_raw_torque->check()) 
     {
         Serial.print("ACCEL 1: ");
-        Serial.println(accel1_);
+        Serial.print(accel1_);
+        Serial.print(", ");
+        Serial.println(accel1_,HEX);
         Serial.print("ACCEL 2: ");
-        Serial.println(accel2_);
+        Serial.print(accel2_);
+        Serial.print(", ");
+        Serial.println(accel2_,HEX);
         Serial.print("BRAKE 1: ");
-        Serial.println(brake1_);
+        Serial.print(brake1_);
+        Serial.print(", ");
+        Serial.println(brake1_,HEX);
         int max_torque = 2400;
         int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
         int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);

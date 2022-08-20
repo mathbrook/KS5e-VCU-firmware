@@ -30,7 +30,7 @@ private:
     bool brake_is_active_;
    
     ADC_SPI pedal_ADC;
-    float accel1_, accel2_, brake1_, brake2_;
+    uint16_t accel1_, accel2_, brake1_, brake2_;
 
     bool implausibility_occured_;
 
