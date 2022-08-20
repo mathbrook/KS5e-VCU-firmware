@@ -81,7 +81,6 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
     dash_->DashLedscolorWipe();
     pm100->tryToClearMcFault();
     pm100->doStartup();
-
     break;
   }
   case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
@@ -342,20 +341,37 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   {
     // Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton),
     // mcu_status.get_brake_pedal_active());
-    dash_->refresh_dash(pm100->getmcBusVoltage());
+    if(tempdisplay_>=1){
+      dash_->refresh_dash(mcu_status.get_max_torque());
+      tempdisplay_--; //this is so dumb
+    }else{
+      dash_->refresh_dash(pm100->getmcBusVoltage());
+    }
     // pm100->debug_print();
+    Serial.printf("Torque mode pin reading: %d\n",digitalRead(TORQUEMODE));
     switch(digitalRead(TORQUEMODE)){
       case 0:{
+        if(TORQUE_1!=mcu_status.get_max_torque()){
+          tempdisplay_=10;
+        }
+        #if DEBUG
+        Serial.println("Torque 1");
+        #endif
         mcu_status.set_max_torque(TORQUE_1);
         break;
       }
       case 1:{
+        if(TORQUE_2!=mcu_status.get_max_torque()){
+          tempdisplay_=10;
+        }
+        #if DEBUG
+        Serial.println("Torque 2");
+        #endif
         mcu_status.set_max_torque(TORQUE_2);
         break;
       }
     }
+    dash_->DashLedsBrightness();
   }
-
-
   // TODO update the dash here properly
 }

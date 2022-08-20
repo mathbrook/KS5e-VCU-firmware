@@ -17,13 +17,14 @@ private:
     Metro *timer_ready_sound; // Time to play RTD sound
     Dashboard *dash_;
     Metro *debug_;
+    int tempdisplay_;
     PedalHandler *pedals;
     Metro *pedal_check_;
     void set_state(MCU_status &mcu_status, MCU_STATE new_state);
     void sendPrechargeStartMsg();
 
 public:
-    StateMachine(Inverter *inv, Accumulator *acc, Metro *rs_tim, Dashboard *dash, Metro *debug, PedalHandler *pedals, Metro * ped_t) : pm100(inv), accumulator(acc), timer_ready_sound(rs_tim), dash_(dash), debug_(debug), pedals(pedals), pedal_check_(ped_t) {};
+    StateMachine(Inverter *inv, Accumulator *acc, Metro *rs_tim, Dashboard *dash, Metro *debug, int *tempdisplay, PedalHandler *pedals, Metro * ped_t) : pm100(inv), accumulator(acc), timer_ready_sound(rs_tim), dash_(dash), debug_(debug), pedals(pedals), pedal_check_(ped_t) {};
 
     void init_state_machine(MCU_status &mcu_status);
     void handle_state_machine(MCU_status &mcu_status);

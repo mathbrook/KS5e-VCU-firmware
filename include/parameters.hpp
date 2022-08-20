@@ -2,7 +2,7 @@
 #define PARAMETERS_HPP
 
 #define HT_DEBUG_EN
-#define DEBUG 0
+#define DEBUG 1
 // TODO may wanna do this another way
 
 // Pedalbox stuff
@@ -39,6 +39,6 @@
 #define ORANGE 0xE05800
 #define WHITE  0xFF000000
 #define BLACK  0x0
-#define BRIGHTNESS 255
+#define BRIGHTNESS 128
 
 #endif

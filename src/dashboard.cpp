@@ -45,6 +45,23 @@ void Dashboard::DashLedscolorWipe()
         leds->show();
     }
 }
+void Dashboard::DashLedsBrightness()
+{
+    uint8_t currbright = leds->getBrightness();
+    if((currbright+5)>255){
+        ledsdirection=false;
+    }else if(currbright<=30){
+        ledsdirection=true;
+    }
+    uint8_t newbright;
+    if(ledsdirection){
+        newbright = currbright + 25;
+    }else{
+        newbright=currbright-25;
+    }
+    leds->setBrightness(newbright);
+
+}
 uint8_t enableLights[] = {0, 7, 7};
 uint8_t waitingRtdLights[] = {2, 7, 7};
 uint8_t rtdLights[] = {3, 7, 7};
