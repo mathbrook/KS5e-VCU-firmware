@@ -2,14 +2,14 @@
 #define PARAMETERS_HPP
 
 #define HT_DEBUG_EN
-#define DEBUG 1
+#define DEBUG 0
 // TODO may wanna do this another way
 
 // Pedalbox stuff
 
 #define BRAKE_ACTIVE 2100             // Threshold for brake pedal active
 #define MIN_ACCELERATOR_PEDAL_1 200    // Low accelerator implausibility threshold
-#define START_ACCELERATOR_PEDAL_1 2100  // Position to start acceleration
+#define START_ACCELERATOR_PEDAL_1 2200  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_1 2670    // Position to max out acceleration
 #define MAX_ACCELERATOR_PEDAL_1 4000    // High accelerator implausibility threshold
 #define MIN_ACCELERATOR_PEDAL_2 200    // Low accelerator implausibility threshold

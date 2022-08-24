@@ -298,7 +298,15 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     mcu_status.set_no_brake_implausability(!brake_is_plausible);
     mcu_status.set_no_accel_brake_implausability(!accel_and_brake_plausible);
 
-    if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
+    // if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
+    // {
+    //   uint8_t max_t = mcu_status.get_max_torque();
+    //   int max_t_actual = max_t * 10;
+
+    //   int16_t motor_speed = pm100->getmcMotorRPM();
+    //   calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
+    // }
+    if (true)
     {
       uint8_t max_t = mcu_status.get_max_torque();
       int max_t_actual = max_t * 10;
@@ -347,8 +355,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }else{
       dash_->refresh_dash(pm100->getmcBusVoltage());
     }
-    // pm100->debug_print();
-    Serial.printf("Torque mode pin reading: %d\n",digitalRead(TORQUEMODE));
+    pm100->debug_print();
     switch(digitalRead(TORQUEMODE)){
       case 0:{
         if(TORQUE_1!=mcu_status.get_max_torque()){
