@@ -6,22 +6,23 @@ void Dashboard::init_dashboard()
     {
         Serial.println("L dash");
     };
+    DashDisplay.setBrightness(15);
     DashDisplay.print("COPE");
     DashDisplay.writeDisplay();
     
     leds->begin();
     leds->setBrightness(BRIGHTNESS);
 
-    set_dashboard_led_color(WHITE);
-    DashLedscolorWipe();
-    delay(500);
-    set_dashboard_led_color(PINK);
-    DashLedscolorWipe();
-    delay(500);
-    set_dashboard_led_color(GREEN);
-    DashLedscolorWipe();
-
-
+    int microsec = 200000 / leds->numPixels();
+    colorWipe(RED, microsec);
+    colorWipe(ORANGE, microsec);
+    colorWipe(YELLOW, microsec);
+    colorWipe(GREEN, microsec);
+    colorWipe(BLUE, microsec);
+    colorWipe(0x8F00FF,microsec);
+    colorWipe(PINK, microsec);
+    colorWipe(0xFFFFFF, microsec);
+    colorWipe(GREEN, microsec);
 }
 
 void Dashboard::set_dashboard_led_color(int color){
@@ -61,6 +62,13 @@ void Dashboard::DashLedsBrightness()
     }
     leds->setBrightness(newbright);
 
+}
+void Dashboard::colorWipe(int color, int wait_us) {
+  for (int i=0; i < leds->numPixels(); i++) {
+    leds->setPixel(i, color);
+    leds->show();
+    delayMicroseconds(wait_us);
+  }
 }
 uint8_t enableLights[] = {0, 7, 7};
 uint8_t waitingRtdLights[] = {2, 7, 7};

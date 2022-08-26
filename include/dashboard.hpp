@@ -23,6 +23,7 @@ private:
 
 public:
     Dashboard(WS2812Serial *leds, Metro *pm100tim) : leds(leds), timer(pm100tim) {}
+    void colorWipe(int color, int wait_us);
     void DashLedsBrightness();
     void init_dashboard();
     void DashLedscolorWipe();
