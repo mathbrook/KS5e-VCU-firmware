@@ -65,7 +65,7 @@ MCU_status mcu_status = MCU_status();
 void setup()
 {
 
-    delay(1000);
+    delay(100);
     
     Serial.println("setup");
     InitCAN();
@@ -82,11 +82,11 @@ void setup()
     pinMode(MC_RELAY, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
     pinMode(WSFR, INPUT_PULLUP);
-    // if (!pump_dac.begin())
-    // {
-    //     Serial.println("L pump_dac");
-    // }
-    // pump_dac.setVoltage(PUMP_SPEED, false);
+    if (!pump_dac.begin())
+    {
+        Serial.println("L pump_dac");
+    }
+    pump_dac.setVoltage(PUMP_SPEED, false);
     digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
     mcu_status.set_max_torque(TORQUE_1);
