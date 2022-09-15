@@ -63,7 +63,6 @@ void Inverter::updateInverterCAN()
 
 void Inverter::debug_print()
 {
-    pm100Speed.print();
     pm100temp1.print();
     pm100temp2.print();
     pm100temp3.print();

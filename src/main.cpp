@@ -38,6 +38,7 @@ Metro pm100speedInspection = Metro(500, 1);
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(100, 1);
+int temporarydisplaytime=0;
 
 
 // timers for VCU state out:
@@ -55,7 +56,7 @@ Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_contro
 Accumulator accum(&pchgMsgTimer);
 PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug);
 Dashboard dash(&leds, &pm100speedInspection);
-StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals, &pedal_check);
+StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
 Adafruit_MCP4725 pump_dac; 
 MCU_status mcu_status = MCU_status();
 
@@ -64,8 +65,7 @@ MCU_status mcu_status = MCU_status();
 void setup()
 {
 
-    Serial.begin(115200);
-    delay(1000);
+    delay(100);
     
     Serial.println("setup");
     InitCAN();
@@ -82,11 +82,11 @@ void setup()
     pinMode(MC_RELAY, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
     pinMode(WSFR, INPUT_PULLUP);
-    // if (!pump_dac.begin())
-    // {
-    //     Serial.println("L pump_dac");
-    // }
-    // pump_dac.setVoltage(PUMP_SPEED, false);
+    if (!pump_dac.begin())
+    {
+        Serial.println("L pump_dac");
+    }
+    pump_dac.setVoltage(PUMP_SPEED, false);
     digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
     mcu_status.set_max_torque(TORQUE_1);

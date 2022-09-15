@@ -81,7 +81,6 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
     dash_->DashLedscolorWipe();
     pm100->tryToClearMcFault();
     pm100->doStartup();
-
     break;
   }
   case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
@@ -299,7 +298,15 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     mcu_status.set_no_brake_implausability(!brake_is_plausible);
     mcu_status.set_no_accel_brake_implausability(!accel_and_brake_plausible);
 
-    if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
+    // if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
+    // {
+    //   uint8_t max_t = mcu_status.get_max_torque();
+    //   int max_t_actual = max_t * 10;
+
+    //   int16_t motor_speed = pm100->getmcMotorRPM();
+    //   calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
+    // }
+    if (true)
     {
       uint8_t max_t = mcu_status.get_max_torque();
       int max_t_actual = max_t * 10;
@@ -338,16 +345,40 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   }
   }
 
-#if DEBUG
   if (debug_->check())
   {
     // Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton),
     // mcu_status.get_brake_pedal_active());
-    dash_->refresh_dash(pm100->getmcBusVoltage());
-    // pm100->debug_print();
+    if(tempdisplay_>=1){
+      dash_->refresh_dash(mcu_status.get_max_torque());
+      tempdisplay_--; //this is so dumb
+    }else{
+      dash_->refresh_dash(pm100->getmcBusVoltage());
+    }
+    pm100->debug_print();
+    switch(digitalRead(TORQUEMODE)){
+      case 0:{
+        if(TORQUE_1!=mcu_status.get_max_torque()){
+          tempdisplay_=10;
+        }
+        #if DEBUG
+        Serial.println("Torque 1");
+        #endif
+        mcu_status.set_max_torque(TORQUE_1);
+        break;
+      }
+      case 1:{
+        if(TORQUE_2!=mcu_status.get_max_torque()){
+          tempdisplay_=10;
+        }
+        #if DEBUG
+        Serial.println("Torque 2");
+        #endif
+        mcu_status.set_max_torque(TORQUE_2);
+        break;
+      }
+    }
+    dash_->DashLedsBrightness();
   }
-
-#endif
-
   // TODO update the dash here properly
 }
