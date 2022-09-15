@@ -22,7 +22,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         torque2 = max_torque;
     }
     // compare torques to check for accelerator implausibility
-    // calculated_torque = (torque1 + torque2) / 2;
+    // calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
     calculated_torque = torque1;
     if (calculated_torque > max_torque)
     {
