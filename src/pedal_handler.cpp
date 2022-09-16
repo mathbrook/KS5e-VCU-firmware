@@ -64,6 +64,9 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         // Serial.println(accel2_);
         // Serial.print("Brake1_ : ");
         // Serial.println(brake1_);
+            Serial.print(*current_);
+            Serial.print(",");
+            Serial.println(*set_);
     }
     //#endif
 // if (abs(motor_speed) <= 1000)
@@ -80,11 +83,9 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 //     if(calculated_torque<100){
 //         calculated_torque=0;
 //     }
-    Serial.print(*current_);
-    Serial.print(",");
-    Serial.print(*set_);
-    Serial.print(",");
-    Serial.println(calculated_torque);
+
+ //   Serial.print(",");
+ //   Serial.println(calculated_torque);
     return calculated_torque;
 }
 

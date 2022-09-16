@@ -9,9 +9,9 @@
 
 //CRUISE CONTROL
 #define SET_RPM 1000
-#define D_KP 0.004;
-#define D_KI 0.0001;
-#define D_KD 1.0;
+#define D_KP 0.08;
+#define D_KI 0.1;
+#define D_KD 0.6;
 #define D_OUTPUT_MIN 0.0;
 #define D_OUTPUT_MAX 500.0;
 
