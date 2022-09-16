@@ -8,6 +8,11 @@ void PedalHandler::init_pedal_handler()
 
 int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 {
+    
+    *current_ = (double)motor_speed;
+    *set_ = (double)SET_RPM;
+    
+    pid_->run();
     int calculated_torque = 0;
     int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
@@ -23,7 +28,17 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     }
     // compare torques to check for accelerator implausibility
     // calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
-    calculated_torque = torque1;
+    
+    
+    if(true) // TODO put here when we want cruise control control to take effect
+    {
+        calculated_torque = (int)*throttle_;
+    } else {
+        pid_->setIntegral(0);
+        pid_->reset();
+        calculated_torque = torque1;
+    }
+
     if (calculated_torque > max_torque)
     {
         calculated_torque = max_torque;
@@ -65,6 +80,11 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 //     if(calculated_torque<100){
 //         calculated_torque=0;
 //     }
+    Serial.print(*current_);
+    Serial.print(",");
+    Serial.print(*set_);
+    Serial.print(",");
+    Serial.println(calculated_torque);
     return calculated_torque;
 }
 
