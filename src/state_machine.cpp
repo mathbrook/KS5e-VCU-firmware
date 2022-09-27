@@ -125,6 +125,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // int max_t_actual = max_t * 10;
     // int16_t motor_speed = pm100->getmcMotorRPM();
     // pedals->calculate_torque(motor_speed, max_t_actual);
+    // end of test block
     pm100->inverter_kick(0);
     if (!accumulator->GetIfPrechargeAttempted())
     {
