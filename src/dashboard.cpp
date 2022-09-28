@@ -7,7 +7,7 @@ void Dashboard::init_dashboard()
         Serial.println("L dash");
     };
     DashDisplay.setBrightness(15);
-    DashDisplay.print("COPE");
+    DashDisplay.print("AAAA");
     DashDisplay.writeDisplay();
     
     leds->begin();
