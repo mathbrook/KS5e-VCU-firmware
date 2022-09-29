@@ -8,12 +8,12 @@
 // Pedalbox stuff
 
 //CRUISE CONTROL
-#define SET_RPM 1000
-#define D_KP 0.08;
-#define D_KI 0.1;
-#define D_KD 0.6;
+#define SET_RPM 3000
+#define D_KP 10.0;
+#define D_KI 0.0;
+#define D_KD 100.0;
 #define D_OUTPUT_MIN 0.0;
-#define D_OUTPUT_MAX 500.0;
+#define D_OUTPUT_MAX 2400.0;
 
 
 #define BRAKE_ACTIVE 2000             // Threshold for brake pedal active
@@ -34,8 +34,8 @@
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
-#define TORQUE_1 50
-#define TORQUE_2 50
+#define TORQUE_1 240
+#define TORQUE_2 240
 // Pump speed
 #define PUMP_SPEED 2048
 
