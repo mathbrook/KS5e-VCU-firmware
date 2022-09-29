@@ -30,7 +30,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     // calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
     
     
-    if((torque1>(0.75*max_torque))||(torque2>(0.75*max_torque))) // TODO put here when we want cruise control control to take effect
+    if((torque1>(0.75*max_torque))) // TODO put here when we want cruise control control to take effect
     {
         calculated_torque = (int)*throttle_;
     } else {

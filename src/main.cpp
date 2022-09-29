@@ -21,7 +21,7 @@
 // Metro timers for inverter:
 Metro timer_mc_kick_timer = Metro(50, 1);
 Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
-Metro timer_motor_controller_send = Metro(50, 1);
+Metro timer_motor_controller_send = Metro(10, 1);
 
 // timers for the accumulator:
 Metro pchgMsgTimer = Metro(1000);
