@@ -4,6 +4,7 @@
 void PedalHandler::init_pedal_handler()
 {
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
+    pid_->setTimeStep(10);
 }
 
 int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
