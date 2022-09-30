@@ -9,12 +9,12 @@
 
 #define BRAKE_ACTIVE 2100             // Threshold for brake pedal active
 #define MIN_ACCELERATOR_PEDAL_1 200    // Low accelerator implausibility threshold
-#define START_ACCELERATOR_PEDAL_1 2200  // Position to start acceleration
-#define END_ACCELERATOR_PEDAL_1 2670    // Position to max out acceleration
+#define START_ACCELERATOR_PEDAL_1 2267  // Position to start acceleration
+#define END_ACCELERATOR_PEDAL_1 2700    // Position to max out acceleration
 #define MAX_ACCELERATOR_PEDAL_1 4000    // High accelerator implausibility threshold
 #define MIN_ACCELERATOR_PEDAL_2 200    // Low accelerator implausibility threshold
-#define START_ACCELERATOR_PEDAL_2 1390  // Position to start acceleration
-#define END_ACCELERATOR_PEDAL_2 1724    // Position to max out acceleration
+#define START_ACCELERATOR_PEDAL_2 1504  // Position to start acceleration
+#define END_ACCELERATOR_PEDAL_2 1750    // Position to max out acceleration
 #define MAX_ACCELERATOR_PEDAL_2 4000    // High accelerator implausibility threshold
 #define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1) / 2)
 #define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2) / 2)
@@ -25,8 +25,8 @@
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
-#define TORQUE_1 240
-#define TORQUE_2 240
+#define TORQUE_1 10
+#define TORQUE_2 10
 // Pump speed
 #define PUMP_SPEED 2048
 

@@ -222,9 +222,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     if (tuff)
     {
-#if DEBUG
       Serial.println("Setting state to TS Active from Enabling Inverter");
-#endif
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
       break;
     }
@@ -232,9 +230,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // motor controller indicates that inverter has enabled within timeout period
     if (pm100->check_inverter_ready())
     {
-#if DEBUG
       Serial.println("Setting state to Waiting Ready to Drive Sound");
-#endif
       set_state(mcu_status, MCU_STATE::WAITING_READY_TO_DRIVE_SOUND);
       break;
     }
@@ -258,9 +254,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // if the ready to drive sound has been playing for long enough, move to ready to drive mode
     if (timer_ready_sound->check())
     {
-#if DEBUG
       Serial.println("Setting state to Ready to Drive");
-#endif
       set_state(mcu_status, MCU_STATE::READY_TO_DRIVE);
     }
     break;
@@ -270,17 +264,20 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // pm100->inverter_kick(1);
     if (!pm100->check_TS_active())
     {
+      Serial.println("Found TS No Longer Active");
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
       break;
     }
 
     if (pm100->check_inverter_disabled())
     {
+      Serial.println("Found Inverter No Longer Active");
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
       break; // TODO idk if we should break here or not but it sure seems like it
     }
     if (accumulator->check_precharge_timeout())
     { // if the precharge hearbeat has timed out, we know it is no longer enabled-> the SDC is open
+      Serial.println("Found Precharge No Longer Active");
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
       break;
     }
@@ -294,20 +291,11 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // FSAE EV.5.5
     // FSAE T.4.2.10
     pedals->verify_pedals(accel_is_plausible, brake_is_plausible, accel_and_brake_plausible, impl_occ);
-
     mcu_status.set_no_accel_implausability(!accel_is_plausible);
     mcu_status.set_no_brake_implausability(!brake_is_plausible);
     mcu_status.set_no_accel_brake_implausability(!accel_and_brake_plausible);
 
-    // if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
-    // {
-    //   uint8_t max_t = mcu_status.get_max_torque();
-    //   int max_t_actual = max_t * 10;
-
-    //   int16_t motor_speed = pm100->getmcMotorRPM();
-    //   calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
-    // }
-    if (true)
+    if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
     {
       uint8_t max_t = mcu_status.get_max_torque();
       int max_t_actual = max_t * 10;
@@ -315,14 +303,22 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       int16_t motor_speed = pm100->getmcMotorRPM();
       calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
     }
+    // if (true)
+    // {
+    //   uint8_t max_t = mcu_status.get_max_torque();
+    //   int max_t_actual = max_t * 10;
+
+    //   int16_t motor_speed = pm100->getmcMotorRPM();
+    //   calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
+    // }
     else
     {
-      Serial.println("not calculating torque");
-      Serial.print("implausibility occured: ");
-      Serial.println(impl_occ);
-      Serial.printf("no brake implausibility: %d\n", mcu_status.get_no_brake_implausability());
-      Serial.printf("no accel implausibility: %d\n", mcu_status.get_no_accel_implausability());
-      Serial.printf("no accel brake implausibility: %d\n", mcu_status.get_no_accel_brake_implausability());
+      // Serial.println("not calculating torque");
+      // Serial.print("implausibility occured: ");
+      // Serial.println(impl_occ);
+      // Serial.printf("no brake implausibility: %d\n", mcu_status.get_no_brake_implausability());
+      // Serial.printf("no accel implausibility: %d\n", mcu_status.get_no_accel_implausability());
+      // Serial.printf("no accel brake implausibility: %d\n", mcu_status.get_no_accel_brake_implausability());
     }
 #if DEBUG
     // if (timer_debug_torque.check()) {
@@ -356,14 +352,13 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }else{
       dash_->refresh_dash(pm100->getmcBusVoltage());
     }
-    pm100->debug_print();
+    //pm100->debug_print();
     switch(digitalRead(TORQUEMODE)){
       case 0:{
         if(TORQUE_1!=mcu_status.get_max_torque()){
           tempdisplay_=10;
         }
         #if DEBUG
-        Serial.println("Torque 1");
         #endif
         mcu_status.set_max_torque(TORQUE_1);
         break;
@@ -373,7 +368,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
           tempdisplay_=10;
         }
         #if DEBUG
-        Serial.println("Torque 2");
         #endif
         mcu_status.set_max_torque(TORQUE_2);
         break;
