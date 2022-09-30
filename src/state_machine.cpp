@@ -31,7 +31,6 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
   {
     accumulator->resetPchgState(); // dealing with sus behavior, precharge timed out but would stay "ready"
-    pm100->forceMCdischarge();
     break;
   }
   case MCU_STATE::ENABLING_INVERTER:
@@ -64,6 +63,7 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
   {
+    pm100->forceMCdischarge();
     dash_->set_dashboard_led_color(GREEN); // this is causing problems rn
     dash_->DashLedscolorWipe();
     break;
