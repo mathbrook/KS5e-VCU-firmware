@@ -28,7 +28,7 @@
 #define TORQUE_1 10
 #define TORQUE_2 10
 // Pump speed
-#define PUMP_SPEED 2048
+#define PUMP_SPEED 4090
 
 // neo-pixel specific
 #define RED    0xFF0000
