@@ -5,6 +5,7 @@
 #include <SPI.h>
 #include <Metro.h>
 #include <stdint.h>
+#include <AutoPID.h>
 
 #include "pedal_readings.hpp"
 #include "parameters.hpp"
@@ -28,14 +29,17 @@ private:
     Metro *timer_debug_raw_torque;
     Metro *pedal_out;
     bool brake_is_active_;
-   
+
+    AutoPID *pid_;
     ADC_SPI pedal_ADC;
     uint16_t accel1_, accel2_, brake1_, brake2_;
-
+    double *current_;
+    double *set_;
+    double *throttle_;
     bool implausibility_occured_;
 
 public:
-    PedalHandler(Metro *pedal_debug_tim, Metro *deb) : timer_debug_raw_torque(pedal_debug_tim), pedal_out(deb){};
+    PedalHandler(Metro *pedal_debug_tim, Metro *deb, AutoPID *pid, double *current, double *set, double *throttle) : timer_debug_raw_torque(pedal_debug_tim), pedal_out(deb), pid_(pid), current_(current), set_(set), throttle_(throttle){};
     void init_pedal_handler();
     MCU_pedal_readings VCUPedalReadings;
     bool is_accel_pedal_plausible();
