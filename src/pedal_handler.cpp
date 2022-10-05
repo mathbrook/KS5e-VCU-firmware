@@ -4,7 +4,8 @@
 void PedalHandler::init_pedal_handler()
 {
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
-    pid_->setTimeStep(10);
+    pid_->setTimeStep(PID_TIMESTEP);
+    //pid_->setBangBang(double(BANGBANG_RANGE));
 }
 
 int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
@@ -30,7 +31,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     // compare torques to check for accelerator implausibility
     // calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
     
-    
+    if(PID_MODE==true){
     if((torque1>(0.75*max_torque))) // TODO put here when we want cruise control control to take effect
     {
         calculated_torque = (int)*throttle_;
@@ -38,6 +39,9 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         pid_->setIntegral(0);
         pid_->reset();
         calculated_torque = 0;
+    }
+    }else{
+        calculated_torque=torque1;
     }
 
     if (calculated_torque > max_torque)
