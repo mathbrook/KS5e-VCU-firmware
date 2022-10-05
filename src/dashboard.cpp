@@ -7,6 +7,7 @@ void Dashboard::init_dashboard()
         Serial.println("L dash");
     };
     DashDisplay.setBrightness(15);
+
     DashDisplay.print(SET_RPM);
     DashDisplay.writeDisplay();
     

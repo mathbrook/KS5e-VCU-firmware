@@ -28,7 +28,8 @@ Metro pchgMsgTimer = Metro(1000);
 // Metro pchgTimeout = Metro(500);
 
 // timers for the pedals:
-Metro timer_debug_pedals_raw = Metro(10, 1);
+
+Metro timer_debug_pedals_raw = Metro(1000, 1);
 Metro pedal_debug = Metro(100, 1);
 Metro pedal_check = Metro(40, 1);
 
@@ -112,5 +113,12 @@ void loop()
         tx_msg.id = ID_VCU_STATUS;
         tx_msg.len = sizeof(mcu_status);
         WriteToDaqCAN(tx_msg);
+    }
+  if(Serial.available()){
+    String message=(Serial.readString());
+    int userreq=message.toInt();
+    Serial.println(userreq);
+    //Validation for inputs being int between 0-90 degrees
+        pump_dac.setVoltage(userreq, false);
     }
 }

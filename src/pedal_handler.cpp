@@ -30,6 +30,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     }
     // compare torques to check for accelerator implausibility
     // calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
+
     
     if(PID_MODE==true){
     if((torque1>(0.75*max_torque))) // TODO put here when we want cruise control control to take effect
@@ -128,6 +129,11 @@ bool PedalHandler::read_pedal_values()
         int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
 
         Serial.printf("TORQUE VALUES IF YOU WERE CALCULATING IT CURRENTLY: \n T1: %d\nT2: %d\n",torque1,torque2);
+        Serial.print("percent difference: ");
+        float torqSum =abs(torque1-torque2);
+        float torqAvg = (torque1+torque2)/2;
+        float asdf = torqSum/torqAvg;
+        Serial.println(asdf);
    }
 #endif
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
@@ -153,42 +159,45 @@ bool PedalHandler::read_pedal_values()
 
 void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible, bool &impl_occ)
 {
+    int max_torque = TORQUE_1*10;
+    int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
+    int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
+    float torqSum =abs(torque1-torque2);
+    float torqAvg = (torque1+torque2)/2;
+    float torqDiff = torqSum/torqAvg;
 
     if (accel1_ < MIN_ACCELERATOR_PEDAL_1 || accel1_ > MAX_ACCELERATOR_PEDAL_1)
     {
         accel_is_plausible = false;
 #if DEBUG
-        // Serial.println("T.4.2.10 1");
-        // Serial.println(accel1_);
+        Serial.println("T.4.2.10 1 OUT OF RANGE");
+        Serial.println(accel1_);
 #endif
     }
     else if (accel2_ < MIN_ACCELERATOR_PEDAL_2 || accel2_ > MAX_ACCELERATOR_PEDAL_2)
     {
         accel_is_plausible = false;
 #if DEBUG
-        // Serial.println("T.4.2.10 2");
-        // Serial.println(accel2_);
+        Serial.println("T.4.2.10 2 OUT OF RANGE");
+        Serial.println(accel2_);
 #endif
     }
     // check that the pedals are reading within 10% of each other
     // sum of the two readings should be within 10% of the average travel
     // T.4.2.4
-    else if ((accel1_ - (4096 - accel2_)) >
-             (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2) / 20)
-    {
-#if DEBUG
-        // Serial.println("T.4.2.4");
-        // Serial.printf("computed - %f\n", accel1_ - (4096 - accel2_));
-        // Serial.printf("standard - %d\n", (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2) / 20);
-#endif
-        accel_is_plausible = false;
-    }
+//     else if (torqDiff*100 > 50)
+//     {
+// #if DEBUG
+//         Serial.println("T.4.2.4");
+//         Serial.printf("BAD computed deviation- %f%\n", torqDiff*100);
+// #endif
+//         accel_is_plausible = false;
+//     }
     else
     {
 #if DEBUG
-        // Serial.println("T.4.2.4");
-        // Serial.printf("computed - %f\n", accel1_ - (4096 - accel2_));
-        // Serial.printf("standard - %d\n", (END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1 + START_ACCELERATOR_PEDAL_2 - END_ACCELERATOR_PEDAL_2) / 20);
+        Serial.println("T.4.2.4");
+        Serial.printf("OK computed deviation- %f%\n", torqDiff*100);
 #endif
         // mcu_status.set_no_accel_implausability(true);
         accel_is_plausible = true;
@@ -200,6 +209,7 @@ void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausi
     if (brake1_ < 200 || brake1_ > 4000)
     {
         brake_is_plausible = false;
+        Serial.println(brake1_);
     }
     else
     {
