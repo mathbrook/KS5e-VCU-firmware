@@ -36,10 +36,10 @@
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
-#define TORQUE_1 20
+#define TORQUE_1 240
 #define TORQUE_2 240
 // Pump speed
-#define PUMP_SPEED 4090
+#define PUMP_SPEED 3400
 
 // neo-pixel specific
 #define RED    0xFF0000

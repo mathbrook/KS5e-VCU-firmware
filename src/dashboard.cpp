@@ -8,7 +8,7 @@ void Dashboard::init_dashboard()
     };
     DashDisplay.setBrightness(15);
 
-    DashDisplay.print(SET_RPM);
+    DashDisplay.print(TORQUE_1);
     DashDisplay.writeDisplay();
     
     leds->begin();

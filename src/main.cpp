@@ -114,11 +114,11 @@ void loop()
         tx_msg.len = sizeof(mcu_status);
         WriteToDaqCAN(tx_msg);
     }
-  if(Serial.available()){
-    String message=(Serial.readString());
-    int userreq=message.toInt();
-    Serial.println(userreq);
-    //Validation for inputs being int between 0-90 degrees
-        pump_dac.setVoltage(userreq, false);
-    }
+//   if(Serial.available()){
+//     String message=(Serial.readString());
+//     int userreq=message.toInt();
+//     Serial.println(userreq);
+//     //Validation for inputs being int between 0-90 degrees
+//         pump_dac.setVoltage(userreq, false);
+//     }
 }
