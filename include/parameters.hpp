@@ -2,12 +2,13 @@
 #define PARAMETERS_HPP
 
 #define HT_DEBUG_EN
-#define DEBUG 0
+#define DEBUG 1
 // TODO may wanna do this another way
 
 // Pedalbox stuff
 
 //CRUISE CONTROL
+#define SLIP 1.1
 #define SET_RPM 1000
 #define D_KP 4.1
 #define D_KI 0
@@ -18,11 +19,13 @@
 #define PID_TIMESTEP 10.0
 #define PID_MODE false
 
+#define RPM_TIMEOUT 100
+
 #define BRAKE_ACTIVE 2000             // Threshold for brake pedal active
 #define MIN_ACCELERATOR_PEDAL_1 200    // Low accelerator implausibility threshold
 #define START_ACCELERATOR_PEDAL_1 2267  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_1 2700    // Position to max out acceleration
-#define MAX_ACCELERATOR_PEDAL_1 4000    // High accelerator implausibility threshold
+#define MAX_ACCELERATOR_PEDAL_1 3000    // High accelerator implausibility threshold
 #define MIN_ACCELERATOR_PEDAL_2 200    // Low accelerator implausibility threshold
 #define START_ACCELERATOR_PEDAL_2 1504  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_2 1750    // Position to max out acceleration
@@ -35,9 +38,8 @@
 
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
-#define ALPHA 0.9772
-#define TORQUE_1 240
-#define TORQUE_2 240
+#define TORQUE_1 250
+#define TORQUE_2 250
 // Pump speed
 #define PUMP_SPEED 3400
 
@@ -50,6 +52,6 @@
 #define ORANGE 0xE05800
 #define WHITE  0xFF000000
 #define BLACK  0x0
-#define BRIGHTNESS 255
+#define BRIGHTNESS 64
 
 #endif

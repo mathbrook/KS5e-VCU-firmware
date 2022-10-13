@@ -5,14 +5,16 @@ void PedalHandler::init_pedal_handler()
 {
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
     pid_->setTimeStep(PID_TIMESTEP);
+    wsfl_->begin(WSFL);
+    wsfr_->begin(WSFR);
     //pid_->setBangBang(double(BANGBANG_RANGE));
 }
 
 int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 {
     
-    *current_ = (double)motor_speed;
-    *set_ = (double)SET_RPM;
+    *current_ = motor_speed;
+    *set_ = SET_RPM;
     
     pid_->run();
     int calculated_torque = 0;
@@ -57,7 +59,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     if (timer_debug_raw_torque->check())
     {
         Serial.print("TORQUE REQUEST DELTA PERCENT: "); // Print the % difference between the 2 accelerator sensor requests
-        Serial.println(abs(torque1 - torque2) / (double) max_torque * 100);
+        Serial.println(abs(torque1 - torque2) /  max_torque * 100);
         Serial.print("MCU RAW TORQUE: ");
         Serial.println(calculated_torque);
         Serial.print("TORQUE 1: ");
@@ -107,6 +109,7 @@ bool PedalHandler::read_pedal_values()
     accel1_ = pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
     accel2_ = pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
     brake1_ = pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+    steering_angle_ = pedal_ADC.read_adc(3);
 
 
 #if DEBUG
@@ -124,6 +127,10 @@ bool PedalHandler::read_pedal_values()
         Serial.print(brake1_);
         Serial.print(", ");
         Serial.println(brake1_,HEX);
+        Serial.print("STEERING: ");
+        Serial.print(steering_angle_);
+        Serial.print(", ");
+        Serial.println(steering_angle_,HEX);
         int max_torque = 2400;
         int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
         int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
@@ -139,18 +146,26 @@ bool PedalHandler::read_pedal_values()
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
     VCUPedalReadings.set_accelerator_pedal_2(accel2_);
     VCUPedalReadings.set_brake_transducer_1(brake1_);
-    VCUPedalReadings.set_brake_transducer_2(brake1_);
+    VCUPedalReadings.set_brake_transducer_2(steering_angle_);
     CAN_message_t tx_msg;
-
+    CAN_message_t tx_msg2;
     // Send Main Control Unit pedal reading message
     VCUPedalReadings.write(tx_msg.buf);
     tx_msg.id = ID_VCU_PEDAL_READINGS;
     tx_msg.len = sizeof(VCUPedalReadings);
+    tx_msg2.id =  ID_VCU_WS_READINGS;
+    tx_msg.len = 8;
+    uint16_t rpm_wsfl = (int)(current_rpm*100);
+    uint16_t rpm_wsfr = (int)(current_rpm2*100); 
+    memcpy(&tx_msg2.buf[0], &rpm_wsfl, sizeof(rpm_wsfl));
+    memcpy(&tx_msg2.buf[2], &rpm_wsfr,sizeof(rpm_wsfr));
+
 
     // write out the actual accel command over CAN
     if (pedal_out->check())
     {
         WriteToDaqCAN(tx_msg);
+        WriteToDaqCAN(tx_msg2);
     }
     // only uses front brake pedal
     brake_is_active_ = (brake1_ >= BRAKE_ACTIVE);
@@ -245,4 +260,63 @@ void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausi
 
     impl_occ =implausibility_occured_;
 
+}
+double PedalHandler::get_wsfr(){
+    return current_rpm2;
+}
+double PedalHandler::get_wsfl(){
+    return current_rpm;
+}
+void PedalHandler::get_ws(){
+ unsigned long test = millis();
+  if((test - current_rpm_change_time) > RPM_TIMEOUT) {
+    // rpm.data = 0;
+    current_rpm = 0;
+
+  }
+  if (wsfl_->available()) {
+    // average several reading together
+    sum = sum + wsfl_->read();
+    count = count + 1;
+    current_rpm_change_time = millis();
+    if (count > 1) {
+        float testRpm = wsfl_->countToFrequency(sum / count)*60 /18;
+        current_rpm = testRpm;
+
+        /*if ( testRpm - prev_rpm < 1)
+        {
+          current_rpm = testRpm;
+          prev_rpm = testRpm;
+        }*/
+        // Serial.printf("Current RPM: %f \n", testRpm);
+      sum = 0;
+      count = 0;
+      //prev_rpm = testRpm;
+    }
+  }
+  unsigned long test2 = millis();
+  if((test2 - current_rpm_change_time2) > RPM_TIMEOUT) {
+    // rpm.data = 0;
+    current_rpm2 = 0;
+
+  }
+  if (wsfr_->available()) {
+    // average several reading together
+    sum2 = sum2 + wsfr_->read();
+    count2 = count2 + 1;
+    current_rpm_change_time2 = millis();
+    if (count2 > 1) {
+        float testRpm2 = wsfr_->countToFrequency(sum2 / count2) *60/18;
+        current_rpm2 = testRpm2;
+        /*if ( testRpm2 - prev_rpm2 < 1)
+        {
+          current_rpm2 = testRpm2;
+          prev_rpm2 = testRpm2;
+        }*/
+        // Serial.printf("Current RPM2: %f \n", testRpm);
+      sum2 = 0;
+      count2 = 0;
+      prev_rpm2 = testRpm2;
+    }
+  }
 }

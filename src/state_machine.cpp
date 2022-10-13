@@ -113,6 +113,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   pm100->updateInverterCAN();
   accumulator->updateAccumulatorCAN();
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
+  pedals->get_ws();
   switch (mcu_status.get_state())
   {
   case MCU_STATE::STARTUP:
@@ -350,6 +351,10 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
   if (debug_->check())
   {
+    uint16_t rpm_wsfl = (int)(pedals->get_wsfl()*100);
+    uint16_t rpm_wsfr = (int)(pedals->get_wsfr()*100);
+
+    //Serial.printf("RPM: %d %d\n",rpm_wsfl,rpm_wsfr);
     // Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton),
     // mcu_status.get_brake_pedal_active());
     if(tempdisplay_>=1){

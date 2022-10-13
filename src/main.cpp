@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <Adafruit_MCP4725.h>
+#include <FreqMeasureMulti.h>
 
 // our includes
 #include "MCU_status.hpp"
@@ -40,6 +41,7 @@ Metro pm100speedInspection = Metro(500, 1);
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(100, 1);
 int temporarydisplaytime = 0;
+//PID shit
 volatile double current_rpm, set_rpm, throttle_out;
 double KP = D_KP;
 double KI = D_KI;
@@ -49,7 +51,9 @@ double OUTPUT_MAX = D_OUTPUT_MAX;
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 // timers for VCU state out:
 Metro timer_can_update = Metro(100, 1);
-
+//Wheel speed shit 
+FreqMeasureMulti wsfl;
+FreqMeasureMulti wsfr;
 // dashboard led handling
 // TODO unfuck this
 const int numled = 9;
@@ -60,7 +64,7 @@ WS2812Serial leds(numled, displayMemory, drawingMemory, 17, WS2812_GRB);
 // objects
 Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send);
 Accumulator accum(&pchgMsgTimer);
-PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_rpm, &set_rpm, &throttle_out);
+PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_rpm, &set_rpm, &throttle_out,&wsfl,&wsfr);
 Dashboard dash(&leds, &pm100speedInspection);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
 Adafruit_MCP4725 pump_dac;
