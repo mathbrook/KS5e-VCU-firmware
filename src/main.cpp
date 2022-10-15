@@ -30,7 +30,7 @@ Metro pchgMsgTimer = Metro(1000);
 
 // timers for the pedals:
 
-Metro timer_debug_pedals_raw = Metro(1000, 1);
+Metro timer_debug_pedals_raw = Metro(100, 1);
 Metro pedal_debug = Metro(100, 1);
 Metro pedal_check = Metro(40, 1);
 
@@ -74,16 +74,12 @@ MCU_status mcu_status = MCU_status();
 
 void setup()
 {
-
     delay(100);
-
     Serial.println("setup");
     InitCAN();
-
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
     Serial.println("initted mcu status");
-
     pinMode(RTDbutton, INPUT_PULLUP);
     pinMode(BUZZER, OUTPUT);
     digitalWrite(BUZZER, LOW);
@@ -100,7 +96,6 @@ void setup()
     digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
     mcu_status.set_max_torque(TORQUE_1);
-
     state_machine.init_state_machine(mcu_status);
 }
 

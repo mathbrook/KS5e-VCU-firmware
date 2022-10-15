@@ -33,7 +33,7 @@ private:
 
 
     ADC_SPI pedal_ADC;
-    uint16_t accel1_, accel2_, brake1_, steering_angle_;
+    uint16_t accel1_{}, accel2_{}, brake1_{}, steering_angle_;
     bool implausibility_occured_;
 
     AutoPID *pid_;

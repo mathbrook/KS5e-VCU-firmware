@@ -2,7 +2,7 @@
 #define PARAMETERS_HPP
 
 #define HT_DEBUG_EN
-#define DEBUG 1
+#define DEBUG 0
 // TODO may wanna do this another way
 
 // Pedalbox stuff
@@ -18,6 +18,7 @@
 #define BANGBANG_RANGE 1000.0
 #define PID_TIMESTEP 10.0
 #define PID_MODE false
+//#define EXP_TORQUE_CURVE 
 
 #define RPM_TIMEOUT 100
 
@@ -32,14 +33,14 @@
 #define MAX_ACCELERATOR_PEDAL_2 4000    // High accelerator implausibility threshold
 #define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1) / 2)
 #define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2) / 2)
-
+#define ALPHA 0.9772
 
 #define MIN_HV_VOLTAGE 600 // apparently this is divided by ten?
 
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
-#define TORQUE_1 250
-#define TORQUE_2 250
+#define TORQUE_1 210
+#define TORQUE_2 210
 // Pump speed
 #define PUMP_SPEED 3400
 

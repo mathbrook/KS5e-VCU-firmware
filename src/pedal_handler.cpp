@@ -20,6 +20,14 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     int calculated_torque = 0;
     int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
+    double accel_percent = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, 1000);
+    accel_percent /= 1000;
+    #ifdef EXP_TORQUE_CURVE
+    double expTorq = 227.04*(pow(accel_percent,3)) - 90.599*(pow(accel_percent,2)) + 105.58*accel_percent + 0.0062;
+    expTorq *= 10;
+    expTorq=round(expTorq);
+    torque1 = (int)expTorq;
+    #endif
 
     // torque values are greater than the max possible value, set them to max
     if (torque1 > max_torque)
@@ -55,7 +63,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     {
         calculated_torque = 0;
     }
-    //#if DEBUG
+    // #if DEBUG
     if (timer_debug_raw_torque->check())
     {
         Serial.print("TORQUE REQUEST DELTA PERCENT: "); // Print the % difference between the 2 accelerator sensor requests
@@ -76,8 +84,12 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         Serial.print(*current_);
         Serial.print(",");
         Serial.println(*set_);
+        Serial.println(millis());
+        #ifdef EXP_TORQUE_CURVE
+        Serial.printf("Exponential Torque Request: %f %f\n",accel_percent,expTorq);
+        #endif
     }
-    //#endif
+    // #endif
 // if (abs(motor_speed) <= 1000)
 //     {
 //         if (calculated_torque >= 1600) //60NM
@@ -103,46 +115,49 @@ bool PedalHandler::read_pedal_values()
 {
     /* Filter ADC readings */
 
-    // accel1_ = ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
-    // accel2_ = ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
-    // brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
-    accel1_ = pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
-    accel2_ = pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
-    brake1_ = pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+    accel1_ = ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
+    accel2_ = ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
+    brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+    // accel1_ = pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
+    // accel2_ = pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
+    // brake1_ = pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
     steering_angle_ = pedal_ADC.read_adc(3);
+    // if (timer_debug_raw_torque->check()) {
+    // // Serial.printf("%d %d\n",accel1_,pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL));
+    // };
 
 
-#if DEBUG
-    if (timer_debug_raw_torque->check()) 
-    {
-        Serial.print("ACCEL 1: ");
-        Serial.print(accel1_);
-        Serial.print(", ");
-        Serial.println(accel1_,HEX);
-        Serial.print("ACCEL 2: ");
-        Serial.print(accel2_);
-        Serial.print(", ");
-        Serial.println(accel2_,HEX);
-        Serial.print("BRAKE 1: ");
-        Serial.print(brake1_);
-        Serial.print(", ");
-        Serial.println(brake1_,HEX);
-        Serial.print("STEERING: ");
-        Serial.print(steering_angle_);
-        Serial.print(", ");
-        Serial.println(steering_angle_,HEX);
-        int max_torque = 2400;
-        int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
-        int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
+// #if DEBUG
+    // if (timer_debug_raw_torque->check()) 
+    // {
+    //     Serial.print("ACCEL 1: ");
+    //     Serial.print(accel1_);
+    //     Serial.print(", ");
+    //     Serial.println(accel1_,HEX);
+    //     Serial.print("ACCEL 2: ");
+    //     Serial.print(accel2_);
+    //     Serial.print(", ");
+    //     Serial.println(accel2_,HEX);
+    //     Serial.print("BRAKE 1: ");
+    //     Serial.print(brake1_);
+    //     Serial.print(", ");
+    //     Serial.println(brake1_,HEX);
+    //     Serial.print("STEERING: ");
+    //     Serial.print(steering_angle_);
+    //     Serial.print(", ");
+    //     Serial.println(steering_angle_,HEX);
+    //     int max_torque = 2400;
+    //     int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
+    //     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
 
-        Serial.printf("TORQUE VALUES IF YOU WERE CALCULATING IT CURRENTLY: \n T1: %d\nT2: %d\n",torque1,torque2);
-        Serial.print("percent difference: ");
-        float torqSum =abs(torque1-torque2);
-        float torqAvg = (torque1+torque2)/2;
-        float asdf = torqSum/torqAvg;
-        Serial.println(asdf);
-   }
-#endif
+    //     Serial.printf("TORQUE VALUES IF YOU WERE CALCULATING IT CURRENTLY: \n T1: %d\nT2: %d\n",torque1,torque2);
+    //     Serial.print("percent difference: ");
+    //     float torqSum =abs(torque1-torque2);
+    //     float torqAvg = (torque1+torque2)/2;
+    //     float asdf = torqSum/torqAvg;
+    //     Serial.println(asdf);
+   //}
+// #endif
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
     VCUPedalReadings.set_accelerator_pedal_2(accel2_);
     VCUPedalReadings.set_brake_transducer_1(brake1_);
@@ -155,10 +170,10 @@ bool PedalHandler::read_pedal_values()
     tx_msg.len = sizeof(VCUPedalReadings);
     tx_msg2.id =  ID_VCU_WS_READINGS;
     tx_msg.len = 8;
-    uint16_t rpm_wsfl = (int)(current_rpm*100);
-    uint16_t rpm_wsfr = (int)(current_rpm2*100); 
+    uint32_t rpm_wsfl = (int)(current_rpm*100);
+    uint32_t rpm_wsfr = (int)(current_rpm2*100); 
     memcpy(&tx_msg2.buf[0], &rpm_wsfl, sizeof(rpm_wsfl));
-    memcpy(&tx_msg2.buf[2], &rpm_wsfr,sizeof(rpm_wsfr));
+    memcpy(&tx_msg2.buf[4], &rpm_wsfr,sizeof(rpm_wsfr));
 
 
     // write out the actual accel command over CAN
@@ -224,7 +239,9 @@ void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausi
     if (brake1_ < 200 || brake1_ > 4000)
     {
         brake_is_plausible = false;
+#if DEBUG
         Serial.println(brake1_);
+#endif
     }
     else
     {
