@@ -18,9 +18,13 @@
 #define BANGBANG_RANGE 1000.0
 #define PID_TIMESTEP 10.0
 #define PID_MODE false
+#define PID_TC_MODE false
 //#define EXP_TORQUE_CURVE 
 
-#define RPM_TIMEOUT 100
+//Longer RPM Timeout means we can read slower RPM
+//Shouldnt hurt to have it long. Should help for things like
+//Traction control
+#define RPM_TIMEOUT 1000
 
 #define BRAKE_ACTIVE 2000             // Threshold for brake pedal active
 #define MIN_ACCELERATOR_PEDAL_1 200    // Low accelerator implausibility threshold
@@ -39,8 +43,9 @@
 
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
-#define TORQUE_1 210
-#define TORQUE_2 210
+#define ALPHA 0.9772
+#define TORQUE_1 160
+#define TORQUE_2 160
 // Pump speed
 #define PUMP_SPEED 3400
 

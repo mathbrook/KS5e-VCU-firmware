@@ -12,9 +12,16 @@ void PedalHandler::init_pedal_handler()
 
 int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 {
-    
-    *current_ = motor_speed;
-    *set_ = SET_RPM;
+    if(PID_MODE){
+        *current_ = motor_speed;
+        *set_ = SET_RPM;
+    }else if(PID_TC_MODE){
+        uint32_t rpm_wsfl = (int)(current_rpm*100);
+    // uint32_t rpm_wsfr = (int)(current_rpm2*100); 
+        double calculated_slip = (motor_speed/(2.9)*100)/rpm_wsfl;
+        *current_ = calculated_slip;
+        *set_ = SLIP;
+    }
     
     pid_->run();
     int calculated_torque = 0;
@@ -23,6 +30,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     double accel_percent = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, 1000);
     accel_percent /= 1000;
     #ifdef EXP_TORQUE_CURVE
+    //torque = 227.04x^3 - 90.599x^2 + 105.58x + 0.0062
     double expTorq = 227.04*(pow(accel_percent,3)) - 90.599*(pow(accel_percent,2)) + 105.58*accel_percent + 0.0062;
     expTorq *= 10;
     expTorq=round(expTorq);
@@ -42,7 +50,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     // calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
 
     
-    if(PID_MODE==true){
+    if(PID_MODE || PID_TC_MODE){
     if((torque1>(0.75*max_torque))) // TODO put here when we want cruise control control to take effect
     {
         calculated_torque = (int)*throttle_;
@@ -80,7 +88,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         Serial.println(accel2_);
         Serial.print("Brake1_ : ");
         Serial.println(brake1_);
-        Serial.print("RPM vs TARGET: ");
+        Serial.print("RPM (or slip) vs TARGET: ");
         Serial.print(*current_);
         Serial.print(",");
         Serial.println(*set_);
@@ -107,6 +115,8 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 
  //   Serial.print(",");
  //   Serial.println(calculated_torque);
+
+    
     return calculated_torque;
 }
 
@@ -118,13 +128,11 @@ bool PedalHandler::read_pedal_values()
     accel1_ = ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
     accel2_ = ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
     brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
-    // accel1_ = pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
-    // accel2_ = pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
-    // brake1_ = pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
     steering_angle_ = pedal_ADC.read_adc(3);
     // if (timer_debug_raw_torque->check()) {
-    // // Serial.printf("%d %d\n",accel1_,pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL));
+    // Serial.printf("%d %d\n",accel1_,pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL));
     // };
+    //This is the code to print raw ADC readings vs the filtered one
 
 
 // #if DEBUG
