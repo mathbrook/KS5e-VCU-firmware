@@ -29,7 +29,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
     double accel_percent = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, 1000);
     accel_percent /= 1000;
-    #ifdef EXP_TORQUE_CURVE
+    #if EXP_TORQUE_CURVE
     //torque = 227.04x^3 - 90.599x^2 + 105.58x + 0.0062
     double expTorq = 227.04*(pow(accel_percent,3)) - 90.599*(pow(accel_percent,2)) + 105.58*accel_percent + 0.0062;
     expTorq *= 10;

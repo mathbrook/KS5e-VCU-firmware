@@ -71,14 +71,13 @@ void setup()
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
     Serial.println("initted mcu status");
-    pinMode(BUZZER, OUTPUT);
+    pinMode(BUZZER, OUTPUT); //TODO write gpio initialization function
     digitalWrite(BUZZER, LOW);
-    pinMode(TORQUEMODE, INPUT);
-    pinMode(LAUNCHCONTROL, INPUT_PULLUP);
-    pinMode(MC_RELAY, OUTPUT);
+    pinMode(LOWSIDE1, OUTPUT);
+    pinMode(LOWSIDE2, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
     pinMode(WSFR, INPUT_PULLUP);
-    mcu_status.set_inverter_powered(true);
+    mcu_status.set_inverter_powered(true); //this means nothing anymore
     mcu_status.set_max_torque(TORQUE_1);
     state_machine.init_state_machine(mcu_status);
 }

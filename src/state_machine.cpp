@@ -45,7 +45,12 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
   case MCU_STATE::READY_TO_DRIVE:
   {
+    //reset "state" of precharge in memory 
     accumulator->resetPchgState();
+    //disable lowside outputs (pump, etc.)
+    digitalWrite(LOWSIDE1,LOW);
+    digitalWrite(LOWSIDE2,LOW);
+
     break;
   }
   }
@@ -87,7 +92,11 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
     Serial.println("RTDS enabled");
 #endif
     break;
-  case MCU_STATE::READY_TO_DRIVE:
+  }
+  case MCU_STATE::READY_TO_DRIVE:{
+  //enable low-side outputs
+  digitalWrite(LOWSIDE1,HIGH);
+  digitalWrite(LOWSIDE2,HIGH);
 #if DEBUG
     Serial.println("Ready to drive");
 #endif
@@ -96,9 +105,18 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
 }
 
+
+
+
 void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
   // things that are done every loop go here:
+  if(analogRead(A2)<700){
+    mcu_status.set_bspd_ok_high(false);
+  }
+  else if(analogRead(A2)>700){
+    mcu_status.set_bspd_ok_high(true);
+  } //TODO make getting analog readings neater--this is the only necessary one for now
   pm100->updateInverterCAN();
   accumulator->updateAccumulatorCAN();
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
@@ -162,9 +180,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     //   accumulator_ready = true;
     // }
     // if TS is above HV threshold, move to Tractive System Active
-    if (pm100->check_TS_active() && accumulator_ready)
+    if (pm100->check_TS_active() && accumulator_ready) //TODO somewhere here, dont allow TS active if a fault is known
     {
-#if DEBUGF
+#if DEBUG
       Serial.println("Setting state to TS Active from TS Not Active");
 #endif
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
