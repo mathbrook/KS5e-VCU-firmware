@@ -11,7 +11,6 @@
 #include "inverter/mc_temperatures.hpp"
 #include "inverter/mc_voltage_information.hpp"
 #include "inverter/mc_command_message.hpp"
-
 class Inverter
 {
 

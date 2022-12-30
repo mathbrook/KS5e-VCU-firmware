@@ -44,8 +44,9 @@
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
-#define TORQUE_1 180
-#define TORQUE_2 180
+#define TORQUE_1 90
+#define TORQUE_2 120
+#define TORQUE_3 180
 // Pump speed
 #define PUMP_SPEED 3400
 

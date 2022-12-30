@@ -1,11 +1,9 @@
 // library includes
-#include <WS2812Serial.h>
 #include <Arduino.h>
 #include <FlexCAN_T4.h>
 #include <Metro.h>
 #include <string.h>
 #include <stdint.h>
-#include <Adafruit_MCP4725.h>
 #include <FreqMeasureMulti.h>
 
 // our includes
@@ -54,20 +52,13 @@ Metro timer_can_update = Metro(100, 1);
 //Wheel speed shit 
 FreqMeasureMulti wsfl;
 FreqMeasureMulti wsfr;
-// dashboard led handling
-// TODO unfuck this
-const int numled = 9;
-byte drawingMemory[numled * 3];         //  3 bytes per LED
-DMAMEM byte displayMemory[numled * 12]; // 12 bytes per LED
-WS2812Serial leds(numled, displayMemory, drawingMemory, 17, WS2812_GRB);
 
 // objects
+Dashboard dash;
 Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send);
 Accumulator accum(&pchgMsgTimer);
 PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_rpm, &set_rpm, &throttle_out,&wsfl,&wsfr);
-Dashboard dash(&leds, &pm100speedInspection);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
-Adafruit_MCP4725 pump_dac;
 MCU_status mcu_status = MCU_status();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,7 +71,6 @@ void setup()
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
     Serial.println("initted mcu status");
-    pinMode(RTDbutton, INPUT_PULLUP);
     pinMode(BUZZER, OUTPUT);
     digitalWrite(BUZZER, LOW);
     pinMode(TORQUEMODE, INPUT);
@@ -88,12 +78,6 @@ void setup()
     pinMode(MC_RELAY, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
     pinMode(WSFR, INPUT_PULLUP);
-    if (!pump_dac.begin())
-    {
-        Serial.println("L pump_dac");
-    }
-    pump_dac.setVoltage(PUMP_SPEED, false);
-    digitalWrite(MC_RELAY, HIGH);
     mcu_status.set_inverter_powered(true);
     mcu_status.set_max_torque(TORQUE_1);
     state_machine.init_state_machine(mcu_status);
@@ -111,7 +95,7 @@ void loop()
         mcu_status.write(tx_msg.buf);
         tx_msg.id = ID_VCU_STATUS;
         tx_msg.len = sizeof(mcu_status);
-        WriteToDaqCAN(tx_msg);
+        WriteCANToInverter(tx_msg);
     }
 //   if(Serial.available()){
 //     String message=(Serial.readString());

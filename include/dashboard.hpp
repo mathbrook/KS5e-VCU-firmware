@@ -1,34 +1,35 @@
-#ifndef DASHBOARD_HPP
-#define DASHBOARD_HPP
-#include <Arduino.h>
-#include "Adafruit_LEDBackpack.h"
-#include <WS2812Serial.h>
-#include "Metro.h"
+#pragma once
 
-#include <KS2eVCUgpios.hpp>
-#include "parameters.hpp"
-
-class Dashboard
-{
-
-private:
-    WS2812Serial * leds;
-    Metro *timer;
-    Adafruit_7segment DashDisplay = Adafruit_7segment();
-    uint8_t enableLights[3] = {0, 7, 7};
-    uint8_t waitingRtdLights[3] = {2, 7, 7};
-    uint8_t rtdLights[3] = {3, 7, 7};
-    int led_color_;
-    bool ledsdirection=true; //true is up, false is down
-
+#include <string.h>
+#include <stdint.h>
+#ifdef HT_DEBUG_EN
+    #include "Arduino.h"
+#endif
+#pragma pack(push,1)
+class Dashboard {
 public:
-    Dashboard(WS2812Serial *leds, Metro *pm100tim) : leds(leds), timer(pm100tim) {}
-    void colorWipe(int color, int wait_us);
-    void DashLedsBrightness();
-    void init_dashboard();
-    void DashLedscolorWipe();
-    void set_dashboard_led_color(int color);
-    void refresh_dash(int voltage);
+    Dashboard() = default;
+    Dashboard(const uint8_t buf[8]) { load(buf); }
+
+    inline void load(const uint8_t buf[])  { memcpy(this, buf, sizeof(*this)); }
+    inline void write(uint8_t buf[]) const { memcpy(buf, this, sizeof(*this)); }
+    inline bool get_buttons()  const {return button_states;}
+
+    inline bool get_button1()  const {return button_states&0x01;}
+    inline bool get_button2()  const {return button_states&0x02;}
+    inline bool get_button3()  const {return button_states&0x04;}
+    inline bool get_button4()  const {return button_states&0x08;}
+    inline bool get_button5()  const {return button_states&0x10;}
+    inline bool get_button6()  const {return button_states&0x20;}
+
+    inline void set_buttons(const uint8_t inputs)        { button_states = inputs; }
+
+    void updateDashCAN();
+    
+private:
+
+    uint8_t button_states;
+    
 };
 
-#endif
+#pragma pack(pop)

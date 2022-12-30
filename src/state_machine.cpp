@@ -3,7 +3,6 @@
 // initializes the mcu status and pedal handler
 void StateMachine::init_state_machine(MCU_status &mcu_status)
 {
-  dash_->init_dashboard();                                      // do this before setting state
   set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE); // this is where it is failing rn
   pedals->init_pedal_handler();
 }
@@ -64,22 +63,16 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
   {
     pm100->forceMCdischarge();
-    dash_->set_dashboard_led_color(GREEN); // this is causing problems rn
-    dash_->DashLedscolorWipe();
     break;
   }
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
   {
     Serial.println("going into tractive sustem active");
-    dash_->set_dashboard_led_color(RED);
-    dash_->DashLedscolorWipe();
     break;
   }
   case MCU_STATE::ENABLING_INVERTER:
   {
     Serial.println("going into enabling inverter");
-    dash_->set_dashboard_led_color(YELLOW);
-    dash_->DashLedscolorWipe();
     pm100->tryToClearMcFault();
     pm100->doStartup();
     break;
@@ -87,8 +80,6 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
   {
     // make dashboard sound buzzer
-    dash_->set_dashboard_led_color(ORANGE);
-    dash_->DashLedscolorWipe();
     mcu_status.set_activate_buzzer(true);
     digitalWrite(BUZZER, HIGH);
     timer_ready_sound->reset();
@@ -97,8 +88,6 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 #endif
     break;
   case MCU_STATE::READY_TO_DRIVE:
-    dash_->set_dashboard_led_color(PINK);
-    dash_->DashLedscolorWipe();
 #if DEBUG
     Serial.println("Ready to drive");
 #endif
@@ -113,6 +102,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   pm100->updateInverterCAN();
   accumulator->updateAccumulatorCAN();
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
+  dash_->updateDashCAN();
   pedals->get_ws();
   switch (mcu_status.get_state())
   {
@@ -200,7 +190,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     pm100->inverter_kick(0);
 
     // if start button has been pressed and brake pedal is held down, transition to the next state
-    if (digitalRead(RTDbutton) == 0 && mcu_status.get_brake_pedal_active())
+    if (dash_->get_button1() && mcu_status.get_brake_pedal_active())
     {
 #if DEBUG
       Serial.println("Setting state to Enabling Inverter");
@@ -351,41 +341,18 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
   if (debug_->check())
   {
-    uint16_t rpm_wsfl = (int)(pedals->get_wsfl()*100);
-    uint16_t rpm_wsfr = (int)(pedals->get_wsfr()*100);
+    if(dash_->get_button2()){
+      mcu_status.toggle_max_torque(mcu_status.get_torque_mode());
+      mcu_status.set_max_torque(60*mcu_status.get_torque_mode());
+    }
+    // uint16_t rpm_wsfl = (int)(pedals->get_wsfl()*100);
+    // uint16_t rpm_wsfr = (int)(pedals->get_wsfr()*100);
 
     //Serial.printf("RPM: %d %d\n",rpm_wsfl,rpm_wsfr);
     // Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton),
     // mcu_status.get_brake_pedal_active());
-    if(tempdisplay_>=1){
-      dash_->refresh_dash(mcu_status.get_max_torque());
-      tempdisplay_--; //this is so dumb
-    }else{
-      dash_->refresh_dash(pm100->getmcBusVoltage());
-    }
 
     //pm100->debug_print();
-    switch(digitalRead(TORQUEMODE)){
-      case 0:{
-        if(TORQUE_1!=mcu_status.get_max_torque()){
-          tempdisplay_=10;
-        }
-        #if DEBUG
-        #endif
-        mcu_status.set_max_torque(TORQUE_1);
-        break;
-      }
-      case 1:{
-        if(TORQUE_2!=mcu_status.get_max_torque()){
-          tempdisplay_=10;
-        }
-        #if DEBUG
-        #endif
-        mcu_status.set_max_torque(TORQUE_2);
-        break;
-      }
-    }
-    dash_->DashLedsBrightness();
   }
   // TODO update the dash here properly
 }

@@ -26,6 +26,9 @@
 #define ID_VCU_STATUS						0xC3
 #define ID_VCU_PEDAL_READINGS				0xC4
 #define ID_VCU_WS_READINGS                  0xC6
+#define ID_DASH_BUTTONS                     0xEB
+#define ID_BMS_SOC                          0x7FF //TODO make this real on the BMS
+
 #define ID_BMS_INFO 0x6B1
 // number of rx and tx mailboxes
 #define NUM_TX_MAILBOXES 2
