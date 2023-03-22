@@ -62,6 +62,12 @@ void Accumulator::updateAccumulatorCAN()
             memcpy(BMS_packInfo, rxMsg.buf, sizeof(BMS_packInfo));
             break;
         }
+        case (ID_BMS_SOC):
+        {
+            //forward message to dash
+            WriteCANToInverter(rxMsg);
+            break;
+        }
         default:
             break;
         }

@@ -8,8 +8,8 @@
 // Pedalbox stuff
 
 //CRUISE CONTROL
-#define SLIP 1.1
-#define SET_RPM 1624
+#define SLIP 1.1 //slip target if in TC mode
+#define SET_RPM 1624 //rpm target if in cruise control mode
 #define D_KP 1.5
 #define D_KI 0.3
 #define D_KD 0.5
@@ -17,9 +17,9 @@
 #define D_OUTPUT_MAX (TORQUE_1*10)
 #define BANGBANG_RANGE 1000.0
 #define PID_TIMESTEP 100.0
-#define PID_MODE false
-#define PID_TC_MODE false
-//#define EXP_TORQUE_CURVE 
+#define PID_MODE false //enable cruise control
+#define PID_TC_MODE false //enable traction control
+#define EXP_TORQUE_CURVE false //set to TRUE for kustom pedal curve
 
 //Longer RPM Timeout means we can read slower RPM
 //Shouldnt hurt to have it long. Should help for things like
@@ -44,8 +44,9 @@
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
-#define TORQUE_1 180
-#define TORQUE_2 180
+#define TORQUE_1 60
+#define TORQUE_2 120
+#define TORQUE_3 180
 // Pump speed
 #define PUMP_SPEED 3400
 
