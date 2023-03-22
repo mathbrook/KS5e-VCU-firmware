@@ -6,7 +6,7 @@ void PedalHandler::init_pedal_handler()
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
     pid_->setTimeStep(PID_TIMESTEP);
     wsfl_->begin(WSFL);
-    wsfr_->begin(WSFR);
+    // wsfr_->begin(WSFR);
     //pid_->setBangBang(double(BANGBANG_RANGE));
 }
 
@@ -94,7 +94,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         Serial.println(*set_);
         Serial.println(millis());
         #ifdef EXP_TORQUE_CURVE
-        Serial.printf("Exponential Torque Request: %f %f\n",accel_percent,expTorq);
+        // Serial.printf("Exponential Torque Request: %f %f\n",accel_percent,expTorq);
         #endif
     }
     // #endif

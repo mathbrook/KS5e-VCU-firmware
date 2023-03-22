@@ -2,16 +2,13 @@
 #define KS2EVCUGPIOS_HPP
 
 #define WSFL 28 //Input Pullup
-#define WSFR 29 //Input Pullup
-#define SDCVSENSE 39 //analog
-#define SDCISENSE 20 //analog
-#define BSPDSENSE 16 //analog
-#define BUZZER 4 //Output
-#define GLV_VSENSE 41 //analog
-#define GLV_ISENSE 38 //analog
-#define _5V_VSENSE 40 //analog
-#define A9 27
-#define A10 26
+#define SDCSENSE 20 //Input ADC
+#define MC_RELAY 14 //Output
+#define RTDbutton 34 //Input Pullup
+#define BUZZER 15 //Output
+#define TORQUEMODE 33 //Input Pullup
+#define LAUNCHCONTROL 35 //Input Pullup
+#define NEOPIXELPIN 17 //lol
 
 #define LOWSIDE1 5
 #define LOWSIDE2 6
