@@ -74,25 +74,25 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     // #if DEBUG
     if (timer_debug_raw_torque->check())
     {
-        Serial.print("TORQUE REQUEST DELTA PERCENT: "); // Print the % difference between the 2 accelerator sensor requests
-        Serial.println(abs(torque1 - torque2) /  max_torque * 100);
-        Serial.print("MCU RAW TORQUE: ");
-        Serial.println(calculated_torque);
-        Serial.print("TORQUE 1: ");
-        Serial.println(torque1);
-        Serial.print("TORQUE 2: ");
-        Serial.println(torque2);
-        Serial.print("Accel 1: ");
-        Serial.println(accel1_);
-        Serial.print("Accel 2: ");
-        Serial.println(accel2_);
-        Serial.print("Brake1_ : ");
-        Serial.println(brake1_);
-        Serial.print("RPM (or slip) vs TARGET: ");
-        Serial.print(*current_);
-        Serial.print(",");
-        Serial.println(*set_);
-        Serial.println(millis());
+        // Serial.print("TORQUE REQUEST DELTA PERCENT: "); // Print the % difference between the 2 accelerator sensor requests
+        // Serial.println(abs(torque1 - torque2) /  max_torque * 100);
+        // Serial.print("MCU RAW TORQUE: ");
+        // Serial.println(calculated_torque);
+        // Serial.print("TORQUE 1: ");
+        // Serial.println(torque1);
+        // Serial.print("TORQUE 2: ");
+        // Serial.println(torque2);
+        // Serial.print("Accel 1: ");
+        // Serial.println(accel1_);
+        // Serial.print("Accel 2: ");
+        // Serial.println(accel2_);
+        // Serial.print("Brake1_ : ");
+        // Serial.println(brake1_);
+        // Serial.print("RPM (or slip) vs TARGET: ");
+        // Serial.print(*current_);
+        // Serial.print(",");
+        // Serial.println(*set_);
+        // Serial.println(millis());
         #ifdef EXP_TORQUE_CURVE
         // Serial.printf("Exponential Torque Request: %f %f\n",accel_percent,expTorq);
         #endif

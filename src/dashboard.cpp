@@ -5,8 +5,8 @@ void Dashboard::updateDashCAN(){
     if(ReadInverterCAN(rxMsg)){
         if(rxMsg.id == ID_DASH_BUTTONS){
             button_states=rxMsg.buf[0];
-            Serial.println("weeeee updated buttons: ");
-            Serial.println(button_states);
+            // Serial.println("weeeee updated buttons: ");
+            // Serial.println(button_states);
         }
     }
 }

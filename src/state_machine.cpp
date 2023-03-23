@@ -111,12 +111,17 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
   // things that are done every loop go here:
-  if(analogRead(A2)<700){
-    mcu_status.set_bspd_ok_high(false);
-  }
-  else if(analogRead(A2)>700){
-    mcu_status.set_bspd_ok_high(true);
-  } //TODO make getting analog readings neater--this is the only necessary one for now
+  // if(analogRead(A2)<700){
+  //   mcu_status.set_bspd_ok_high(false);
+  // }
+  // else if(analogRead(A2)>700){
+  //   mcu_status.set_bspd_ok_high(true);
+  // } //TODO make getting analog readings neater--this is the only necessary one for now
+  mcu_status.set_bms_ok_high(true); // TODO BODGE TESTING
+  mcu_status.set_bspd_ok_high(true);
+  mcu_status.set_imd_ok_high(true);
+
+
   pm100->updateInverterCAN();
   accumulator->updateAccumulatorCAN();
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());

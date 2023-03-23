@@ -75,5 +75,7 @@ int ReadInverterCAN(CAN_message_t &msg)
 }
 int ReadAccumulatorCAN(CAN_message_t &msg)
 {
+    Serial.print("MSG id:");
+    Serial.println(msg.id);
     return AccumulatorCAN_.read(msg);
 }
