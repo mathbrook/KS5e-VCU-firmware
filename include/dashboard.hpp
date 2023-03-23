@@ -15,7 +15,7 @@ public:
     inline void write(uint8_t buf[]) const { memcpy(buf, this, sizeof(*this)); }
     inline bool get_buttons()  const {return button_states;}
 
-    inline bool get_button1()  const {return button_states&0x01;}
+    inline bool get_button1()  const {return !(button_states&0x01);}
     inline bool get_button2()  const {return button_states&0x02;}
     inline bool get_button3()  const {return button_states&0x04;}
     inline bool get_button4()  const {return button_states&0x08;}
