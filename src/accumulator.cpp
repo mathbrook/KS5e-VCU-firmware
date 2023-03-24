@@ -39,9 +39,12 @@ void Accumulator::updateAccumulatorCAN()
 {
     CAN_message_t rxMsg;
     char lineBuffer[200];
+    Serial.println("Update Acc can");
     if (ReadAccumulatorCAN(rxMsg))
     {
         WriteToDaqCAN(rxMsg);
+        Serial.println("In IF, ID: ");
+        Serial.print(rxMsg.id);
         switch (rxMsg.id)
         {
         case (0x69):
