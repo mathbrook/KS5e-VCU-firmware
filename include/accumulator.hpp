@@ -16,6 +16,7 @@ public:
     Accumulator(Metro *pch_timeout) : pchgTimeout(pch_timeout){};
     void updateAccumulatorCAN();
     void sendPrechargeStartMsg();
+    int get_precharge_state();
     bool check_precharge_success();
     bool check_precharge_timeout();
     bool GetIfPrechargeAttempted();

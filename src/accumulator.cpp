@@ -18,9 +18,16 @@ void Accumulator::sendPrechargeStartMsg()
 }
 
 
+int Accumulator::get_precharge_state()
+{
+    return pchgState;
+}
+
 // returns true if precharge has succeeeded or not
 bool Accumulator::check_precharge_success()
 {
+    // Serial.print("pchgState: ");
+    // Serial.println(pchgState);
     return (pchgState == 2);
 }
 void Accumulator::resetPchgState(){
@@ -42,7 +49,7 @@ void Accumulator::updateAccumulatorCAN()
     Serial.println("Update Acc can");
     if (ReadAccumulatorCAN(rxMsg))
     {
-        WriteToDaqCAN(rxMsg);
+        // WriteCANToAccumulator(rxMsg);
         Serial.println("In IF, ID: ");
         Serial.print(rxMsg.id);
         switch (rxMsg.id)

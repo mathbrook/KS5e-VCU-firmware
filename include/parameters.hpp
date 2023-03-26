@@ -2,7 +2,7 @@
 #define PARAMETERS_HPP
 
 #define HT_DEBUG_EN
-#define DEBUG 0
+#define DEBUG 1
 // TODO may wanna do this another way
 
 // Pedalbox stuff

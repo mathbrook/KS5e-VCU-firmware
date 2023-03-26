@@ -1,6 +1,6 @@
 #include "state_machine.hpp"
-//#define ACCDEBUG
-// initializes the mcu status and pedal handler
+// #define ACCDEBUG
+//  initializes the mcu status and pedal handler
 void StateMachine::init_state_machine(MCU_status &mcu_status)
 {
   set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE); // this is where it is failing rn
@@ -45,11 +45,11 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
   case MCU_STATE::READY_TO_DRIVE:
   {
-    //reset "state" of precharge in memory 
+    // reset "state" of precharge in memory
     accumulator->resetPchgState();
-    //disable lowside outputs (pump, etc.)
-    digitalWrite(LOWSIDE1,LOW);
-    digitalWrite(LOWSIDE2,LOW);
+    // disable lowside outputs (pump, etc.)
+    digitalWrite(LOWSIDE1, LOW);
+    digitalWrite(LOWSIDE2, LOW);
 
     break;
   }
@@ -93,10 +93,11 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 #endif
     break;
   }
-  case MCU_STATE::READY_TO_DRIVE:{
-  //enable low-side outputs
-  digitalWrite(LOWSIDE1,HIGH);
-  digitalWrite(LOWSIDE2,HIGH);
+  case MCU_STATE::READY_TO_DRIVE:
+  {
+    // enable low-side outputs
+    digitalWrite(LOWSIDE1, HIGH);
+    digitalWrite(LOWSIDE2, HIGH);
 #if DEBUG
     Serial.println("Ready to drive");
 #endif
@@ -104,9 +105,6 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
   }
 }
-
-
-
 
 void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
@@ -121,7 +119,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   mcu_status.set_bspd_ok_high(true);
   mcu_status.set_imd_ok_high(true);
 
-
   pm100->updateInverterCAN();
   accumulator->updateAccumulatorCAN();
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
@@ -135,37 +132,48 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
   {
-    //delete this later, testing when not in TS mode
+    // delete this later, testing when not in TS mode
     uint8_t max_t = mcu_status.get_max_torque();
     int max_t_actual = max_t * 10;
     int16_t motor_speed = pm100->getmcMotorRPM();
     pedals->calculate_torque(motor_speed, max_t_actual);
+
     // end of test block
     pm100->inverter_kick(0);
     if (!accumulator->GetIfPrechargeAttempted())
     {
       accumulator->sendPrechargeStartMsg(); // we dont actually need to send this-precharge is automatic
+      Serial.println("Sent precharge start msg");
 #ifdef ACCDEBUG
       Serial.println("Sent precharge start msg");
 #endif
     }
 
     bool accumulator_ready = false;
+    Serial.print("AccRdy: ");
+    Serial.println(accumulator_ready);
+    Serial.print("PCHGSTATE: ");
+    Serial.println(accumulator->get_precharge_state());
+    
     // TODO might wanna check this out and make sure that this shit works, idk if it does
     if (accumulator->check_precharge_success() && (!accumulator->check_precharge_timeout()))
     {
       accumulator_ready = true;
+      Serial.println("Precharge is ready and not timed out");
 #ifdef ACCDEBUG
-// Serial.println("Precharge is ready and not timed out");
+      Serial.println("Precharge is ready and not timed out");
 #endif
     }
     else if ((!accumulator->check_precharge_timeout()) && (!accumulator->check_precharge_success()))
     {
-// if the accumulator hasnt finished precharge and it hasnt timed out yet, break
+      // if the accumulator hasnt finished precharge and it hasnt timed out yet, break
+      Serial.print("Precharge Rdy?: ");
+      Serial.println(accumulator_ready);
 #ifdef ACCDEBUG
       Serial.println("Precharge not ready yet");
       Serial.println(accumulator_ready);
 #endif
+      Serial.println("F");
       break;
     }
     else if (accumulator->check_precharge_timeout() && (!accumulator->check_precharge_success()))
@@ -179,19 +187,26 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #endif
       break;
     }
-    // else
-    // {
-    //   // accumulator has timed out but it also pre-charged, continue
-    //   accumulator_ready = true;
-    // }
-    // if TS is above HV threshold, move to Tractive System Active
-    if (pm100->check_TS_active() && accumulator_ready) //TODO somewhere here, dont allow TS active if a fault is known
+    else
     {
+      // accumulator has timed out but it also pre-charged, continue
+      // accumulator_ready = true;
+      Serial.print("accumulator_ready: ");
+      Serial.println(accumulator_ready);
+    }
+
+    // if TS is above HV threshold, move to Tractive System Active
+    if (pm100->check_TS_active() && accumulator_ready) // TODO somewhere here, dont allow TS active if a fault is known
+    {
+      Serial.println("I have enterd this if");
+
 #if DEBUG
       Serial.println("Setting state to TS Active from TS Not Active");
 #endif
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
     }
+
+    Serial.println("Failed to make TS active");
     break;
   }
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
@@ -355,8 +370,8 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
      Serial.printf("imd: %d\n", mcu_status.get_imd_ok_high());*/
 //}
 #endif
-    
-      pm100->command_torque(calculated_torque);
+
+    pm100->command_torque(calculated_torque);
 
     break;
   }
@@ -364,18 +379,19 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
   if (debug_->check())
   {
-    if(dash_->get_button2()){
+    if (dash_->get_button2())
+    {
       mcu_status.toggle_max_torque(mcu_status.get_torque_mode());
-      mcu_status.set_max_torque(60*mcu_status.get_torque_mode());
+      mcu_status.set_max_torque(60 * mcu_status.get_torque_mode());
     }
     // uint16_t rpm_wsfl = (int)(pedals->get_wsfl()*100);
     // uint16_t rpm_wsfr = (int)(pedals->get_wsfr()*100);
 
-    //Serial.printf("RPM: %d %d\n",rpm_wsfl,rpm_wsfr);
-    // Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton),
-    // mcu_status.get_brake_pedal_active());
+    // Serial.printf("RPM: %d %d\n",rpm_wsfl,rpm_wsfr);
+    //  Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton),
+    //  mcu_status.get_brake_pedal_active());
 
-    //pm100->debug_print();
+    // pm100->debug_print();
   }
   // TODO update the dash here properly
 }
