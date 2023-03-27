@@ -78,47 +78,62 @@ int WriteToDaqCAN(CAN_message_t &msg)
 int ReadDaqCAN(CAN_message_t &msg)
 {
     int ret = DaqCAN_.read(msg);
+    
+    //enable for CAN messages
+    /*
     Serial.print("ReadDaqCAN id:");
     Serial.println(msg.id);
     Serial.print("ReadDaqCAN len:");
     Serial.println(msg.len);
     Serial.print("ReadDaqCAN: ");
+    */
     for (int i = 0; i < 8; i++) {
         Serial.print(msg.buf[i]); // print each byte in the array
         Serial.print(", ");
     }
-    Serial.println();
+    //Serial.println();
     return ret;
 }
 
 int ReadInverterCAN(CAN_message_t &msg)
 {
     int ret = Inverter_CAN_.read(msg);
+    
+    //enable for CAN messages
+    /*
     Serial.print("ReadInverterCANMSG id:");
     Serial.println(msg.id);
     Serial.print("ReadInverterCANMSG len:");
     Serial.println(msg.len);
     Serial.print("ReadInverterCAN: ");
+    */
+
     for (int i = 0; i < 8; i++) {
-        Serial.print(msg.buf[i]); // print each byte in the array
-        Serial.print(", ");
+        //Serial.print(msg.buf[i]); // print each byte in the array
+        //Serial.print(", ");
     }
-    Serial.println();
+    //Serial.println();
     return ret;
 }
 
 int ReadAccumulatorCAN(CAN_message_t &msg)
 {
     int ret = AccumulatorCAN_.read(msg); 
+
+    //enable for CAN messages
+    /*
+
     Serial.print("ReadAccumulatorCAN MSG id:");
     Serial.println(msg.id);
     Serial.print("ReadAccumulatorCAN MSG len:");
     Serial.println(msg.len);
     Serial.print("ReadAccumulatorCAN: ");
+    */
+
     for (int i = 0; i < 8; i++) {
-        Serial.print(msg.buf[i]); // print each byte in the array
-        Serial.print(", ");
+        //Serial.print(msg.buf[i]); // print each byte in the array
+        //Serial.print(", ");
     }
-    Serial.println();
+    //Serial.println();
     return ret;
 }

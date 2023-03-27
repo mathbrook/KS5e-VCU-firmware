@@ -29,7 +29,7 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
   {
-    accumulator->resetPchgState(); // dealing with sus behavior, precharge timed out but would stay "ready"
+    //accumulator->resetPchgState(); // dealing with sus behavior, precharge timed out but would stay "ready"
     break;
   }
   case MCU_STATE::ENABLING_INVERTER:
@@ -46,7 +46,7 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   case MCU_STATE::READY_TO_DRIVE:
   {
     // reset "state" of precharge in memory
-    accumulator->resetPchgState();
+    //accumulator->resetPchgState();
     // disable lowside outputs (pump, etc.)
     digitalWrite(LOWSIDE1, LOW);
     digitalWrite(LOWSIDE2, LOW);
@@ -67,12 +67,14 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
   {
+    Serial.println("starting entry forceMCdischarged");
     pm100->forceMCdischarge();
+    Serial.println("finished entry forceMCdischarged");
     break;
   }
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
   {
-    Serial.println("going into tractive sustem active");
+    Serial.println("going into tractive system active");
     break;
   }
   case MCU_STATE::ENABLING_INVERTER:
@@ -155,11 +157,12 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     Serial.print("PCHGSTATE: ");
     Serial.println(accumulator->get_precharge_state());
     
+    // *we are ok up to here*
+
     // TODO might wanna check this out and make sure that this shit works, idk if it does
     if (accumulator->check_precharge_success() && (!accumulator->check_precharge_timeout()))
     {
       accumulator_ready = true;
-      Serial.println("Precharge is ready and not timed out");
       #ifdef ACCDEBUG
       Serial.println("Precharge is ready and not timed out");
       #endif
@@ -173,32 +176,33 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       Serial.println("Precharge not ready yet");
       Serial.println(accumulator_ready);
 #endif
-      Serial.println("F");
+      
       break;
     }
     else if (accumulator->check_precharge_timeout() && (!accumulator->check_precharge_success()))
     {
-// attempt pre-charge again if the pre-charge has timed out
-// TODO add in re-try limitation number
-// accumulator->sendPrechargeStartMsg();
+      // attempt pre-charge again if the pre-charge has timed out
+      // TODO add in re-try limitation number
+       accumulator->sendPrechargeStartMsg();
 #ifdef ACCDEBUG
       Serial.println("Sent precharge start msg AGAIN");
       Serial.println(accumulator_ready);
 #endif
       break;
     }
-    else
+    //else
+    /*
     {
       // accumulator has timed out but it also pre-charged, continue
-      // accumulator_ready = true;
+       accumulator_ready = true;
       Serial.print("accumulator_ready: ");
       Serial.println(accumulator_ready);
     }
-
+  */
     // if TS is above HV threshold, move to Tractive System Active
     if (pm100->check_TS_active() && accumulator_ready) // TODO somewhere here, dont allow TS active if a fault is known
     {
-      Serial.println("I have enterd this if");
+      
 
 #if DEBUG
       Serial.println("Setting state to TS Active from TS Not Active");
@@ -206,7 +210,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
     }
 
-    Serial.println("Failed to make TS active");
+    
     break;
   }
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
@@ -226,27 +230,33 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       
       //set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE); //uncomet stage 1
     }
-    //else if (accumulator->check_precharge_timeout()) //uncomet stage 1
+    else if (accumulator->check_precharge_timeout()) //uncomet stage 1
     {
+      Serial.println("TSActive check_precharge_timeout NOT_ACTIVE start");
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+      Serial.println("TSActive check_precharge_timeout NOT_ACTIVE finished");
     }
     //pm100->inverter_kick(0); //uncomet stage 1
     
-    Serial.print("Dash RTD Button");
+    Serial.print("Dash RTD Button ");
     Serial.println(dash_->get_button1());
+    Serial.print("Brake pedal ");
+    Serial.println(mcu_status.get_brake_pedal_active());
     // if start button has been pressed and brake pedal is held down, transition to the next state
     if (dash_->get_button1() && mcu_status.get_brake_pedal_active())
     {
-#if DEBUG
       Serial.println("Setting state to Enabling Inverter");
-#endif
+      #if DEBUG
+      Serial.println("Setting state to Enabling Inverter");
+      #endif
       set_state(mcu_status, MCU_STATE::ENABLING_INVERTER);
     }
+    Serial.print("At end of TSActive I made it here 2222");
     break;
   }
   case MCU_STATE::ENABLING_INVERTER:
   {
-    // Serial.println("ENABLING INVERTER");
+    Serial.println("ENABLING INVERTER");
     pm100->inverter_kick(1);
     if (!pm100->check_TS_active())
     {
