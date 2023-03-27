@@ -85,6 +85,10 @@ void setup()
 void loop()
 {
 
+    // Serial.print("Dash RTD Button RETARD");
+    // Serial.println(dash_->get_button1());
+
+
     state_machine.handle_state_machine(mcu_status);
     Serial.println(static_cast<int>(mcu_status.get_state())); //Added so it shits down state
     delay(1000);

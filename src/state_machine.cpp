@@ -1,5 +1,5 @@
 #include "state_machine.hpp"
-// #define ACCDEBUG
+#define ACCDEBUG
 //  initializes the mcu status and pedal handler
 void StateMachine::init_state_machine(MCU_status &mcu_status)
 {
@@ -144,9 +144,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     {
       accumulator->sendPrechargeStartMsg(); // we dont actually need to send this-precharge is automatic
       Serial.println("Sent precharge start msg");
-#ifdef ACCDEBUG
+      #ifdef ACCDEBUG
       Serial.println("Sent precharge start msg");
-#endif
+      #endif
     }
 
     bool accumulator_ready = false;
@@ -160,9 +160,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     {
       accumulator_ready = true;
       Serial.println("Precharge is ready and not timed out");
-#ifdef ACCDEBUG
+      #ifdef ACCDEBUG
       Serial.println("Precharge is ready and not timed out");
-#endif
+      #endif
     }
     else if ((!accumulator->check_precharge_timeout()) && (!accumulator->check_precharge_success()))
     {
@@ -211,22 +211,29 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
   {
+    //uncomet stage 1
+    //^ un do all this when done with stage one diag
 #if DEBUG
 
     // Serial.println("TRACTIVE_SYSTEM_ACTIVE");
     // Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton),
     // mcu_status.get_brake_pedal_active());
 #endif
+    //TODO (Disabled to test error 3/27/23)
+    Serial.println("I made it to stable active"); //Added so it shits down that we made it here
     if (!pm100->check_TS_active())
     {
-      set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+      
+      //set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE); //uncomet stage 1
     }
-    else if (accumulator->check_precharge_timeout())
+    //else if (accumulator->check_precharge_timeout()) //uncomet stage 1
     {
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
     }
-    pm100->inverter_kick(0);
-
+    //pm100->inverter_kick(0); //uncomet stage 1
+    
+    Serial.print("Dash RTD Button");
+    Serial.println(dash_->get_button1());
     // if start button has been pressed and brake pedal is held down, transition to the next state
     if (dash_->get_button1() && mcu_status.get_brake_pedal_active())
     {

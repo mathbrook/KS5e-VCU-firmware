@@ -2,7 +2,7 @@
 
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> DaqCAN_;
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Inverter_CAN_;
-FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> AccumulatorCAN_;
+FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> AccumulatorCAN_;
 
 void InitCAN()
 {
