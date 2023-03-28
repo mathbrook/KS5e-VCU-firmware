@@ -7,6 +7,8 @@ void StateMachine::init_state_machine(MCU_status &mcu_status)
   pedals->init_pedal_handler();
 }
 
+
+
 /* Handle changes in state */
 void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 {
@@ -236,7 +238,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
       Serial.println("TSActive check_precharge_timeout NOT_ACTIVE finished");
     }
-    //pm100->inverter_kick(0); //uncomet stage 1
+    pm100->inverter_kick(0);
     
     Serial.print("Dash RTD Button ");
     Serial.println(dash_->get_button1());
@@ -257,6 +259,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   case MCU_STATE::ENABLING_INVERTER:
   {
     Serial.println("ENABLING INVERTER");
+    pm100->tryToClearMcFault();// added to clear
     pm100->inverter_kick(1);
     if (!pm100->check_TS_active())
     {
@@ -272,13 +275,14 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // inverter enabling timed out
     bool tuff = pm100->check_inverter_enable_timeout();
 
-    if (tuff)
+    if (tuff) // this does something is inverter times out
     {
       Serial.println("Setting state to TS Active from Enabling Inverter");
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
       break;
     }
-
+      pm100->tryToClearMcFault();// added
+      pm100->enable_inverter();
     // motor controller indicates that inverter has enabled within timeout period
     if (pm100->check_inverter_ready())
     {
@@ -349,6 +353,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
     {
+      Serial.print("I enter TRKUE Calc");
       uint8_t max_t = mcu_status.get_max_torque();
       int max_t_actual = max_t * 10;
 
@@ -366,8 +371,8 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     else
     {
       // Serial.println("not calculating torque");
-      // Serial.print("implausibility occured: ");
-      // Serial.println(impl_occ);
+       Serial.print("implausibility occured: ");
+       Serial.println(impl_occ);
       // Serial.printf("no brake implausibility: %d\n", mcu_status.get_no_brake_implausability());
       // Serial.printf("no accel implausibility: %d\n", mcu_status.get_no_accel_implausability());
       // Serial.printf("no accel brake implausibility: %d\n", mcu_status.get_no_accel_brake_implausability());
@@ -388,7 +393,11 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 //}
 #endif
 
-    pm100->command_torque(calculated_torque);
+    //pm100->command_torque(calculated_torque);
+    Serial.print("Calc turke");
+    //Serial.println(calculated_torque);
+    //pm100->command_torque(30); // do not use this. hard coed spin
+    
 
     break;
   }

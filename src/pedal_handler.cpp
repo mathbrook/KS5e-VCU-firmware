@@ -37,6 +37,19 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     torque1 = (int)expTorq;
     #endif
 
+    //johns turke
+     Serial.print("MCU RAW TORQUE: ");
+     Serial.println(calculated_torque);
+     Serial.print("TORQUE 1: ");
+     Serial.println(torque1);
+        Serial.print("TORQUE 2: ");
+        Serial.println(torque2);
+        Serial.print("Accel 1: ");
+        Serial.println(accel1_);
+        Serial.print("Accel 2: ");
+        Serial.println(accel2_);
+
+
     // torque values are greater than the max possible value, set them to max
     if (torque1 > max_torque)
     {
@@ -59,7 +72,8 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         pid_->reset();
         calculated_torque = 0;
     }
-    }else{
+    }
+    else{
         calculated_torque=torque1;
     }
 
@@ -71,6 +85,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     {
         calculated_torque = 0;
     }
+
     // #if DEBUG
     if (timer_debug_raw_torque->check())
     {
@@ -191,7 +206,7 @@ bool PedalHandler::read_pedal_values()
         WriteToDaqCAN(tx_msg2);
     }
     // only uses front brake pedal
-    brake_is_active_ = (brake1_ >= BRAKE_ACTIVE);
+    brake_is_active_ = (brake1_ <= BRAKE_ACTIVE);
     return brake_is_active_;
 }
 
@@ -286,6 +301,8 @@ void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausi
     impl_occ =implausibility_occured_;
 
 }
+
+// idgaf anything below (all wheel speed)
 double PedalHandler::get_wsfr(){
     return current_rpm2;
 }

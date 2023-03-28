@@ -84,10 +84,18 @@ void setup()
 
 void loop()
 {
-
+    digitalWrite(BUZZER, HIGH);
     // Serial.print("Dash RTD Button RETARD");
     // Serial.println(dash_->get_button1());
+    Serial.println("MIN_ACCELERATOR_PEDAL_2 ");
+    //Serial.print(Read_petal());
+    
+    Serial.println(ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED).read_adc(ADC_ACCEL_2_CHANNEL));
+    Serial.println("MIN_ACCELERATOR_PEDAL_1 ");
+    Serial.println(ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED).read_adc(ADC_ACCEL_1_CHANNEL));
 
+    Serial.println("MIN_ACCELERATOR_PEDAL_1 ");
+    Serial.println(ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED).read_adc(ADC_BRAKE_1_CHANNEL));
 
     state_machine.handle_state_machine(mcu_status);
     Serial.println(static_cast<int>(mcu_status.get_state())); //Added so it shits down state
