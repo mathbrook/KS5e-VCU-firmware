@@ -393,7 +393,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 //}
 #endif
 
-    //pm100->command_torque(calculated_torque);
+    pm100->command_torque(calculated_torque);
     Serial.print("Calc turke");
     //Serial.println(calculated_torque);
     //pm100->command_torque(30); // do not use this. hard coed spin
@@ -405,11 +405,11 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
   if (debug_->check())
   {
-    if (dash_->get_button2())
-    {
-      mcu_status.toggle_max_torque(mcu_status.get_torque_mode());
-      mcu_status.set_max_torque(60 * mcu_status.get_torque_mode());
-    }
+    // if (dash_->get_button2())
+    // {
+    //   mcu_status.toggle_max_torque(mcu_status.get_torque_mode());
+    //   mcu_status.set_max_torque(60 * mcu_status.get_torque_mode());
+    // }
     // uint16_t rpm_wsfl = (int)(pedals->get_wsfl()*100);
     // uint16_t rpm_wsfr = (int)(pedals->get_wsfr()*100);
 

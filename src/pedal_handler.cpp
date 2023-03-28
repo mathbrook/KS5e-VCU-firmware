@@ -38,16 +38,18 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     #endif
 
     //johns turke
-     Serial.print("MCU RAW TORQUE: ");
-     Serial.println(calculated_torque);
-     Serial.print("TORQUE 1: ");
-     Serial.println(torque1);
-        Serial.print("TORQUE 2: ");
-        Serial.println(torque2);
-        Serial.print("Accel 1: ");
-        Serial.println(accel1_);
-        Serial.print("Accel 2: ");
-        Serial.println(accel2_);
+    Serial.print("max torque: ");
+    Serial.println(max_torque);
+    Serial.print("MCU RAW TORQUE: ");
+    Serial.println(calculated_torque);
+    Serial.print("TORQUE 1: ");
+    Serial.println(torque1);
+    Serial.print("TORQUE 2: ");
+    Serial.println(torque2);
+    Serial.print("Accel 1: ");
+    Serial.println(accel1_);
+    Serial.print("Accel 2: ");
+    Serial.println(accel2_);
 
 
     // torque values are greater than the max possible value, set them to max
