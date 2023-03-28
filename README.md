@@ -28,6 +28,9 @@ below is a loose flow of the data and what handles what
        
 
 ```
+This is tha basic of the state machien. 
+    the car is set to state
+
 
 ```mermaid
 flowchart TD
