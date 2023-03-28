@@ -25,12 +25,16 @@ below is a loose flow of the data and what handles what
         pedal_handler --> VCU_CAN_OUT;
         state_machine --> VCU_CAN_OUT;
 
-       flowchart TD
+       
+
+```
+
+```mermaid
+flowchart TD
         A[Initalize State Machine] -->|Set State to startup| B(Current state)
         B --> C(Check If Current state == New state) -->|NEW = OLD| B(Current state)
         C --> |New *does not equal* OLD| D(run exit logic)
         D --> E(run exit logic)
         E --> F(run exit logic)
         F --> B(Current State) 
-
-```
+```        
