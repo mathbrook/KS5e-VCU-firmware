@@ -11,8 +11,6 @@ void StateMachine::init_state_machine(MCU_status &mcu_status)
 void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 {
 
-  Serial.print("new state: ");
-  Serial.println(static_cast<int>(new_state));
 
   if (mcu_status.get_state() == new_state)
   {
@@ -141,7 +139,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #if USE_INVERTER
     motor_speed = pm100->getmcMotorRPM();
 #endif
-    pedals->calculate_torque(motor_speed, max_t_actual);
+    // pedals->calculate_torque(motor_speed, max_t_actual);
 
     // end of test block
 #if USE_INVERTER
@@ -176,8 +174,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
     // if TS is above HV threshold, move to Tractive System Active
 #if USE_INVERTER
-    Serial.print("check_TS_active?: ");
-    Serial.println(pm100->check_TS_active());
 
     if (pm100->check_TS_active() && accumulator_ready) // TODO somewhere here, dont allow TS active if a fault is known
     {
@@ -305,7 +301,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #endif
     if (accumulator->check_precharge_timeout())
     { // if the precharge hearbeat has timed out, we know it is no longer enabled-> the SDC is open
-
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
       break;
     }
@@ -335,18 +330,14 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #endif
       calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
     }
-    // Serial.print("calculated torque: ");
-    // Serial.println(calculated_torque);
+    Serial.println("calculated_torque");
+    Serial.println(calculated_torque);
+    
 #if USE_INVERTER
     pm100->command_torque(calculated_torque);
 #endif
     break;
   }
-  }
-
-  if (debug_->check())
-  {
-
   }
   // TODO update the dash here properly
 }

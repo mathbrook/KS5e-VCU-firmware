@@ -14,7 +14,6 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 {
     int calculated_torque = 0;
     
-    Serial.printf("%i, %i\n", accel1_, accel2_);
     int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
                       END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,
@@ -29,7 +28,8 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         torque2 = max_torque;
     }
     // compare torques to check for accelerator implausibility
-    // calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
+    
+    calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
 
     if (calculated_torque > max_torque)
     {
@@ -53,10 +53,15 @@ bool PedalHandler::read_pedal_values()
         ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
     brake1_ =
         ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+    
     steering_angle_ = pedal_ADC.read_adc(3);
 
-    // This is the code to print raw ADC readings vs the filtered one
+    Serial.println("accel1, accel2");
+    Serial.println(accel1_);
+    Serial.println(accel2_);
 
+    // This is the code to print raw ADC readings vs the filtered one
+    
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
     VCUPedalReadings.set_accelerator_pedal_2(accel2_);
     VCUPedalReadings.set_brake_transducer_1(brake1_);
@@ -143,7 +148,7 @@ void PedalHandler::verify_pedals(
                      START_ACCELERATOR_PEDAL_2))) &&
         brake_is_active_)
     {
-
+        
         accel_and_brake_plausible = false;
     }
     else if ((accel1_ <
@@ -154,8 +159,7 @@ void PedalHandler::verify_pedals(
                START_ACCELERATOR_PEDAL_2)))
     {
         accel_and_brake_plausible = true;
-        implausibility_occured_ =
-            false; // only here do we want to reset this flag
+        implausibility_occured_ = false; // only here do we want to reset this flag
     }
     else
     {
