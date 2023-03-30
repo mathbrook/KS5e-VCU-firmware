@@ -6,6 +6,7 @@ void Inverter::doStartup()
 {
     writeEnableNoTorque();
     writeControldisableWithZeros();
+    Serial.println("PLZ BE THIS");
     writeEnableNoTorque();
 
     timer_inverter_enable->reset();
@@ -138,13 +139,15 @@ bool Inverter::check_inverter_ready()
     #endif
     
     bool inverter_is_enabled = pm100State.get_inverter_enable_state();
-    Serial.println("penis");
-    Serial.println(inverter_is_enabled);
-    Serial.println("Dick");
+    
+    Serial.print(inverter_is_enabled);
+    //Serial.println("   Dick");
+    //delay(1000);
     if (inverter_is_enabled)
     {
         Serial.println("resting inverter reset timer");
         timer_inverter_enable->reset();
+        
     }
     return inverter_is_enabled;
 }
@@ -194,6 +197,7 @@ void Inverter::tryToClearMcFault()
 // release the electrons they too hot
 void Inverter::forceMCdischarge()
 {
+    Serial.println("FORCE DISCHARGE");
     elapsedMillis dischargeCountdown = 0;
     while (dischargeCountdown <= 100)
     {
@@ -227,8 +231,11 @@ int Inverter::getmcMotorRPM()
 // returns false if mc bus voltage is below min, true if otherwise
 bool Inverter::check_TS_active()
 {
+    /*
     Serial.print("MCBV:");
     Serial.println(getmcBusVoltage());
+    */
+
     if ((getmcBusVoltage() < MIN_HV_VOLTAGE))
     {
 #if DEBUG

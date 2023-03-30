@@ -88,8 +88,8 @@ int ReadDaqCAN(CAN_message_t &msg)
     Serial.print("ReadDaqCAN: ");
     */
     for (int i = 0; i < 8; i++) {
-        Serial.print(msg.buf[i]); // print each byte in the array
-        Serial.print(", ");
+        //Serial.print(msg.buf[i]); // print each byte in the array
+        //Serial.print(", ");
     }
     //Serial.println();
     return ret;

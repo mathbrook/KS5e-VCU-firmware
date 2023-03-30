@@ -253,14 +253,14 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       #endif
       set_state(mcu_status, MCU_STATE::ENABLING_INVERTER);
     }
-    Serial.print("At end of TSActive I made it here 2222");
+    //Serial.print("At end of TSActive I made it here 2222");
     break;
   }
   case MCU_STATE::ENABLING_INVERTER:
   {
-    Serial.println("ENABLING INVERTER");
-    pm100->tryToClearMcFault();// added to clear
-    pm100->inverter_kick(1);
+    //Serial.println("ENABLING INVERTER");
+    //pm100->tryToClearMcFault();// added to clear
+    //pm100->inverter_kick(1);
     if (!pm100->check_TS_active())
     {
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -274,6 +274,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     // inverter enabling timed out
     bool tuff = pm100->check_inverter_enable_timeout();
+    //pm100->enable_inverter(); // carefull this may mess things up
+
+    
 
     if (tuff) // this does something is inverter times out
     {
@@ -281,15 +284,23 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
       break;
     }
-      pm100->tryToClearMcFault();// added
+      
+      
+      //pm100->tryToClearMcFault();// added
       pm100->enable_inverter();
+      //Serial.print("Raw State of the invert   ");
+      //Serial.println(pm100->pm100State.get_inverter_enable_state());
+  //pm100State.get_inverter_enable_state();
+
     // motor controller indicates that inverter has enabled within timeout period
     if (pm100->check_inverter_ready())
+    
     {
       Serial.println("Setting state to Waiting Ready to Drive Sound");
       set_state(mcu_status, MCU_STATE::WAITING_READY_TO_DRIVE_SOUND);
       break;
     }
+    
     break;
   }
   case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
@@ -353,7 +364,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
     {
-      Serial.print("I enter TRKUE Calc");
+      //Serial.print("I enter TRKUE Calc");
       uint8_t max_t = mcu_status.get_max_torque();
       int max_t_actual = max_t * 10;
 
@@ -394,10 +405,10 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #endif
 
     pm100->command_torque(calculated_torque);
-    Serial.print("Calc turke");
+    //Serial.print("Calc turke");
     //Serial.println(calculated_torque);
     //pm100->command_torque(30); // do not use this. hard coed spin
-    
+    //delay(1000);
 
     break;
   }
