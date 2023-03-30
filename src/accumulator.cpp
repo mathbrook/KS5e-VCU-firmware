@@ -27,8 +27,6 @@ int Accumulator::get_precharge_state()
 // returns true if precharge has succeeeded or not
 bool Accumulator::check_precharge_success()
 {
-    // Serial.print("pchgState: ");
-    // Serial.println(pchgState);
     return (pchgState == 2);
 }
 void Accumulator::resetPchgState(){
@@ -47,12 +45,8 @@ void Accumulator::updateAccumulatorCAN()
 {
     CAN_message_t rxMsg;
     char lineBuffer[200];
-    //Serial.println("Update Acc can");
     if (ReadAccumulatorCAN(rxMsg))
     {
-        // WriteCANToAccumulator(rxMsg);
-        //Serial.println("In IF, ID: ");
-        //Serial.print(rxMsg.id);
         switch (rxMsg.id)
         {
         case (0x69):
@@ -61,11 +55,6 @@ void Accumulator::updateAccumulatorCAN()
             pchgState = rxMsg.buf[0];
             int accVoltage = rxMsg.buf[1] + (rxMsg.buf[2] * 100);
             int tsVoltage = rxMsg.buf[3] + (rxMsg.buf[4] * 100);
-            sprintf(lineBuffer, "precharging: state: %d ACV: %dv TSV: %dv\n", pchgState, accVoltage, tsVoltage);
-            #ifdef ACCDEBUG
-            Serial.print(millis());
-            Serial.println(lineBuffer);
-            #endif
             break;
         }
         case (ID_BMS_INFO):

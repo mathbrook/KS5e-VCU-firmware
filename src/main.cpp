@@ -66,11 +66,11 @@ MCU_status mcu_status = MCU_status();
 void setup()
 {
     delay(100);
-    Serial.println("setup");
+    
     InitCAN();
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
-    Serial.println("initted mcu status");
+    
     pinMode(BUZZER, OUTPUT); //TODO write gpio initialization function
     digitalWrite(BUZZER, LOW);
     pinMode(LOWSIDE1, OUTPUT);
@@ -84,23 +84,10 @@ void setup()
 
 void loop()
 {
-    // digitalWrite(BUZZER, HIGH);
-    // Serial.print("Dash RTD Button RETARD");
-    // Serial.println(dash_->get_button1());
-
-    /*
-    Serial.println("MIN_ACCELERATOR_PEDAL_2 ");
-    Serial.println(ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED).read_adc(ADC_ACCEL_2_CHANNEL));
-    Serial.println("MIN_ACCELERATOR_PEDAL_1 ");
-    Serial.println(ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED).read_adc(ADC_ACCEL_1_CHANNEL));
-    Serial.println("MIN_BRAKE_PEDAL_1 ");
-    Serial.println(ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED).read_adc(ADC_BRAKE_1_CHANNEL));
-    */
 
 
     state_machine.handle_state_machine(mcu_status);
-   // Serial.println(static_cast<int>(mcu_status.get_state())); //Added so it shits down state
-    //delay(1000);
+   
     if (timer_can_update.check())
     {
         // Send Main Control Unit status message
@@ -110,12 +97,6 @@ void loop()
         tx_msg.len = sizeof(mcu_status);
         WriteCANToInverter(tx_msg);
     }
-//   if(Serial.available()){
-//     String message=(Serial.readString());
-//     int userreq=message.toInt();
-//     Serial.println(userreq);
-//     //Validation for inputs being int between 0-90 degrees
-//         pump_dac.setVoltage(userreq, false);
-//     }
-    //Serial.println(""); 
+
+    
 }

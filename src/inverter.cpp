@@ -6,7 +6,6 @@ void Inverter::doStartup()
 {
     writeEnableNoTorque();
     writeControldisableWithZeros();
-    Serial.println("PLZ BE THIS");
     writeEnableNoTorque();
 
     timer_inverter_enable->reset();
@@ -70,9 +69,6 @@ void Inverter::updateInverterCAN()
 
 void Inverter::debug_print()
 {
-    pm100temp1.print();
-    pm100temp2.print();
-    pm100temp3.print();
 }
 
 void Inverter::writeControldisableWithZeros()
@@ -81,10 +77,6 @@ void Inverter::writeControldisableWithZeros()
     ctrlMsg.len = 8;
     ctrlMsg.id = 0xC0; // OUR CONTROLLER
     memcpy(ctrlMsg.buf, disableWithZeros, sizeof(ctrlMsg.buf));
-    if (WriteCANToInverter(ctrlMsg) > 0)
-    {
-        Serial.println("****DISABLE****");
-    }
 }
 
 void Inverter::writeEnableNoTorque()
@@ -133,19 +125,15 @@ bool Inverter::command_torque(int torque)
 // 
 bool Inverter::check_inverter_ready()
 {
-    #if DEBUG
-     Serial.println("checking if inverter is ready");
-     pm100State.print();
-    #endif
-    
+
     bool inverter_is_enabled = pm100State.get_inverter_enable_state();
     
-    Serial.print(inverter_is_enabled);
-    //Serial.println("   Dick");
+    
+    
     //delay(1000);
     if (inverter_is_enabled)
     {
-        Serial.println("resting inverter reset timer");
+        
         timer_inverter_enable->reset();
         
     }
@@ -197,7 +185,7 @@ void Inverter::tryToClearMcFault()
 // release the electrons they too hot
 void Inverter::forceMCdischarge()
 {
-    Serial.println("FORCE DISCHARGE");
+    
     elapsedMillis dischargeCountdown = 0;
     while (dischargeCountdown <= 100)
     {
@@ -232,14 +220,14 @@ int Inverter::getmcMotorRPM()
 bool Inverter::check_TS_active()
 {
     /*
-    Serial.print("MCBV:");
-    Serial.println(getmcBusVoltage());
+    
+    
     */
 
     if ((getmcBusVoltage() < MIN_HV_VOLTAGE))
     {
 #if DEBUG
-        // Serial.println("Setting state to TS Not Active, because TS is below HV threshold");
+        
 #endif
         // set_state(MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
         return false;
