@@ -6,21 +6,22 @@ FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> AccumulatorCAN_;
 
 void InitCAN()
 {
-    //Daqcan only needs to send, but fast
+    // Daqcan only needs to send, but fast
     DaqCAN_.begin();
     DaqCAN_.setBaudRate(500000);
-    DaqCAN_.setMaxMB(NUM_TX_MAILBOXES+NUM_RX_MAILBOXES);
+    DaqCAN_.setMaxMB(NUM_TX_MAILBOXES + NUM_RX_MAILBOXES);
     for (int i = 0; i < (NUM_RX_MAILBOXES - 1); i++)
     {
         DaqCAN_.setMB((FLEXCAN_MAILBOX)i, RX, STD);
     }
-    for(int i = NUM_RX_MAILBOXES;i<(NUM_TX_MAILBOXES+NUM_RX_MAILBOXES);i++){
-        DaqCAN_.setMB((FLEXCAN_MAILBOX)i,TX,STD);
+    for (int i = NUM_RX_MAILBOXES; i < (NUM_TX_MAILBOXES + NUM_RX_MAILBOXES); i++)
+    {
+        DaqCAN_.setMB((FLEXCAN_MAILBOX)i, TX, STD);
     }
     DaqCAN_.setMB((FLEXCAN_MAILBOX)5, RX, EXT);
     DaqCAN_.mailboxStatus();
-    
-    //inverter can must send & receive, 6rx MB and 2tx MB
+
+    // inverter can must send & receive, 6rx MB and 2tx MB
     Inverter_CAN_.begin();
     Inverter_CAN_.setBaudRate(125000);
     Inverter_CAN_.setMaxMB(NUM_TX_MAILBOXES + NUM_RX_MAILBOXES);
@@ -34,7 +35,7 @@ void InitCAN()
     }
     Inverter_CAN_.mailboxStatus();
 
-    //accumulator can must send & receive, 6rx MB and 2tx MB
+    // accumulator can must send & receive, 6rx MB and 2tx MB
 
     AccumulatorCAN_.begin();
     AccumulatorCAN_.setBaudRate(500000);
@@ -63,8 +64,9 @@ int WriteCANToAccumulator(CAN_message_t &msg)
     // DaqCAN_.write(msg);
     return AccumulatorCAN_.write(msg);
 }
-bool writeCANToJUSTAccumulator(CAN_message_t &msg){
-    return AccumulatorCAN_.write(msg);  
+bool writeCANToJUSTAccumulator(CAN_message_t &msg)
+{
+    return AccumulatorCAN_.write(msg);
 }
 int WriteToDaqCAN(CAN_message_t &msg)
 {
@@ -85,7 +87,7 @@ int ReadInverterCAN(CAN_message_t &msg)
 
 int ReadAccumulatorCAN(CAN_message_t &msg)
 {
-    int ret = AccumulatorCAN_.read(msg); 
+    int ret = AccumulatorCAN_.read(msg);
 
     return ret;
 }

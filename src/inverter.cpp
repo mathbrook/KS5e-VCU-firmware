@@ -20,7 +20,6 @@ void Inverter::updateInverterCAN()
 
     CAN_message_t rxMsg;
 
-
     if (ReadInverterCAN(rxMsg))
     {
         WriteToDaqCAN(rxMsg);
@@ -90,7 +89,7 @@ void Inverter::writeEnableNoTorque()
 
 // returns false if the command was unable to be sent
 bool Inverter::command_torque(int torque)
-{ 
+{
     uint8_t torquePart1 = torque % 256;
     uint8_t torquePart2 = torque / 256;
     uint8_t angularVelocity1 = 0, angularVelocity2 = 0;
@@ -122,20 +121,17 @@ bool Inverter::command_torque(int torque)
     return true;
 }
 
-// 
+//
 bool Inverter::check_inverter_ready()
 {
 
     bool inverter_is_enabled = pm100State.get_inverter_enable_state();
-    
-    
-    
-    //delay(1000);
+
+    // delay(1000);
     if (inverter_is_enabled)
     {
-        
+
         timer_inverter_enable->reset();
-        
     }
     return inverter_is_enabled;
 }
@@ -185,7 +181,7 @@ void Inverter::tryToClearMcFault()
 // release the electrons they too hot
 void Inverter::forceMCdischarge()
 {
-    
+
     elapsedMillis dischargeCountdown = 0;
     while (dischargeCountdown <= 100)
     {
@@ -220,15 +216,13 @@ int Inverter::getmcMotorRPM()
 bool Inverter::check_TS_active()
 {
     /*
-    
-    
+
+
     */
 
     if ((getmcBusVoltage() < MIN_HV_VOLTAGE))
     {
-#if DEBUG
-        
-#endif
+
         // set_state(MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
         return false;
     }
@@ -240,7 +234,7 @@ bool Inverter::check_TS_active()
 // if the inverter becomes disabled, return to Tractive system active.
 // returns true if the inverter is disabled
 bool Inverter::check_inverter_disabled()
-{;
+{
+    ;
     return (!pm100State.get_inverter_enable_state());
 }
-

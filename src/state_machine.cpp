@@ -90,9 +90,6 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
     mcu_status.set_activate_buzzer(true);
     digitalWrite(BUZZER, HIGH);
     timer_ready_sound->reset();
-#if DEBUG
-
-#endif
     break;
   }
   case MCU_STATE::READY_TO_DRIVE:
@@ -100,9 +97,6 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
     // enable low-side outputs
     digitalWrite(LOWSIDE1, HIGH);
     digitalWrite(LOWSIDE2, HIGH);
-#if DEBUG
-
-#endif
     break;
   }
   }
@@ -145,16 +139,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     if (!accumulator->GetIfPrechargeAttempted())
     {
       accumulator->sendPrechargeStartMsg(); // we dont actually need to send this-precharge is automatic
-
-#ifdef ACCDEBUG
-
-#endif
     }
 
     bool accumulator_ready = false;
-    
-
-    
 
     // *we are ok up to here*
 
@@ -162,18 +149,10 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     if (accumulator->check_precharge_success() && (!accumulator->check_precharge_timeout()))
     {
       accumulator_ready = true;
-#ifdef ACCDEBUG
-
-#endif
     }
     else if ((!accumulator->check_precharge_timeout()) && (!accumulator->check_precharge_success()))
     {
       // if the accumulator hasnt finished precharge and it hasnt timed out yet, break
-      
-
-#ifdef ACCDEBUG
-
-#endif
 
       break;
     }
@@ -182,27 +161,12 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       // attempt pre-charge again if the pre-charge has timed out
       // TODO add in re-try limitation number
       accumulator->sendPrechargeStartMsg();
-#ifdef ACCDEBUG
-
-#endif
       break;
     }
-    // else
-    /*
-    {
-      // accumulator has timed out but it also pre-charged, continue
-       accumulator_ready = true;
-      
-
-    }
-  */
     // if TS is above HV threshold, move to Tractive System Active
     if (pm100->check_TS_active() && accumulator_ready) // TODO somewhere here, dont allow TS active if a fault is known
     {
 
-#if DEBUG
-
-#endif
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
     }
 
@@ -210,13 +174,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
   {
-    // uncomet stage 1
-    //^ un do all this when done with stage one diag
-#if DEBUG
 
-    
-    // mcu_status.get_brake_pedal_active());
-#endif
     // TODO (Disabled to test error 3/27/23)
 
     if (!pm100->check_TS_active())
@@ -231,20 +189,12 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
     pm100->inverter_kick(0);
 
-    
-
-    
-
     // if start button has been pressed and brake pedal is held down, transition to the next state
     if (dash_->get_button1() && mcu_status.get_brake_pedal_active())
     {
-
-#if DEBUG
-
-#endif
       set_state(mcu_status, MCU_STATE::ENABLING_INVERTER);
     }
-    
+
     break;
   }
   case MCU_STATE::ENABLING_INVERTER:
@@ -276,7 +226,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     // pm100->tryToClearMcFault();// added
     pm100->enable_inverter();
-    
 
     // pm100State.get_inverter_enable_state();
 
@@ -352,7 +301,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
     {
-      
+
       uint8_t max_t = mcu_status.get_max_torque();
       int max_t_actual = max_t * 10;
 
@@ -369,7 +318,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // }
     else
     {
-      
     }
 
     pm100->command_torque(calculated_torque);
@@ -388,8 +336,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // uint16_t rpm_wsfl = (int)(pedals->get_wsfl()*100);
     // uint16_t rpm_wsfr = (int)(pedals->get_wsfr()*100);
 
-    
-    
     //  mcu_status.get_brake_pedal_active());
 
     // pm100->debug_print();

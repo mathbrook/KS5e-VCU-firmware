@@ -33,13 +33,6 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
     double accel_percent = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, 1000);
     accel_percent /= 1000;
-#if EXP_TORQUE_CURVE
-    // torque = 227.04x^3 - 90.599x^2 + 105.58x + 0.0062
-    double expTorq = 227.04 * (pow(accel_percent, 3)) - 90.599 * (pow(accel_percent, 2)) + 105.58 * accel_percent + 0.0062;
-    expTorq *= 10;
-    expTorq = round(expTorq);
-    torque1 = (int)expTorq;
-#endif
 
     // torque values are greater than the max possible value, set them to max
     if (torque1 > max_torque)
@@ -80,223 +73,192 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         calculated_torque = 0;
     }
 
-    // #if DEBUG
     if (timer_debug_raw_torque->check())
     {
-
-#ifdef EXP_TORQUE_CURVE
-#endif
-    }
-    // #endif
-    // if (abs(motor_speed) <= 1000)
-    //     {
-    //         if (calculated_torque >= 1600) //60NM
-    //         {
-    //             calculated_torque = 1600; // ideally limit torque at low RPMs, see how high this number can be raised
-    //         }
-    //     }
-    //     uint32_t calculated_power =  (calculated_torque/10)*motor_speed*0.104725;
-    //     if(calculated_power>80000){
-    //         calculated_torque=((80000*9.54)/motor_speed)*10;
-    //     }
-    //     if(calculated_torque<100){
-    //         calculated_torque=0;
-    //     }
-
-    return calculated_torque;
-}
-
-// returns true if the brake pedal is active
-bool PedalHandler::read_pedal_values()
-{
-    /* Filter ADC readings */
-
-    accel1_ = ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
-    accel2_ = ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
-    brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
-    steering_angle_ = pedal_ADC.read_adc(3);
-    // if (timer_debug_raw_torque->check()) {
-
-    // };
-    // This is the code to print raw ADC readings vs the filtered one
-
-    VCUPedalReadings.set_accelerator_pedal_1(accel1_);
-    VCUPedalReadings.set_accelerator_pedal_2(accel2_);
-    VCUPedalReadings.set_brake_transducer_1(brake1_);
-    VCUPedalReadings.set_brake_transducer_2(steering_angle_);
-    CAN_message_t tx_msg;
-    CAN_message_t tx_msg2;
-    // Send Main Control Unit pedal reading message
-    VCUPedalReadings.write(tx_msg.buf);
-    tx_msg.id = ID_VCU_PEDAL_READINGS;
-    tx_msg.len = sizeof(VCUPedalReadings);
-    tx_msg2.id = ID_VCU_WS_READINGS;
-    tx_msg.len = 8;
-    uint32_t rpm_wsfl = (int)(current_rpm * 100);
-    uint32_t rpm_wsfr = (int)(current_rpm2 * 100);
-    memcpy(&tx_msg2.buf[0], &rpm_wsfl, sizeof(rpm_wsfl));
-    memcpy(&tx_msg2.buf[4], &rpm_wsfr, sizeof(rpm_wsfr));
-
-    // write out the actual accel command over CAN
-    if (pedal_out->check())
-    {
-        WriteToDaqCAN(tx_msg);
-        WriteToDaqCAN(tx_msg2);
-    }
-    // only uses front brake pedal
-    brake_is_active_ = (brake1_ <= BRAKE_ACTIVE);
-    return brake_is_active_;
-}
-
-void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible, bool &impl_occ)
-{
-    int max_torque = TORQUE_1 * 10;
-    int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
-    int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
-    float torqSum = abs(torque1 - torque2);
-    float torqAvg = (torque1 + torque2) / 2;
-    float torqDiff = torqSum / torqAvg;
-
-    if (accel1_ < MIN_ACCELERATOR_PEDAL_1 || accel1_ > MAX_ACCELERATOR_PEDAL_1)
-    {
-        accel_is_plausible = false;
-#if DEBUG
-
-#endif
-    }
-    else if (accel2_ < MIN_ACCELERATOR_PEDAL_2 || accel2_ > MAX_ACCELERATOR_PEDAL_2)
-    {
-        accel_is_plausible = false;
-#if DEBUG
-
-#endif
-    }
-    // check that the pedals are reading within 10% of each other
-    // sum of the two readings should be within 10% of the average travel
-    // T.4.2.4
-    //     else if (torqDiff*100 > 50)
-    //     {
-    // #if DEBUG
-
-    // #endif
-    //         accel_is_plausible = false;
-    //     }
-    else
-    {
-#if DEBUG
-
-#endif
-        // mcu_status.set_no_accel_implausability(true);
-        accel_is_plausible = true;
+        return calculated_torque;
     }
 
-    // BSE check
-    // EV.5.6
-    // FSAE T.4.3.4
-    if (brake1_ < 200 || brake1_ > 4000)
+    // returns true if the brake pedal is active
+    bool PedalHandler::read_pedal_values()
     {
-        brake_is_plausible = false;
-    }
-    else
-    {
-        brake_is_plausible = true;
-    }
+        /* Filter ADC readings */
 
-    // FSAE EV.5.7
-    // APPS/Brake Pedal Plausability Check
-    if (
-        (
-            (accel1_ > ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1) / 4 + START_ACCELERATOR_PEDAL_1)) ||
-            (accel2_ > ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2) / 4 + START_ACCELERATOR_PEDAL_2))) &&
-        brake_is_active_)
-    {
+        accel1_ = ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
+        accel2_ = ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
+        brake1_ = ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+        steering_angle_ = pedal_ADC.read_adc(3);
+        // if (timer_debug_raw_torque->check()) {
 
-        accel_and_brake_plausible = false;
-    }
-    else if (
-        (accel1_ < ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1) / 20 + START_ACCELERATOR_PEDAL_1)) &&
-        (accel2_ < ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2) / 20 + START_ACCELERATOR_PEDAL_2)))
-    {
-        accel_and_brake_plausible = true;
-        implausibility_occured_ = false; // only here do we want to reset this flag
-    }
-    else
-    {
-        accel_and_brake_plausible = true;
-    }
+        // };
+        // This is the code to print raw ADC readings vs the filtered one
 
-    if ((!accel_and_brake_plausible) || (!brake_is_plausible) || (!accel_is_plausible))
-    {
-        implausibility_occured_ = true;
-    }
+        VCUPedalReadings.set_accelerator_pedal_1(accel1_);
+        VCUPedalReadings.set_accelerator_pedal_2(accel2_);
+        VCUPedalReadings.set_brake_transducer_1(brake1_);
+        VCUPedalReadings.set_brake_transducer_2(steering_angle_);
+        CAN_message_t tx_msg;
+        CAN_message_t tx_msg2;
+        // Send Main Control Unit pedal reading message
+        VCUPedalReadings.write(tx_msg.buf);
+        tx_msg.id = ID_VCU_PEDAL_READINGS;
+        tx_msg.len = sizeof(VCUPedalReadings);
+        tx_msg2.id = ID_VCU_WS_READINGS;
+        tx_msg.len = 8;
+        uint32_t rpm_wsfl = (int)(current_rpm * 100);
+        uint32_t rpm_wsfr = (int)(current_rpm2 * 100);
+        memcpy(&tx_msg2.buf[0], &rpm_wsfl, sizeof(rpm_wsfl));
+        memcpy(&tx_msg2.buf[4], &rpm_wsfr, sizeof(rpm_wsfr));
 
-    impl_occ = implausibility_occured_;
-}
-
-// idgaf anything below (all wheel speed)
-double PedalHandler::get_wsfr()
-{
-    return current_rpm2;
-}
-double PedalHandler::get_wsfl()
-{
-    return current_rpm;
-}
-void PedalHandler::get_ws()
-{
-    unsigned long test = millis();
-    if ((test - current_rpm_change_time) > RPM_TIMEOUT)
-    {
-        // rpm.data = 0;
-        current_rpm = 0;
-    }
-    if (wsfl_->available())
-    {
-        // average several reading together
-        sum = sum + wsfl_->read();
-        count = count + 1;
-        current_rpm_change_time = millis();
-        if (count > 1)
+        // write out the actual accel command over CAN
+        if (pedal_out->check())
         {
-            float testRpm = wsfl_->countToFrequency(sum / count) * 60 / 18;
-            current_rpm = testRpm;
+            WriteToDaqCAN(tx_msg);
+            WriteToDaqCAN(tx_msg2);
+        }
+        // only uses front brake pedal
+        brake_is_active_ = (brake1_ <= BRAKE_ACTIVE);
+        return brake_is_active_;
+    }
 
-            /*if ( testRpm - prev_rpm < 1)
+    void PedalHandler::verify_pedals(bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible, bool &impl_occ)
+    {
+        int max_torque = TORQUE_1 * 10;
+        int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
+        int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);
+        float torqSum = abs(torque1 - torque2);
+        float torqAvg = (torque1 + torque2) / 2;
+        float torqDiff = torqSum / torqAvg;
+
+        if (accel1_ < MIN_ACCELERATOR_PEDAL_1 || accel1_ > MAX_ACCELERATOR_PEDAL_1)
+        {
+            accel_is_plausible = false;
+        }
+        else if (accel2_ < MIN_ACCELERATOR_PEDAL_2 || accel2_ > MAX_ACCELERATOR_PEDAL_2)
+        {
+            accel_is_plausible = false;
+        }
+        // check that the pedals are reading within 10% of each other
+        // sum of the two readings should be within 10% of the average travel
+        // T.4.2.4
+        //     else if (torqDiff*100 > 50)
+        //     {
+
+        // #endif
+        //         accel_is_plausible = false;
+        //     }
+        else
+        {
+            // mcu_status.set_no_accel_implausability(true);
+            accel_is_plausible = true;
+        }
+
+        // BSE check
+        // EV.5.6
+        // FSAE T.4.3.4
+        if (brake1_ < 200 || brake1_ > 4000)
+        {
+            brake_is_plausible = false;
+        }
+        else
+        {
+            brake_is_plausible = true;
+        }
+
+        // FSAE EV.5.7
+        // APPS/Brake Pedal Plausability Check
+        if (
+            (
+                (accel1_ > ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1) / 4 + START_ACCELERATOR_PEDAL_1)) ||
+                (accel2_ > ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2) / 4 + START_ACCELERATOR_PEDAL_2))) &&
+            brake_is_active_)
+        {
+
+            accel_and_brake_plausible = false;
+        }
+        else if (
+            (accel1_ < ((END_ACCELERATOR_PEDAL_1 - START_ACCELERATOR_PEDAL_1) / 20 + START_ACCELERATOR_PEDAL_1)) &&
+            (accel2_ < ((END_ACCELERATOR_PEDAL_2 - START_ACCELERATOR_PEDAL_2) / 20 + START_ACCELERATOR_PEDAL_2)))
+        {
+            accel_and_brake_plausible = true;
+            implausibility_occured_ = false; // only here do we want to reset this flag
+        }
+        else
+        {
+            accel_and_brake_plausible = true;
+        }
+
+        if ((!accel_and_brake_plausible) || (!brake_is_plausible) || (!accel_is_plausible))
+        {
+            implausibility_occured_ = true;
+        }
+
+        impl_occ = implausibility_occured_;
+    }
+
+    // idgaf anything below (all wheel speed)
+    double PedalHandler::get_wsfr()
+    {
+        return current_rpm2;
+    }
+    double PedalHandler::get_wsfl()
+    {
+        return current_rpm;
+    }
+    void PedalHandler::get_ws()
+    {
+        unsigned long test = millis();
+        if ((test - current_rpm_change_time) > RPM_TIMEOUT)
+        {
+            // rpm.data = 0;
+            current_rpm = 0;
+        }
+        if (wsfl_->available())
+        {
+            // average several reading together
+            sum = sum + wsfl_->read();
+            count = count + 1;
+            current_rpm_change_time = millis();
+            if (count > 1)
             {
-              current_rpm = testRpm;
-              prev_rpm = testRpm;
-            }*/
+                float testRpm = wsfl_->countToFrequency(sum / count) * 60 / 18;
+                current_rpm = testRpm;
 
-            sum = 0;
-            count = 0;
-            // prev_rpm = testRpm;
+                /*if ( testRpm - prev_rpm < 1)
+                {
+                  current_rpm = testRpm;
+                  prev_rpm = testRpm;
+                }*/
+
+                sum = 0;
+                count = 0;
+                // prev_rpm = testRpm;
+            }
+        }
+        unsigned long test2 = millis();
+        if ((test2 - current_rpm_change_time2) > RPM_TIMEOUT)
+        {
+            // rpm.data = 0;
+            current_rpm2 = 0;
+        }
+        if (wsfr_->available())
+        {
+            // average several reading together
+            sum2 = sum2 + wsfr_->read();
+            count2 = count2 + 1;
+            current_rpm_change_time2 = millis();
+            if (count2 > 1)
+            {
+                float testRpm2 = wsfr_->countToFrequency(sum2 / count2) * 60 / 18;
+                current_rpm2 = testRpm2;
+                /*if ( testRpm2 - prev_rpm2 < 1)
+                {
+                  current_rpm2 = testRpm2;
+                  prev_rpm2 = testRpm2;
+                }*/
+
+                sum2 = 0;
+                count2 = 0;
+                prev_rpm2 = testRpm2;
+            }
         }
     }
-    unsigned long test2 = millis();
-    if ((test2 - current_rpm_change_time2) > RPM_TIMEOUT)
-    {
-        // rpm.data = 0;
-        current_rpm2 = 0;
-    }
-    if (wsfr_->available())
-    {
-        // average several reading together
-        sum2 = sum2 + wsfr_->read();
-        count2 = count2 + 1;
-        current_rpm_change_time2 = millis();
-        if (count2 > 1)
-        {
-            float testRpm2 = wsfr_->countToFrequency(sum2 / count2) * 60 / 18;
-            current_rpm2 = testRpm2;
-            /*if ( testRpm2 - prev_rpm2 < 1)
-            {
-              current_rpm2 = testRpm2;
-              prev_rpm2 = testRpm2;
-            }*/
-
-            sum2 = 0;
-            count2 = 0;
-            prev_rpm2 = testRpm2;
-        }
-    }
-}

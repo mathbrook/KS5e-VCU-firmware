@@ -17,11 +17,9 @@ void Accumulator::sendPrechargeStartMsg()
     WriteCANToAccumulator(ctrlMsg);
 }
 
-
 int Accumulator::get_precharge_state()
 {
     return pchgState;
-    
 }
 
 // returns true if precharge has succeeeded or not
@@ -29,8 +27,9 @@ bool Accumulator::check_precharge_success()
 {
     return (pchgState == 2);
 }
-void Accumulator::resetPchgState(){
-    pchgState=0;
+void Accumulator::resetPchgState()
+{
+    pchgState = 0;
     return;
 }
 
@@ -64,7 +63,7 @@ void Accumulator::updateAccumulatorCAN()
         }
         case (ID_BMS_SOC):
         {
-            //forward message to dash
+            // forward message to dash
             WriteCANToInverter(rxMsg);
             break;
         }

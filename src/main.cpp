@@ -39,7 +39,7 @@ Metro pm100speedInspection = Metro(500, 1);
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(100, 1);
 int temporarydisplaytime = 0;
-//PID shit
+// PID shit
 volatile double current_rpm, set_rpm, throttle_out;
 double KP = D_KP;
 double KI = D_KI;
@@ -49,7 +49,7 @@ double OUTPUT_MAX = D_OUTPUT_MAX;
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 // timers for VCU state out:
 Metro timer_can_update = Metro(100, 1);
-//Wheel speed shit 
+// Wheel speed shit
 FreqMeasureMulti wsfl;
 FreqMeasureMulti wsfr;
 
@@ -57,7 +57,7 @@ FreqMeasureMulti wsfr;
 Dashboard dash;
 Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send);
 Accumulator accum(&pchgMsgTimer);
-PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_rpm, &set_rpm, &throttle_out,&wsfl,&wsfr);
+PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
 
@@ -66,18 +66,18 @@ MCU_status mcu_status = MCU_status();
 void setup()
 {
     delay(100);
-    
+
     InitCAN();
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
-    
-    pinMode(BUZZER, OUTPUT); //TODO write gpio initialization function
+
+    pinMode(BUZZER, OUTPUT); // TODO write gpio initialization function
     digitalWrite(BUZZER, LOW);
     pinMode(LOWSIDE1, OUTPUT);
     pinMode(LOWSIDE2, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
     // pinMode(WSFR, INPUT_PULLUP);
-    mcu_status.set_inverter_powered(true); //this means nothing anymore
+    mcu_status.set_inverter_powered(true); // this means nothing anymore
     mcu_status.set_max_torque(TORQUE_1);
     state_machine.init_state_machine(mcu_status);
 }
@@ -85,9 +85,8 @@ void setup()
 void loop()
 {
 
-
     state_machine.handle_state_machine(mcu_status);
-   
+
     if (timer_can_update.check())
     {
         // Send Main Control Unit status message
@@ -97,6 +96,4 @@ void loop()
         tx_msg.len = sizeof(mcu_status);
         WriteCANToInverter(tx_msg);
     }
-
-    
 }
