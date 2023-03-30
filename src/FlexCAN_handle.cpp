@@ -22,7 +22,7 @@ void InitCAN()
     
     //inverter can must send & receive, 6rx MB and 2tx MB
     Inverter_CAN_.begin();
-    Inverter_CAN_.setBaudRate(500000);
+    Inverter_CAN_.setBaudRate(125000);
     Inverter_CAN_.setMaxMB(NUM_TX_MAILBOXES + NUM_RX_MAILBOXES);
     for (int i = 0; i < NUM_RX_MAILBOXES; i++)
     {
