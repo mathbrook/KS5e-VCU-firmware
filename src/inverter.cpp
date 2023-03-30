@@ -22,6 +22,8 @@ void Inverter::updateInverterCAN()
 
     if (ReadInverterCAN(rxMsg))
     {
+        Serial.print("ID: ");
+        Serial.println(rxMsg.id);
         WriteToDaqCAN(rxMsg);
         switch (rxMsg.id)
         {
@@ -38,6 +40,7 @@ void Inverter::updateInverterCAN()
         case (ID_MC_VOLTAGE_INFORMATION):
         {
             pm100Voltage.load(rxMsg.buf);
+            
             break;
         }
         case (ID_MC_MOTOR_POSITION_INFORMATION):

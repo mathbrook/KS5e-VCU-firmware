@@ -65,6 +65,7 @@ MCU_status mcu_status = MCU_status();
 
 void setup()
 {
+    Serial.begin(57600);
     delay(100);
 
     InitCAN();
@@ -85,10 +86,12 @@ void setup()
 void loop()
 {
 
+    
     state_machine.handle_state_machine(mcu_status);
 
     if (timer_can_update.check())
     {
+        
         // Send Main Control Unit status message
         CAN_message_t tx_msg;
         mcu_status.write(tx_msg.buf);

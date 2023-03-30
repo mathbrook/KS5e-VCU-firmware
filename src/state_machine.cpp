@@ -10,6 +10,10 @@ void StateMachine::init_state_machine(MCU_status &mcu_status)
 /* Handle changes in state */
 void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 {
+  
+  Serial.print("new state: ");
+  Serial.println(static_cast<int>(new_state));
+  
   if (mcu_status.get_state() == new_state)
   {
     return;
@@ -104,13 +108,12 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 
 void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
+  Serial.print("current state: ");
+  MCU_STATE yeet = mcu_status.get_state();
+  Serial.println(static_cast<int>(yeet));
   // things that are done every loop go here:
-  // if(analogRead(A2)<700){
-  //   mcu_status.set_bspd_ok_high(false);
-  // }
-  // else if(analogRead(A2)>700){
-  //   mcu_status.set_bspd_ok_high(true);
-  // } //TODO make getting analog readings neater--this is the only necessary one for now
+  
+  //TODO make getting analog readings neater--this is the only necessary one for now
   mcu_status.set_bms_ok_high(true); // TODO BODGE TESTING, confirmed working 3/28/23, false = light ON, true = light OFF
   mcu_status.set_bspd_ok_high(true);
   mcu_status.set_imd_ok_high(true);
@@ -164,6 +167,8 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       break;
     }
     // if TS is above HV threshold, move to Tractive System Active
+    Serial.print("check_TS_active?: ");
+    Serial.println(pm100->check_TS_active());
     if (pm100->check_TS_active() && accumulator_ready) // TODO somewhere here, dont allow TS active if a fault is known
     {
 
@@ -200,8 +205,8 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   case MCU_STATE::ENABLING_INVERTER:
   {
 
-    // pm100->tryToClearMcFault();// added to clear
-    // pm100->inverter_kick(1);
+    
+    pm100->inverter_kick(1);
     if (!pm100->check_TS_active())
     {
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -215,19 +220,12 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     // inverter enabling timed out
     bool tuff = pm100->check_inverter_enable_timeout();
-    // pm100->enable_inverter(); // carefull this may mess things up
 
     if (tuff) // this does something is inverter times out
     {
-
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
       break;
     }
-
-    // pm100->tryToClearMcFault();// added
-    pm100->enable_inverter();
-
-    // pm100State.get_inverter_enable_state();
 
     // motor controller indicates that inverter has enabled within timeout period
     if (pm100->check_inverter_ready())
