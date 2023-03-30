@@ -22,8 +22,6 @@ void Inverter::updateInverterCAN()
 
     if (ReadInverterCAN(rxMsg))
     {
-        Serial.print("ID: ");
-        Serial.println(rxMsg.id);
         WriteToDaqCAN(rxMsg);
         switch (rxMsg.id)
         {

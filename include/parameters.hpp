@@ -3,6 +3,8 @@
 
 #define HT_DEBUG_EN
 #define DEBUG 0
+
+#define USE_INVERTER false
 // TODO may wanna do this another way
 
 // Pedalbox stuff

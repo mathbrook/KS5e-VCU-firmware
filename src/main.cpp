@@ -86,7 +86,6 @@ void setup()
 void loop()
 {
 
-    
     state_machine.handle_state_machine(mcu_status);
 
     if (timer_can_update.check())

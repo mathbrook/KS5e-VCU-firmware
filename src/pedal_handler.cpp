@@ -12,31 +12,13 @@ void PedalHandler::init_pedal_handler()
 
 int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 {
-    if (PID_MODE)
-    {
-        *current_ = motor_speed;
-        *set_ = SET_RPM;
-    }
-
-    else if (PID_TC_MODE)
-    {
-        uint32_t rpm_wsfl = (int)(current_rpm * 100);
-        // uint32_t rpm_wsfr = (int)(current_rpm2*100);
-        double calculated_slip = (motor_speed / (2.9) * 100) / rpm_wsfl;
-        *current_ = calculated_slip;
-        *set_ = SLIP;
-    }
-
-    // pid_->run();
     int calculated_torque = 0;
+    
+    Serial.printf("%i, %i\n", accel1_, accel2_);
     int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
                       END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,
                       END_ACCELERATOR_PEDAL_2, 0, max_torque);
-    double accel_percent = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
-                               END_ACCELERATOR_PEDAL_1, 0, 1000);
-    accel_percent /= 1000;
-
     // torque values are greater than the max possible value, set them to max
     if (torque1 > max_torque)
     {
@@ -49,25 +31,6 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     // compare torques to check for accelerator implausibility
     // calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
 
-    if (PID_MODE || PID_TC_MODE)
-    {
-        if ((torque1 > (0.75 * max_torque))) // TODO put here when we want cruise
-                                             // control control to take effect
-        {
-            calculated_torque = (int)*throttle_;
-        }
-        else
-        {
-            pid_->setIntegral(0);
-            pid_->reset();
-            calculated_torque = 0;
-        }
-    }
-    else
-    {
-        calculated_torque = torque1;
-    }
-
     if (calculated_torque > max_torque)
     {
         calculated_torque = max_torque;
@@ -76,11 +39,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     {
         calculated_torque = 0;
     }
-
-    if (timer_debug_raw_torque->check())
-    {
-        return calculated_torque;
-    }
+    return calculated_torque;
 }
 
 // returns true if the brake pedal is active
@@ -95,9 +54,7 @@ bool PedalHandler::read_pedal_values()
     brake1_ =
         ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
     steering_angle_ = pedal_ADC.read_adc(3);
-    // if (timer_debug_raw_torque->check()) {
 
-    // };
     // This is the code to print raw ADC readings vs the filtered one
 
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);

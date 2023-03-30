@@ -10,10 +10,10 @@ void StateMachine::init_state_machine(MCU_status &mcu_status)
 /* Handle changes in state */
 void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 {
-  
+
   Serial.print("new state: ");
   Serial.println(static_cast<int>(new_state));
-  
+
   if (mcu_status.get_state() == new_state)
   {
     return;
@@ -28,7 +28,9 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
   {
+#if USE_INVERTER
     pm100->tryToClearMcFault();
+#endif
     break;
   }
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
@@ -71,9 +73,9 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
   {
-
+#if USE_INVERTER
     pm100->forceMCdischarge();
-
+#endif
     break;
   }
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
@@ -84,8 +86,11 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   case MCU_STATE::ENABLING_INVERTER:
   {
 
+#if USE_INVERTER
     pm100->tryToClearMcFault();
+
     pm100->doStartup();
+#endif
     break;
   }
   case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
@@ -108,17 +113,15 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 
 void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
-  Serial.print("current state: ");
-  MCU_STATE yeet = mcu_status.get_state();
-  Serial.println(static_cast<int>(yeet));
   // things that are done every loop go here:
-  
-  //TODO make getting analog readings neater--this is the only necessary one for now
+
+  // TODO make getting analog readings neater--this is the only necessary one for now
   mcu_status.set_bms_ok_high(true); // TODO BODGE TESTING, confirmed working 3/28/23, false = light ON, true = light OFF
   mcu_status.set_bspd_ok_high(true);
   mcu_status.set_imd_ok_high(true);
-
+#if USE_INVERTER
   pm100->updateInverterCAN();
+#endif
   accumulator->updateAccumulatorCAN();
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
   dash_->updateDashCAN();
@@ -134,11 +137,16 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // delete this later, testing when not in TS mode
     uint8_t max_t = mcu_status.get_max_torque();
     int max_t_actual = max_t * 10;
-    int16_t motor_speed = pm100->getmcMotorRPM();
+    int16_t motor_speed = 0;
+#if USE_INVERTER
+    motor_speed = pm100->getmcMotorRPM();
+#endif
     pedals->calculate_torque(motor_speed, max_t_actual);
 
     // end of test block
+#if USE_INVERTER
     pm100->inverter_kick(0);
+#endif
     if (!accumulator->GetIfPrechargeAttempted())
     {
       accumulator->sendPrechargeStartMsg(); // we dont actually need to send this-precharge is automatic
@@ -167,13 +175,20 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       break;
     }
     // if TS is above HV threshold, move to Tractive System Active
+#if USE_INVERTER
     Serial.print("check_TS_active?: ");
     Serial.println(pm100->check_TS_active());
+
     if (pm100->check_TS_active() && accumulator_ready) // TODO somewhere here, dont allow TS active if a fault is known
     {
-
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
     }
+#else
+    if (accumulator_ready) // TODO somewhere here, dont allow TS active if a fault is known
+    {
+      set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
+    }
+#endif
 
     break;
   }
@@ -181,19 +196,23 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   {
 
     // TODO (Disabled to test error 3/27/23)
-
+#if USE_INVERTER
     if (!pm100->check_TS_active())
     {
 
       // set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE); //uncomet stage 1
     }
+#else
+    if (false) {} // dummy
+#endif
     else if (accumulator->check_precharge_timeout()) // uncomet stage 1
     {
 
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
     }
+#if USE_INVERTER
     pm100->inverter_kick(0);
-
+#endif
     // if start button has been pressed and brake pedal is held down, transition to the next state
     if (dash_->get_button1() && mcu_status.get_brake_pedal_active())
     {
@@ -204,14 +223,16 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   }
   case MCU_STATE::ENABLING_INVERTER:
   {
-
-    
+#if USE_INVERTER
     pm100->inverter_kick(1);
     if (!pm100->check_TS_active())
     {
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
       break;
     }
+#else
+    if(false){}
+#endif
     else if (accumulator->check_precharge_timeout())
     {
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
@@ -219,6 +240,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
 
     // inverter enabling timed out
+#if USE_INVERTER
     bool tuff = pm100->check_inverter_enable_timeout();
 
     if (tuff) // this does something is inverter times out
@@ -231,15 +253,18 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     if (pm100->check_inverter_ready())
 
     {
-
       set_state(mcu_status, MCU_STATE::WAITING_READY_TO_DRIVE_SOUND);
       break;
     }
+#else
+  set_state(mcu_status, MCU_STATE::WAITING_READY_TO_DRIVE_SOUND);
+#endif
 
     break;
   }
   case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
   {
+  #if USE_INVERTER
     pm100->inverter_kick(1);
     if (!pm100->check_TS_active())
     {
@@ -252,7 +277,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
       break;
     }
-
+#endif
     // if the ready to drive sound has been playing for long enough, move to ready to drive mode
     if (timer_ready_sound->check())
     {
@@ -263,7 +288,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   }
   case MCU_STATE::READY_TO_DRIVE:
   {
-    // pm100->inverter_kick(1);
+#if USE_INVERTER
     if (!pm100->check_TS_active())
     {
 
@@ -277,6 +302,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
       break; // TODO idk if we should break here or not but it sure seems like it
     }
+#endif
     if (accumulator->check_precharge_timeout())
     { // if the precharge hearbeat has timed out, we know it is no longer enabled-> the SDC is open
 
@@ -303,40 +329,24 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       uint8_t max_t = mcu_status.get_max_torque();
       int max_t_actual = max_t * 10;
 
-      int16_t motor_speed = pm100->getmcMotorRPM();
+      int16_t motor_speed = 0;
+#if USE_INVERTER
+      motor_speed = pm100->getmcMotorRPM();
+#endif
       calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
     }
-    // if (true)
-    // {
-    //   uint8_t max_t = mcu_status.get_max_torque();
-    //   int max_t_actual = max_t * 10;
-
-    //   int16_t motor_speed = pm100->getmcMotorRPM();
-    //   calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
-    // }
-    else
-    {
-    }
-
+    // Serial.print("calculated torque: ");
+    // Serial.println(calculated_torque);
+#if USE_INVERTER
     pm100->command_torque(calculated_torque);
-
+#endif
     break;
   }
   }
 
   if (debug_->check())
   {
-    // if (dash_->get_button2())
-    // {
-    //   mcu_status.toggle_max_torque(mcu_status.get_torque_mode());
-    //   mcu_status.set_max_torque(60 * mcu_status.get_torque_mode());
-    // }
-    // uint16_t rpm_wsfl = (int)(pedals->get_wsfl()*100);
-    // uint16_t rpm_wsfr = (int)(pedals->get_wsfr()*100);
 
-    //  mcu_status.get_brake_pedal_active());
-
-    // pm100->debug_print();
   }
   // TODO update the dash here properly
 }
