@@ -15,7 +15,9 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     if(PID_MODE){
         *current_ = motor_speed;
         *set_ = SET_RPM;
-    }else if(PID_TC_MODE){
+    }
+    
+    else if(PID_TC_MODE){
         uint32_t rpm_wsfl = (int)(current_rpm*100);
     // uint32_t rpm_wsfr = (int)(current_rpm2*100); 
         double calculated_slip = (motor_speed/(2.9)*100)/rpm_wsfl;
@@ -23,7 +25,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
         *set_ = SLIP;
     }
     
-    pid_->run();
+    //pid_->run();
     int calculated_torque = 0;
     int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1, END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2, END_ACCELERATOR_PEDAL_2, 0, max_torque);

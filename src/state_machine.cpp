@@ -121,8 +121,8 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   // } //TODO make getting analog readings neater--this is the only necessary one for now
   
   // TODO BODGE TESTING
-  mcu_status.set_bms_ok_high(false); // This needs to be set by the ACU from a CAN message
-  mcu_status.set_bspd_ok_high(false);
+  mcu_status.set_bms_ok_high(true); // This needs to be set by the ACU from a CAN message
+  mcu_status.set_bspd_ok_high(true);
   mcu_status.set_imd_ok_high(true);
 
   pm100->updateInverterCAN();
