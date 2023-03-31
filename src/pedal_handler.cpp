@@ -56,9 +56,6 @@ bool PedalHandler::read_pedal_values()
     
     steering_angle_ = pedal_ADC.read_adc(3);
 
-    Serial.println("accel1, accel2");
-    Serial.println(accel1_);
-    Serial.println(accel2_);
 
     // This is the code to print raw ADC readings vs the filtered one
     

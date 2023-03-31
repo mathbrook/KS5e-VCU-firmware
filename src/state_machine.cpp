@@ -112,7 +112,12 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
   // things that are done every loop go here:
-
+  Serial.print("current state: ");
+  Serial.println(static_cast<int>(mcu_status.get_state()));
+  Serial.print("ts active?: ");
+  Serial.println(pm100->check_TS_active());
+  Serial.print("enabled?: ");
+  Serial.println(pm100->check_inverter_disabled());
   // TODO make getting analog readings neater--this is the only necessary one for now
   mcu_status.set_bms_ok_high(true); // TODO BODGE TESTING, confirmed working 3/28/23, false = light ON, true = light OFF
   mcu_status.set_bspd_ok_high(true);
@@ -132,15 +137,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
   {
-    // delete this later, testing when not in TS mode
-    uint8_t max_t = mcu_status.get_max_torque();
-    int max_t_actual = max_t * 10;
-    int16_t motor_speed = 0;
-#if USE_INVERTER
-    motor_speed = pm100->getmcMotorRPM();
-#endif
-    // pedals->calculate_torque(motor_speed, max_t_actual);
-
     // end of test block
 #if USE_INVERTER
     pm100->inverter_kick(0);
@@ -285,25 +281,26 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   case MCU_STATE::READY_TO_DRIVE:
   {
 #if USE_INVERTER
+    
     if (!pm100->check_TS_active())
     {
-
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
       break;
     }
 
-    if (pm100->check_inverter_disabled())
-    {
 
-      set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
-      break; // TODO idk if we should break here or not but it sure seems like it
-    }
+    // if (!pm100->check_inverter_disabled())
+    // {
+
+    //   set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
+    //   break; // TODO idk if we should break here or not but it sure seems like it
+    // }
 #endif
-    if (accumulator->check_precharge_timeout())
-    { // if the precharge hearbeat has timed out, we know it is no longer enabled-> the SDC is open
-      set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
-      break;
-    }
+    // if (accumulator->check_precharge_timeout())
+    // { // if the precharge hearbeat has timed out, we know it is no longer enabled-> the SDC is open
+    //   set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+    //   break;
+    // }
 
     int calculated_torque = 0;
     bool accel_is_plausible = false;
@@ -330,8 +327,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #endif
       calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
     }
-    Serial.println("calculated_torque");
-    Serial.println(calculated_torque);
     
 #if USE_INVERTER
     pm100->command_torque(calculated_torque);
