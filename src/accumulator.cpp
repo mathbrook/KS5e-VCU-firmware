@@ -40,6 +40,17 @@ bool Accumulator::check_precharge_timeout()
     return (pchgTimeout->check());
 }
 
+bool Accumulator::get_imd_state()
+{
+    return imdstate;
+}
+
+bool Accumulator::get_bms_state()
+{
+    return bmsstate;
+}
+
+
 void Accumulator::updateAccumulatorCAN()
 {
     CAN_message_t rxMsg;
@@ -54,6 +65,12 @@ void Accumulator::updateAccumulatorCAN()
             pchgState = rxMsg.buf[0];
             int accVoltage = rxMsg.buf[1] + (rxMsg.buf[2] * 100);
             int tsVoltage = rxMsg.buf[3] + (rxMsg.buf[4] * 100);
+            break;
+        }
+        case (ID_ACU_RELAY): // Added to recieve states from ACU for dash lights
+        {
+            imdstate = rxMsg.buf[1];
+            bmsstate = rxMsg.buf[2];
             break;
         }
         case (ID_BMS_INFO):

@@ -113,9 +113,13 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
   // things that are done every loop go here:
   // TODO make getting analog readings neater--this is the only necessary one for now
-  mcu_status.set_bms_ok_high(true); // TODO BODGE TESTING, confirmed working 3/28/23, false = light ON, true = light OFF
-  mcu_status.set_bspd_ok_high(true);
-  mcu_status.set_imd_ok_high(true);
+  // mcu_status.set_bms_ok_high(true); // TODO BODGE TESTING, confirmed working 3/28/23, false = light ON, true = light OFF
+  // mcu_status.set_bspd_ok_high(true);
+  // mcu_status.set_imd_ok_high(true);
+  mcu_status.set_imd_ok_high(accumulator->get_imd_state());
+  mcu_status.set_bms_ok_high(accumulator->get_bms_state());
+  mcu_status.set_bspd_ok_high(true); // not reading this value so it defaults to off for now
+
 #if USE_INVERTER
   pm100->updateInverterCAN();
 #endif

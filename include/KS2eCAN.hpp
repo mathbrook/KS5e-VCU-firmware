@@ -30,6 +30,7 @@
 #define ID_BMS_SOC                          0x7FF //TODO make this real on the BMS
 
 #define ID_BMS_INFO 0x6B1
+#define ID_ACU_RELAY 0x68
 // number of rx and tx mailboxes
 #define NUM_TX_MAILBOXES 2
 #define NUM_RX_MAILBOXES 6
