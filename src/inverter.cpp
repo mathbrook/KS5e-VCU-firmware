@@ -233,7 +233,7 @@ bool Inverter::check_TS_active()
     }
 }
 // if the inverter becomes disabled, return to Tractive system active.
-// returns true if the inverter is disabled
+// returns false if the inverter is disabled
 bool Inverter::check_inverter_disabled()
 {
     return (!pm100State.get_inverter_enable_state());

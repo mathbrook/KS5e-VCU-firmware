@@ -112,12 +112,6 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
   // things that are done every loop go here:
-  Serial.print("current state: ");
-  Serial.println(static_cast<int>(mcu_status.get_state()));
-  Serial.print("ts active?: ");
-  Serial.println(pm100->check_TS_active());
-  Serial.print("enabled?: ");
-  Serial.println(pm100->check_inverter_disabled());
   // TODO make getting analog readings neater--this is the only necessary one for now
   mcu_status.set_bms_ok_high(true); // TODO BODGE TESTING, confirmed working 3/28/23, false = light ON, true = light OFF
   mcu_status.set_bspd_ok_high(true);
@@ -289,12 +283,12 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
 
 
-    // if (!pm100->check_inverter_disabled())
-    // {
+    if (pm100->check_inverter_disabled())
+    {
 
-    //   set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
-    //   break; // TODO idk if we should break here or not but it sure seems like it
-    // }
+      set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
+      break; // TODO idk if we should break here or not but it sure seems like it
+    }
 #endif
     // if (accumulator->check_precharge_timeout())
     // { // if the precharge hearbeat has timed out, we know it is no longer enabled-> the SDC is open
