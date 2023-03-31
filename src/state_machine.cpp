@@ -290,11 +290,11 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       break; // TODO idk if we should break here or not but it sure seems like it
     }
 #endif
-    // if (accumulator->check_precharge_timeout())
-    // { // if the precharge hearbeat has timed out, we know it is no longer enabled-> the SDC is open
-    //   set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
-    //   break;
-    // }
+    if (accumulator->check_precharge_timeout())
+    { // if the precharge hearbeat has timed out, we know it is no longer enabled-> the SDC is open
+      set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+      break;
+    }
 
     int calculated_torque = 0;
     bool accel_is_plausible = false;

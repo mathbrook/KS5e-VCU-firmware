@@ -23,7 +23,7 @@ Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
 Metro timer_motor_controller_send = Metro(10, 1);
 
 // timers for the accumulator:
-Metro pchgMsgTimer = Metro(1000);
+Metro pchgMsgTimer = Metro(1000,0);
 // Metro pchgTimeout = Metro(500);
 
 // timers for the pedals:
@@ -37,7 +37,7 @@ Metro pm100speedInspection = Metro(500, 1);
 
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
-Metro debug_tim = Metro(100, 1);
+Metro debug_tim = Metro(200, 1);
 int temporarydisplaytime = 0;
 // PID shit
 volatile double current_rpm, set_rpm, throttle_out;
@@ -87,7 +87,9 @@ void loop()
 {
 
     state_machine.handle_state_machine(mcu_status);
-
+    if(debug_tim.check()) {
+        Serial.println("COPE SEEETHE MALD");
+    }
     if (timer_can_update.check())
     {
         
