@@ -38,18 +38,6 @@ public:
     inline void set_commanded_torque_limit(int16_t commanded_torque_limit) { this->commanded_torque_limit = commanded_torque_limit; }
 
 
-    void print() {
-        Serial.println("\n\nMC COMMAND MESSAGE");
-        Serial.println(    "------------------");
-        Serial.print("TORQUE COMMAND:         ");   Serial.println(torque_command / 10.0, 1);
-        Serial.print("ANGULAR VELOCITY:       ");   Serial.println(angular_velocity);
-        Serial.print("DIRECTION:              ");   Serial.println(direction);
-        Serial.print("INVERTER ENABLE:        ");   Serial.println(get_inverter_enable());
-        Serial.print("DISCHARGE ENABLE:       ");   Serial.println(get_discharge_enable());
-        Serial.print("COMMANDED TORQUE LIMIT: ");   Serial.println(commanded_torque_limit / 10.0, 1);
-    }
-
-
 private:
     int16_t torque_command;                     // @Parse @Scale(10) @Name(requested_torque)
     int16_t angular_velocity;                   // @Parse

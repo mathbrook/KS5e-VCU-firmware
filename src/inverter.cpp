@@ -13,6 +13,11 @@ void Inverter::doStartup()
 
 void Inverter::updateInverterCAN()
 {
+    CAN_message_t rxMsg2;
+
+    // TODO Hey John delete this because I'm just putting it here to read CAN1
+    ReadDaqCAN(rxMsg2);
+
     CAN_message_t rxMsg;
 
     if (ReadInverterCAN(rxMsg))
@@ -33,6 +38,7 @@ void Inverter::updateInverterCAN()
         case (ID_MC_VOLTAGE_INFORMATION):
         {
             pm100Voltage.load(rxMsg.buf);
+            
             break;
         }
         case (ID_MC_MOTOR_POSITION_INFORMATION):
@@ -63,9 +69,6 @@ void Inverter::updateInverterCAN()
 
 void Inverter::debug_print()
 {
-    pm100temp1.print();
-    pm100temp2.print();
-    pm100temp3.print();
 }
 
 void Inverter::writeControldisableWithZeros()
@@ -74,10 +77,6 @@ void Inverter::writeControldisableWithZeros()
     ctrlMsg.len = 8;
     ctrlMsg.id = 0xC0; // OUR CONTROLLER
     memcpy(ctrlMsg.buf, disableWithZeros, sizeof(ctrlMsg.buf));
-    if (WriteCANToInverter(ctrlMsg) > 0)
-    {
-        Serial.println("****DISABLE****");
-    }
 }
 
 void Inverter::writeEnableNoTorque()
@@ -91,7 +90,7 @@ void Inverter::writeEnableNoTorque()
 
 // returns false if the command was unable to be sent
 bool Inverter::command_torque(int torque)
-{ 
+{
     uint8_t torquePart1 = torque % 256;
     uint8_t torquePart2 = torque / 256;
     uint8_t angularVelocity1 = 0, angularVelocity2 = 0;
@@ -123,19 +122,16 @@ bool Inverter::command_torque(int torque)
     return true;
 }
 
-// 
+//
 bool Inverter::check_inverter_ready()
 {
-    #if DEBUG
-    // Serial.println("checking if inverter is ready");
-    // pm100State.print();
-    #endif
-    
+
     bool inverter_is_enabled = pm100State.get_inverter_enable_state();
-    Serial.println(inverter_is_enabled);
+
+    // delay(1000);
     if (inverter_is_enabled)
     {
-        Serial.println("resting inverter reset timer");
+
         timer_inverter_enable->reset();
     }
     return inverter_is_enabled;
@@ -186,6 +182,7 @@ void Inverter::tryToClearMcFault()
 // release the electrons they too hot
 void Inverter::forceMCdischarge()
 {
+
     elapsedMillis dischargeCountdown = 0;
     while (dischargeCountdown <= 100)
     {
@@ -219,11 +216,14 @@ int Inverter::getmcMotorRPM()
 // returns false if mc bus voltage is below min, true if otherwise
 bool Inverter::check_TS_active()
 {
+    /*
+
+
+    */
+
     if ((getmcBusVoltage() < MIN_HV_VOLTAGE))
     {
-#if DEBUG
-        // Serial.println("Setting state to TS Not Active, because TS is below HV threshold");
-#endif
+
         // set_state(MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
         return false;
     }
@@ -233,9 +233,8 @@ bool Inverter::check_TS_active()
     }
 }
 // if the inverter becomes disabled, return to Tractive system active.
-// returns true if the inverter is disabled
+// returns false if the inverter is disabled
 bool Inverter::check_inverter_disabled()
-{;
+{
     return (!pm100State.get_inverter_enable_state());
 }
-

@@ -1,11 +1,9 @@
 // library includes
-#include <WS2812Serial.h>
 #include <Arduino.h>
 #include <FlexCAN_T4.h>
 #include <Metro.h>
 #include <string.h>
 #include <stdint.h>
-#include <Adafruit_MCP4725.h>
 #include <FreqMeasureMulti.h>
 
 // our includes
@@ -25,7 +23,7 @@ Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
 Metro timer_motor_controller_send = Metro(10, 1);
 
 // timers for the accumulator:
-Metro pchgMsgTimer = Metro(1000);
+Metro pchgMsgTimer = Metro(1000,0);
 // Metro pchgTimeout = Metro(500);
 
 // timers for the pedals:
@@ -39,9 +37,9 @@ Metro pm100speedInspection = Metro(500, 1);
 
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
-Metro debug_tim = Metro(100, 1);
+Metro debug_tim = Metro(200, 1);
 int temporarydisplaytime = 0;
-//PID shit
+// PID shit
 volatile double current_rpm, set_rpm, throttle_out;
 double KP = D_KP;
 double KI = D_KI;
@@ -51,50 +49,36 @@ double OUTPUT_MAX = D_OUTPUT_MAX;
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 // timers for VCU state out:
 Metro timer_can_update = Metro(100, 1);
-//Wheel speed shit 
+// Wheel speed shit
 FreqMeasureMulti wsfl;
 FreqMeasureMulti wsfr;
-// dashboard led handling
-// TODO unfuck this
-const int numled = 9;
-byte drawingMemory[numled * 3];         //  3 bytes per LED
-DMAMEM byte displayMemory[numled * 12]; // 12 bytes per LED
-WS2812Serial leds(numled, displayMemory, drawingMemory, 17, WS2812_GRB);
 
 // objects
+Dashboard dash;
 Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send);
 Accumulator accum(&pchgMsgTimer);
-PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_rpm, &set_rpm, &throttle_out,&wsfl,&wsfr);
-Dashboard dash(&leds, &pm100speedInspection);
+PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
-Adafruit_MCP4725 pump_dac;
 MCU_status mcu_status = MCU_status();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void setup()
 {
+    Serial.begin(57600);
     delay(100);
-    Serial.println("setup");
+
     InitCAN();
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
-    Serial.println("initted mcu status");
-    pinMode(RTDbutton, INPUT_PULLUP);
-    pinMode(BUZZER, OUTPUT);
+
+    pinMode(BUZZER, OUTPUT); // TODO write gpio initialization function
     digitalWrite(BUZZER, LOW);
-    pinMode(TORQUEMODE, INPUT);
-    pinMode(LAUNCHCONTROL, INPUT_PULLUP);
-    pinMode(MC_RELAY, OUTPUT);
+    pinMode(LOWSIDE1, OUTPUT);
+    pinMode(LOWSIDE2, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
-    pinMode(WSFR, INPUT_PULLUP);
-    if (!pump_dac.begin())
-    {
-        Serial.println("L pump_dac");
-    }
-    pump_dac.setVoltage(PUMP_SPEED, false);
-    digitalWrite(MC_RELAY, HIGH);
-    mcu_status.set_inverter_powered(true);
+    // pinMode(WSFR, INPUT_PULLUP);
+    mcu_status.set_inverter_powered(true); // this means nothing anymore
     mcu_status.set_max_torque(TORQUE_1);
     state_machine.init_state_machine(mcu_status);
 }
@@ -103,21 +87,17 @@ void loop()
 {
 
     state_machine.handle_state_machine(mcu_status);
-
+    if(debug_tim.check()) {
+        Serial.println("COPE SEEETHE MALD");
+    }
     if (timer_can_update.check())
     {
+        
         // Send Main Control Unit status message
         CAN_message_t tx_msg;
         mcu_status.write(tx_msg.buf);
         tx_msg.id = ID_VCU_STATUS;
         tx_msg.len = sizeof(mcu_status);
-        WriteToDaqCAN(tx_msg);
+        WriteCANToInverter(tx_msg);
     }
-//   if(Serial.available()){
-//     String message=(Serial.readString());
-//     int userreq=message.toInt();
-//     Serial.println(userreq);
-//     //Validation for inputs being int between 0-90 degrees
-//         pump_dac.setVoltage(userreq, false);
-//     }
 }
