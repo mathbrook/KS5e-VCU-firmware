@@ -56,14 +56,14 @@ bool PedalHandler::read_pedal_values()
     
     steering_angle_ = pedal_ADC.read_adc(3);
 
-    
+    #ifdef DEBUG
     Serial.print("ADC1 :");
     Serial.println(accel1_);
     Serial.print("ADC2 :");
     Serial.println(accel2_);
     Serial.print("BRAKE :");
     Serial.println(brake1_);
-
+    #endif
 
     // This is the code to print raw ADC readings vs the filtered one
     
@@ -118,7 +118,7 @@ void PedalHandler::verify_pedals(
     {
         accel_is_plausible = false;
     }
-    // check that the pedals are reading within 10% of each other
+    // check that the pedals are reading within 10% of each other TODO reenable???
     // sum of the two readings should be within 10% of the average travel
     // T.4.2.4
     //     else if (torqDiff*100 > 50)
