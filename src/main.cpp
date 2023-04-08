@@ -79,7 +79,7 @@ void setup()
     pinMode(WSFL, INPUT_PULLUP);
     // pinMode(WSFR, INPUT_PULLUP);
     mcu_status.set_inverter_powered(true); // this means nothing anymore
-    mcu_status.set_max_torque(TORQUE_1);
+    mcu_status.set_max_torque(TORQUE_4);
     state_machine.init_state_machine(mcu_status);
 }
 
