@@ -88,7 +88,7 @@ void loop()
 
     state_machine.handle_state_machine(mcu_status);
     if(debug_tim.check()) {
-        Serial.println("COPE SEEETHE MALD");
+        // Serial.println("COPE SEEETHE MALD");
     }
     if (timer_can_update.check())
     {
