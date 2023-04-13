@@ -28,7 +28,7 @@
 //Traction control
 #define RPM_TIMEOUT 1000
 
-#define BRAKE_ACTIVE 2700             // Threshold for brake pedal active
+#define BRAKE_ACTIVE 2500             // Threshold for brake pedal active
 #define MIN_ACCELERATOR_PEDAL_1 0    // Low accelerator implausibility threshold
 #define START_ACCELERATOR_PEDAL_1 50  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_1 2400    // Position to max out acceleration
