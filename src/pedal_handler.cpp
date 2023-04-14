@@ -1,4 +1,5 @@
 #include "pedal_handler.hpp"
+Metro debugPrint = Metro(50);
 
 // initializes pedal's ADC
 void PedalHandler::init_pedal_handler()
@@ -56,14 +57,17 @@ bool PedalHandler::read_pedal_values()
     
     steering_angle_ = pedal_ADC.read_adc(3);
 
-    #ifdef DEBUG
-    Serial.print("ADC1 :");
-    Serial.println(accel1_);
-    Serial.print("ADC2 :");
-    Serial.println(accel2_);
-    Serial.print("BRAKE :");
-    Serial.println(brake1_);
-    #endif
+    if(debugPrint.check()){
+        #ifdef DEBUG
+        Serial.print("ADC1 :");
+        Serial.println(accel1_);
+        Serial.print("ADC2 :");
+        Serial.println(accel2_);
+        Serial.print("BRAKE :");
+        Serial.println(brake1_);
+        #endif
+    }
+
 
     // This is the code to print raw ADC readings vs the filtered one
     
