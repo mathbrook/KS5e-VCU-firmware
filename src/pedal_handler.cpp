@@ -95,7 +95,7 @@ bool PedalHandler::read_pedal_values()
         WriteToDaqCAN(tx_msg2);
     }
     // only uses front brake pedal
-    brake_is_active_ = (brake1_ <= BRAKE_ACTIVE);
+    brake_is_active_ = (brake1_ >= BRAKE_ACTIVE);
     return brake_is_active_;
 }
 
