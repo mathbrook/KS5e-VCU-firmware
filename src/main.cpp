@@ -115,7 +115,7 @@ void loop()
         // Send Dash Bus Voltage (pls don change this jonathon :( )
         CAN_message_t dash_msg;
 
-        dash.write(dash.ByteEachDigit(BusVoltage));
+        memcpy(dash.ByteEachDigit(BusVoltage), dash_msg.buf, dash_msg.len);
 
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;
