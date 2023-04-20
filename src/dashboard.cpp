@@ -33,7 +33,6 @@ uint8_t *Dashboard::ByteEachDigit(int num)
     if (this->counter > sizeof(BusVolt_ByteEachDigit) - 1)
     {
         this->counter = 0;
-
         return this->BusVolt_ByteEachDigit;
     }
 }
