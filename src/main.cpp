@@ -23,7 +23,7 @@ Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
 Metro timer_motor_controller_send = Metro(10, 1);
 
 // timers for the accumulator:
-Metro pchgMsgTimer = Metro(1000,0);
+Metro pchgMsgTimer = Metro(1000, 0);
 // Metro pchgTimeout = Metro(500);
 
 // timers for the pedals:
@@ -46,6 +46,11 @@ double KI = D_KI;
 double KD = D_KD;
 double OUTPUT_MIN = D_OUTPUT_MIN;
 double OUTPUT_MAX = D_OUTPUT_MAX;
+
+// Bus Voltage
+int BusVoltage = 0;
+int counter = 0;
+
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 // timers for VCU state out:
 Metro timer_can_update = Metro(100, 1);
@@ -79,7 +84,7 @@ void setup()
     pinMode(WSFL, INPUT_PULLUP);
     // pinMode(WSFR, INPUT_PULLUP);
     mcu_status.set_inverter_powered(true); // this means nothing anymore
-    mcu_status.set_max_torque(TORQUE_4); // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
+    mcu_status.set_max_torque(TORQUE_4);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
     state_machine.init_state_machine(mcu_status);
 }
 
@@ -87,17 +92,34 @@ void loop()
 {
 
     state_machine.handle_state_machine(mcu_status);
-    if(debug_tim.check()) {
+
+    BusVoltage = pm100.getmcBusVoltage();
+
+    if (debug_tim.check())
+    {
         // Serial.println("COPE SEEETHE MALD");
     }
     if (timer_can_update.check())
     {
-        
+
         // Send Main Control Unit status message
         CAN_message_t tx_msg;
+
         mcu_status.write(tx_msg.buf);
+
         tx_msg.id = ID_VCU_STATUS;
         tx_msg.len = sizeof(mcu_status);
+
         WriteCANToInverter(tx_msg);
+
+        // Send Dash Bus Voltage (pls don change this jonathon :( )
+        CAN_message_t dash_msg;
+
+        dash.write(dash.ByteEachDigit(BusVoltage));
+
+        dash_msg.id = ID_DASH_BUSVOLT;
+        dash_msg.len = 8;
+
+        WriteCANToInverter(dash_msg);
     }
 }

@@ -6,7 +6,9 @@
     #include "Arduino.h"
 #endif
 #pragma pack(push,1)
-class Dashboard {
+class Dashboard 
+{
+
 public:
     Dashboard() = default;
     Dashboard(const uint8_t buf[8]) { load(buf); }
@@ -25,11 +27,16 @@ public:
     inline void set_buttons(const uint8_t inputs)        { button_states = inputs; }
 
     void updateDashCAN();
+
+    uint8_t *ByteEachDigit(int num);
+
     
 private:
-
     uint8_t button_states;
-    
+
+    uint8_t BusVolt_ByteEachDigit[8] = { 0 };
+
+    int counter = 0; // This kinda cringe ngl but cannot think of alt way.
 };
 
 #pragma pack(pop)
