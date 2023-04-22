@@ -1,6 +1,10 @@
+
 #include "FlexCAN_util.hpp"
 #include "dashboard.hpp"
 
+
+uint8_t counter = 0;
+uint8_t digit = 0;
 
 
 void Dashboard::updateDashCAN()
@@ -17,22 +21,27 @@ void Dashboard::updateDashCAN()
 }
 
 
-uint8_t *Dashboard::ByteEachDigit(int num)
+void Dashboard::ByteEachDigit(int num)
 {
     if (num >= 10)
     {
         ByteEachDigit(num / 10);
     }
-        
-    int digit = num % 10;
-
-    this->BusVolt_ByteEachDigit[this->counter] = digit;
-
-    this->counter++;
-
-    if (this->counter > sizeof(BusVolt_ByteEachDigit) - 1)
+    else if (counter == 4)
     {
-        this->counter = 0;
-        return this->BusVolt_ByteEachDigit;
+        counter = 0;
+        digit = 0;
     }
+
+    digit = num % 10;
+
+    this->BusVolt_ByteEachDigit[counter] = digit;
+
+    counter++;
+}
+
+
+uint8_t *Dashboard::getByteEachDigit()
+{
+    return this->BusVolt_ByteEachDigit;
 }

@@ -28,15 +28,18 @@ public:
 
     void updateDashCAN();
 
-    uint8_t *ByteEachDigit(int num);
+    inline void ByteEachDigit(int num);
+
+    uint8_t *getByteEachDigit();
 
     
 private:
     uint8_t button_states;
 
+    // Stuff for bus voltage 
+
     uint8_t BusVolt_ByteEachDigit[8] = { 0 };
 
-    int counter = 0; // This kinda cringe ngl but cannot think of alt way.
 };
 
 #pragma pack(pop)

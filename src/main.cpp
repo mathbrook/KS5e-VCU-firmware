@@ -115,8 +115,10 @@ void loop()
         // Send Dash Bus Voltage (pls don change this jonathan :( )
         CAN_message_t dash_msg;
 
-        memcpy(dash.ByteEachDigit(pm100.getmcBusVoltage()), dash_msg.buf, dash_msg.len);
-        Serial.println(dash.ByteEachDigit(BusVoltage)[1]);
+        dash.ByteEachDigit(BusVoltage);
+
+        memcpy(dash.getByteEachDigit(), dash_msg.buf, dash_msg.len);
+    
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;
 
