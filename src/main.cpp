@@ -101,7 +101,6 @@ void loop()
     }
     if (timer_can_update.check())
     {
-
         // Send Main Control Unit status message
         CAN_message_t tx_msg;
 
