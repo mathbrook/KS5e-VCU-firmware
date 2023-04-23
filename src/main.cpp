@@ -117,7 +117,7 @@ void loop()
 
         dash.ByteEachDigit(BusVoltage);
 
-        memcpy(dash.getByteEachDigit(), dash_msg.buf, dash_msg.len);
+        memcpy(dash.getBusVoltage(), dash_msg.buf, dash_msg.len);
     
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;

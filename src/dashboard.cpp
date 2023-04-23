@@ -3,7 +3,7 @@
 #include "dashboard.hpp"
 
 
-uint8_t counter = 0;
+uint8_t index = 0;
 uint8_t digit = 0;
 
 
@@ -27,21 +27,22 @@ void Dashboard::ByteEachDigit(int num)
     {
         ByteEachDigit(num / 10);
     }
-    else if (counter == 4)
+    else if (index == 4)
     {
-        counter = 0;
+        index = 0;
         digit = 0;
+        return;
     }
 
     digit = num % 10;
 
-    this->BusVolt_ByteEachDigit[counter] = digit;
+    this->BusVolt_ByteEachDigit[index] = digit;
 
-    counter++;
+    index++;
 }
 
 
-uint8_t *Dashboard::getByteEachDigit()
+uint8_t *Dashboard::getBusVoltage()
 {
     return this->BusVolt_ByteEachDigit;
 }

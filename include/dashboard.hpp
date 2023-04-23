@@ -30,14 +30,13 @@ public:
 
     inline void ByteEachDigit(int num);
 
-    uint8_t *getByteEachDigit();
+    uint8_t *getBusVoltage();
 
     
 private:
     uint8_t button_states;
 
     // Stuff for bus voltage 
-
     uint8_t BusVolt_ByteEachDigit[8] = { 0 };
 
 };
