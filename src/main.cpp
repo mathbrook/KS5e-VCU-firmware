@@ -65,7 +65,7 @@ PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_r
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//----------------------------------------------------------------------------------------------------------------------------------------
 
 void setup()
 {
