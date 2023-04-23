@@ -29,10 +29,9 @@ public:
     void updateDashCAN();
 
     void ByteEachDigit(int num);
-
-    uint8_t *getBusVoltage();
-
     
+    uint8_t *getBusVoltage();
+ 
 private:
     uint8_t button_states;
 
