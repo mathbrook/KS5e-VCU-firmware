@@ -39,6 +39,7 @@ Metro pm100speedInspection = Metro(500, 1);
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(200, 1);
 int temporarydisplaytime = 0;
+
 // PID shit
 volatile double current_rpm, set_rpm, throttle_out;
 double KP = D_KP;
@@ -51,8 +52,10 @@ double OUTPUT_MAX = D_OUTPUT_MAX;
 int BusVoltage = 0;
 
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
+
 // timers for VCU state out:
 Metro timer_can_update = Metro(100, 1);
+
 // Wheel speed shit
 FreqMeasureMulti wsfl;
 FreqMeasureMulti wsfr;
@@ -73,6 +76,7 @@ void setup()
     delay(100);
 
     InitCAN();
+    
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
 
@@ -81,6 +85,7 @@ void setup()
     pinMode(LOWSIDE1, OUTPUT);
     pinMode(LOWSIDE2, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
+
     // pinMode(WSFR, INPUT_PULLUP);
     mcu_status.set_inverter_powered(true); // this means nothing anymore
     mcu_status.set_max_torque(TORQUE_4);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
@@ -89,7 +94,6 @@ void setup()
 
 void loop()
 {
-
     state_machine.handle_state_machine(mcu_status);
 
     BusVoltage = pm100.getmcBusVoltage();
