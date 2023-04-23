@@ -30,8 +30,6 @@ void Dashboard::ByteEachDigit(int num)
     else if (counter == 4)
     {
         counter = 0;
-          digit = 0;
-        return;
     }
 
     digit = num % 10;
