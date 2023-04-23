@@ -5,7 +5,9 @@
 #ifdef HT_DEBUG_EN
     #include "Arduino.h"
 #endif
+
 #pragma pack(push,1)
+
 class Dashboard 
 {
 
@@ -29,7 +31,7 @@ public:
     void updateDashCAN();
 
     void ByteEachDigit(int num);
-    
+
     uint8_t *getBusVoltage();
  
 private:
@@ -37,7 +39,6 @@ private:
 
     // Stuff for bus voltage 
     uint8_t BusVolt_ByteEachDigit[8] = { 0 };
-
 };
 
 #pragma pack(pop)
