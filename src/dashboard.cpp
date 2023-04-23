@@ -4,7 +4,6 @@
 
 
 uint8_t counter = 0;
-uint8_t   digit = 0;
 
 
 void Dashboard::updateDashCAN()
@@ -32,9 +31,7 @@ void Dashboard::ByteEachDigit(int num)
         counter = 0;
     }
 
-    digit = num % 10;
-
-    this->BusVolt_ByteEachDigit[counter] = digit;
+    this->BusVolt_ByteEachDigit[counter] = num % 10;
 
     counter++;
 }
