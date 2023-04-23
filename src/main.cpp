@@ -49,7 +49,6 @@ double OUTPUT_MAX = D_OUTPUT_MAX;
 
 // Bus Voltage
 int BusVoltage = 0;
-int counter = 0;
 
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 // timers for VCU state out:
