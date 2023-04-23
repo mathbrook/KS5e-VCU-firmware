@@ -28,7 +28,7 @@ public:
 
     void updateDashCAN();
 
-    inline void ByteEachDigit(int num);
+    void ByteEachDigit(int num);
 
     uint8_t *getBusVoltage();
 
