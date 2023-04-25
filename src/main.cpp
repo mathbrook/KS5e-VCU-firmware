@@ -117,7 +117,7 @@ void loop()
 
         BusVoltage = pm100.getmcBusVoltage();
 
-        // Serial.println(BusVoltage);
+        Serial.println(BusVoltage);
 
         dash.ByteEachDigit(BusVoltage);
 
