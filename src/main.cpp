@@ -39,6 +39,7 @@ Metro pm100speedInspection = Metro(500, 1);
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(200, 1);
 int temporarydisplaytime = 0;
+
 // PID shit
 volatile double current_rpm, set_rpm, throttle_out;
 double KP = D_KP;
@@ -49,11 +50,12 @@ double OUTPUT_MAX = D_OUTPUT_MAX;
 
 // Bus Voltage
 int BusVoltage = 0;
-int counter = 0;
 
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
+
 // timers for VCU state out:
 Metro timer_can_update = Metro(100, 1);
+
 // Wheel speed shit
 FreqMeasureMulti wsfl;
 FreqMeasureMulti wsfr;
@@ -66,7 +68,7 @@ PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_r
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//----------------------------------------------------------------------------------------------------------------------------------------
 
 void setup()
 {
@@ -74,6 +76,7 @@ void setup()
     delay(100);
 
     InitCAN();
+    
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
 
@@ -82,6 +85,7 @@ void setup()
     pinMode(LOWSIDE1, OUTPUT);
     pinMode(LOWSIDE2, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
+
     // pinMode(WSFR, INPUT_PULLUP);
     mcu_status.set_inverter_powered(true); // this means nothing anymore
     mcu_status.set_max_torque(TORQUE_4);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
@@ -90,7 +94,6 @@ void setup()
 
 void loop()
 {
-
     state_machine.handle_state_machine(mcu_status);
 
     if (debug_tim.check())
@@ -99,9 +102,6 @@ void loop()
     }
     if (timer_can_update.check())
     {
-
-        BusVoltage = pm100.getmcBusVoltage();
-
         // Send Main Control Unit status message
         CAN_message_t tx_msg;
 
@@ -112,11 +112,13 @@ void loop()
 
         WriteCANToInverter(tx_msg);
 
-        // Send Dash Bus Voltage (pls don change this jonathon :( )
+        // Send Dash Bus Voltage (pls don change this jonathan :( )
         CAN_message_t dash_msg;
 
-        memcpy(dash_msg.buf, dash.ByteEachDigit(BusVoltage), dash_msg.len);
+        dash.ByteEachDigit(BusVoltage);
 
+        memcpy(dash.getBusVoltage(), dash_msg.buf, dash_msg.len);
+    
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;
 

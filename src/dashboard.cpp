@@ -1,15 +1,18 @@
+
 #include "FlexCAN_util.hpp"
 #include "dashboard.hpp"
 
+
+uint8_t counter = 0;
 
 
 void Dashboard::updateDashCAN()
 {
     CAN_message_t rxMsg;
 
-    if(ReadInverterCAN(rxMsg))
+    if (ReadInverterCAN(rxMsg))
     {
-        if(rxMsg.id == ID_DASH_BUTTONS)
+        if (rxMsg.id == ID_DASH_BUTTONS)
         {
             button_states = rxMsg.buf[0];
         }
@@ -17,22 +20,24 @@ void Dashboard::updateDashCAN()
 }
 
 
-uint8_t *Dashboard::ByteEachDigit(int num)
+void Dashboard::ByteEachDigit(int num)
 {
     if (num >= 10)
     {
         ByteEachDigit(num / 10);
     }
-        
-    int digit = num % 10;
-
-    this->BusVolt_ByteEachDigit[this->counter] = digit;
-
-    this->counter++;
-
-    if (this->counter == 4)
+    else if (counter == 4)
     {
-        this->counter = 0;
-        return this->BusVolt_ByteEachDigit;
+        counter = 0;
     }
+
+    this->BusVolt_ByteEachDigit[counter] = num % 10;
+
+    counter++;
+}
+
+
+uint8_t *Dashboard::getBusVoltage()
+{
+    return this->BusVolt_ByteEachDigit;
 }
