@@ -93,14 +93,14 @@ void loop()
 
     state_machine.handle_state_machine(mcu_status);
 
-    BusVoltage = pm100.getmcBusVoltage();
-
     if (debug_tim.check())
     {
         // Serial.println("COPE SEEETHE MALD");
     }
     if (timer_can_update.check())
     {
+
+        BusVoltage = pm100.getmcBusVoltage();
 
         // Send Main Control Unit status message
         CAN_message_t tx_msg;
@@ -115,10 +115,17 @@ void loop()
         // Send Dash Bus Voltage (pls don change this jonathon :( )
         CAN_message_t dash_msg;
 
-        memcpy(dash.ByteEachDigit(BusVoltage), dash_msg.buf, dash_msg.len);
+        memcpy(dash_msg.buf, dash.ByteEachDigit(BusVoltage), dash_msg.len);
 
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;
+
+        // for (int i = 0; i < 4; i++)
+        // {
+        //     Serial.println(dash.ByteEachDigit(BusVoltage)[i]);
+        // }
+
+        // Serial.println(pm100.getmcBusVoltage());
 
         WriteCANToInverter(dash_msg);
     }
