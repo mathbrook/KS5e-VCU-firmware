@@ -115,19 +115,23 @@ void loop()
         // Send Dash Bus Voltage (pls don change this jonathan :( )
         CAN_message_t dash_msg;
 
+        BusVoltage = pm100.getmcBusVoltage();
+
+        Serial.println(BusVoltage);
+
+        //Serial.println(pm100.getmcBusVoltage());
+
+        //dash.ByteEachDigit(pm100.getmcBusVoltage());
+
         dash.ByteEachDigit(BusVoltage);
 
-        memcpy(dash.getBusVoltage(), dash_msg.buf, dash_msg.len);
+        for (int i = 0; i < 4; i++)
+        {
+            dash_msg.buf[i] = dash.getBusVoltage()[i];
+        }
     
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;
-
-        // for (int i = 0; i < 4; i++)
-        // {
-        //     Serial.println(dash.ByteEachDigit(BusVoltage)[i]);
-        // }
-
-        // Serial.println(pm100.getmcBusVoltage());
 
         WriteCANToInverter(dash_msg);
     }
