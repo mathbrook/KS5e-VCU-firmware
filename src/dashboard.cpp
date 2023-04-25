@@ -3,7 +3,7 @@
 #include "dashboard.hpp"
 
 
-int counter = 0;
+const uint8_t NUM_OF_DIGITS = 3;
 
 
 void Dashboard::updateDashCAN()
@@ -22,20 +22,11 @@ void Dashboard::updateDashCAN()
 
 void Dashboard::ByteEachDigit(int num)
 {
-    if (num >= 10)
-    {
-        ByteEachDigit(num / 10);
-    }
-
-    this->BusVolt_ByteEachDigit[counter] = num % 10;
-
-    counter++;
-
-    if (counter == 4)
-    {
-        counter = 0;
-        return;
-    }
+   for (int i = NUM_OF_DIGITS; i >= 0; i--)
+   {
+        this->BusVolt_ByteEachDigit[i] = num % 10;
+        num = num / 10;
+   }
 }
 
 

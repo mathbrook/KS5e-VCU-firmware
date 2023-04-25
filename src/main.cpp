@@ -76,7 +76,7 @@ void setup()
     delay(100);
 
     InitCAN();
-    
+
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
 
@@ -125,10 +125,7 @@ void loop()
 
         dash.ByteEachDigit(BusVoltage);
 
-        for (int i = 0; i < 4; i++)
-        {
-            dash_msg.buf[i] = dash.getBusVoltage()[i];
-        }
+        memcpy(dash_msg.buf, dash.getBusVoltage(), dash_msg.len);
     
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;
