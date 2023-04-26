@@ -70,7 +70,6 @@ bool PedalHandler::read_pedal_values()
 
 
     // This is the code to print raw ADC readings vs the filtered one
-    
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
     VCUPedalReadings.set_accelerator_pedal_2(accel2_);
     VCUPedalReadings.set_brake_transducer_1(brake1_);

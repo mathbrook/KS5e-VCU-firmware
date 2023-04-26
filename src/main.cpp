@@ -29,7 +29,7 @@ Metro pchgMsgTimer = Metro(1000,0);
 // timers for the pedals:
 
 Metro timer_debug_pedals_raw = Metro(100, 1);
-Metro pedal_debug = Metro(100, 1);
+Metro pedal_out = Metro(100, 1);
 Metro pedal_check = Metro(40, 1);
 
 // timers for the dashboard:
@@ -57,7 +57,7 @@ FreqMeasureMulti wsfr;
 Dashboard dash;
 Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send);
 Accumulator accum(&pchgMsgTimer);
-PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
+PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
 
@@ -85,14 +85,12 @@ void setup()
 
 void loop()
 {
-
     state_machine.handle_state_machine(mcu_status);
     if(debug_tim.check()) {
         // Serial.println("COPE SEEETHE MALD");
     }
     if (timer_can_update.check())
     {
-        
         // Send Main Control Unit status message
         CAN_message_t tx_msg;
         mcu_status.write(tx_msg.buf);

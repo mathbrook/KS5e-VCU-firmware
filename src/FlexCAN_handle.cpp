@@ -56,12 +56,12 @@ void InitCAN()
 
 int WriteCANToInverter(CAN_message_t &msg)
 {
-    // DaqCAN_.write(msg);
+    DaqCAN_.write(msg);
     return Inverter_CAN_.write(msg);
 }
 int WriteCANToAccumulator(CAN_message_t &msg)
 {
-    // DaqCAN_.write(msg);
+    DaqCAN_.write(msg);
     return AccumulatorCAN_.write(msg);
 }
 bool writeCANToJUSTAccumulator(CAN_message_t &msg)
@@ -82,12 +82,13 @@ int ReadDaqCAN(CAN_message_t &msg)
 int ReadInverterCAN(CAN_message_t &msg)
 {
     int ret = Inverter_CAN_.read(msg);
+    DaqCAN_.write(msg);
     return ret;
 }
 
 int ReadAccumulatorCAN(CAN_message_t &msg)
 {
     int ret = AccumulatorCAN_.read(msg);
-
+    DaqCAN_.write(msg);
     return ret;
 }
