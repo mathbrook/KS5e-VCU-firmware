@@ -1,5 +1,6 @@
 #include "inverter.hpp"
 #include "FlexCAN_util.hpp"
+#include "pedal_handler.hpp"
 #define HT_DEBUG_EN
 // inverter has got to be crunk up before yeeting
 void Inverter::doStartup()
@@ -92,10 +93,10 @@ bool Inverter::command_torque(int torque)
     bool emraxDirection = true; // forward
     bool inverterEnable = true; // go brrr
     // TODO actual regen mapping and not on/off, this was jerky on dyno
-    //  if(pedals->VCUPedalReadings.get_brake_transducer_1()>=1950){
-    //    torquePart1=0x9C;
-    //    torquePart2=0xFf; //-10nm sussy regen
-    //  }
+     if(pedals->VCUPedalReadings.get_brake_transducer_1()>=1950){
+       torquePart1=0x9C;
+       torquePart2=0xFf; //-10nm sussy regen
+     }
     uint8_t torqueCommand[] = {
         torquePart1, torquePart2, angularVelocity1, angularVelocity2, emraxDirection, inverterEnable, 0, 0};
     if (timer_motor_controller_send->check())
