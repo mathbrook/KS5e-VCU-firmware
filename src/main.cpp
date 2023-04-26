@@ -94,6 +94,7 @@ void setup()
 void loop()
 {
     state_machine.handle_state_machine(mcu_status);
+    BusVoltage = pm100.getmcBusVoltage();
 
     if (debug_tim.check())
     {
@@ -110,8 +111,6 @@ void loop()
 
         // Send Dash Bus Voltage, pls don't change this jonathan :(
         CAN_message_t dash_msg;
-        BusVoltage = pm100.getmcBusVoltage();
-        Serial.println(BusVoltage);
         dash.ByteEachDigit(BusVoltage);
         memcpy(dash_msg.buf, dash.getBusVoltage(), dash_msg.len);
         dash_msg.id = ID_DASH_BUSVOLT;
