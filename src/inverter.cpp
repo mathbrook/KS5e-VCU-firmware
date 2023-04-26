@@ -13,11 +13,6 @@ void Inverter::doStartup()
 
 void Inverter::updateInverterCAN()
 {
-    CAN_message_t rxMsg2;
-
-    // TODO Hey John delete this because I'm just putting it here to read CAN1
-    ReadDaqCAN(rxMsg2);
-
     CAN_message_t rxMsg;
 
     if (ReadInverterCAN(rxMsg))

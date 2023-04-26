@@ -2,11 +2,16 @@
 
 #include <string.h>
 #include <stdint.h>
+
 #ifdef HT_DEBUG_EN
     #include "Arduino.h"
 #endif
+
 #pragma pack(push,1)
-class Dashboard {
+
+class Dashboard 
+{
+
 public:
     Dashboard() = default;
     Dashboard(const uint8_t buf[8]) { load(buf); }
@@ -25,11 +30,16 @@ public:
     inline void set_buttons(const uint8_t inputs)        { button_states = inputs; }
 
     void updateDashCAN();
-    
-private:
 
+    void ByteEachDigit(int num);
+
+    uint8_t *getBusVoltage();
+ 
+private:
     uint8_t button_states;
-    
+
+    // Stuff for bus voltage 
+    uint8_t BusVolt_ByteEachDigit[8] = { 0 };
 };
 
 #pragma pack(pop)

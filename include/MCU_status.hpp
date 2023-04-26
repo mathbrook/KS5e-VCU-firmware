@@ -97,8 +97,11 @@ public:
     //Pressing buttons on dash to change torque modes and cycle through
     inline uint8_t get_torque_mode()          const { return torque_mode; }
     inline void set_torque_mode(const uint8_t mode) { torque_mode = mode; }
-    inline void toggle_max_torque(const uint8_t mode){
-        switch(mode){
+
+    inline void toggle_max_torque(const uint8_t mode)
+    {
+        switch(mode)
+        {
             case 1:
             {
                 torque_mode=2;
@@ -118,10 +121,8 @@ public:
             {
                 break;
             }
-
         }
-
-    };
+    }
 
 private:
     // no free bits

@@ -1,5 +1,6 @@
 #include "pedal_handler.hpp"
 Metro debugPrint = Metro(50);
+Metro deb = Metro(10);
 
 // initializes pedal's ADC
 void PedalHandler::init_pedal_handler()
