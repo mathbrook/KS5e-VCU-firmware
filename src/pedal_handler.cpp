@@ -1,5 +1,5 @@
 #include "pedal_handler.hpp"
-Metro debugPrint = Metro(50);
+Metro debugPrint = Metro(10);
 Metro deb = Metro(10);
 
 // initializes pedal's ADC
@@ -41,6 +41,19 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     {
         calculated_torque = 0;
     }
+
+       // TODO actual regen mapping and not on/off, this was jerky on dyno
+    if(VCUPedalReadings.get_brake_transducer_1()>=1650 && torque1<=5)
+    {
+        regen_command = regen_nm;
+            
+        // 40191 = -10nm
+        // 10101 = -100nm
+        calculated_torque = 40191;
+        // torquePart1=0x9C;
+        // torquePart2=0xFf; //-10nm sussy regen
+    }
+
     return calculated_torque;
 }
 

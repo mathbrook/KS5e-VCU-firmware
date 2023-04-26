@@ -20,7 +20,7 @@
 // Metro timers for inverter:
 Metro timer_mc_kick_timer = Metro(50, 1);
 Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
-Metro timer_motor_controller_send = Metro(10, 1);
+Metro timer_motor_controller_send = Metro(100, 1);
 
 // timers for the accumulator:
 Metro pchgMsgTimer = Metro(1000, 0);
@@ -29,7 +29,7 @@ Metro pchgMsgTimer = Metro(1000, 0);
 // timers for the pedals:
 
 Metro timer_debug_pedals_raw = Metro(100, 1);
-Metro pedal_out = Metro(100, 1);
+Metro pedal_out = Metro(50, 1);
 Metro pedal_check = Metro(40, 1);
 
 // timers for the dashboard:
@@ -54,7 +54,7 @@ int BusVoltage = 0;
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 
 // timers for VCU state out:
-Metro timer_can_update = Metro(100, 1);
+Metro timer_can_update = Metro(10, 1);
 
 // Wheel speed shit
 FreqMeasureMulti wsfl;
@@ -87,7 +87,7 @@ void setup()
     pinMode(WSFL, INPUT_PULLUP);
     pinMode(WSFR, INPUT_PULLUP);
     mcu_status.set_inverter_powered(true); // this means nothing anymore
-    mcu_status.set_max_torque(TORQUE_4);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
+    mcu_status.set_max_torque(TORQUE_3);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
     state_machine.init_state_machine(mcu_status);
 }
 
@@ -111,7 +111,7 @@ void loop()
         // Send Dash Bus Voltage, pls don't change this jonathan :(
         CAN_message_t dash_msg;
         BusVoltage = pm100.getmcBusVoltage();
-        Serial.println(BusVoltage);
+        // Serial.println(BusVoltage);
         dash.ByteEachDigit(BusVoltage);
         memcpy(dash_msg.buf, dash.getBusVoltage(), dash_msg.len);
         dash_msg.id = ID_DASH_BUSVOLT;

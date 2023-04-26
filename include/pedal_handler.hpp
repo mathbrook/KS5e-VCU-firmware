@@ -56,6 +56,7 @@ private:
     int sum2 = 0;
     int count2 = 0;
     unsigned long time2;
+    int regen_command;
 
 
 public:
