@@ -8,8 +8,8 @@ void PedalHandler::init_pedal_handler()
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
     pid_->setTimeStep(PID_TIMESTEP);
     wsfl_->begin(WSFL);
-    // wsfr_->begin(WSFR);
-    // pid_->setBangBang(double(BANGBANG_RANGE));
+    wsfr_->begin(WSFR);
+    pid_->setBangBang(double(BANGBANG_RANGE));
 }
 
 int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
@@ -68,7 +68,6 @@ bool PedalHandler::read_pedal_values()
         Serial.println(brake1_);
         #endif
     }
-
 
     // This is the code to print raw ADC readings vs the filtered one
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);

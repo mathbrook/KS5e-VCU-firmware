@@ -2,6 +2,7 @@
 #define KS2EVCUGPIOS_HPP
 
 #define WSFL 28 //Input Pullup
+#define WSFR 28 //Input Pullup
 #define SDCSENSE 20 //Input ADC
 #define MC_RELAY 14 //Output
 #define RTDbutton 34 //Input Pullup

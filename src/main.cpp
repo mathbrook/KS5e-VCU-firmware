@@ -85,8 +85,7 @@ void setup()
     pinMode(LOWSIDE1, OUTPUT);
     pinMode(LOWSIDE2, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
-
-    // pinMode(WSFR, INPUT_PULLUP);
+    pinMode(WSFR, INPUT_PULLUP);
     mcu_status.set_inverter_powered(true); // this means nothing anymore
     mcu_status.set_max_torque(TORQUE_4);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
     state_machine.init_state_machine(mcu_status);
@@ -104,28 +103,19 @@ void loop()
     {
         // Send Main Control Unit status message
         CAN_message_t tx_msg;
-
         mcu_status.write(tx_msg.buf);
-
         tx_msg.id = ID_VCU_STATUS;
         tx_msg.len = sizeof(mcu_status);
-
         WriteCANToInverter(tx_msg);
 
-        // Send Dash Bus Voltage (pls don change this jonathan :( )
+        // Send Dash Bus Voltage, pls don't change this jonathan :(
         CAN_message_t dash_msg;
-
         BusVoltage = pm100.getmcBusVoltage();
-
         Serial.println(BusVoltage);
-
         dash.ByteEachDigit(BusVoltage);
-
         memcpy(dash_msg.buf, dash.getBusVoltage(), dash_msg.len);
-    
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;
-
         WriteCANToInverter(dash_msg);
     }
 }
