@@ -65,7 +65,7 @@ public:
     MCU_pedal_readings VCUPedalReadings;
     bool is_accel_pedal_plausible();
     bool is_brake_pedal_plausible();
-    int calculate_torque(int16_t &motor_speed, int &max_torque);
+    int calculate_torque(int16_t &motor_speed, int &max_torque, bool regen_button);
     void verify_pedals(bool &accel_is_plausible, bool &brake_is_plausible, bool &accel_and_brake_plausible, bool &impl_occ);
     bool read_pedal_values();
     void get_ws();

@@ -40,13 +40,14 @@
 #define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1) / 2)
 #define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2) / 2)
 #define ALPHA 0.9772
-#define regen_nm 10
+#define regen_nm 120
 
 #define MIN_HV_VOLTAGE 600 // apparently this is divided by ten? yes maybe, bc getmcbusvoltage returns a can packet which is the bus voltage*10? idk
 
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
+';lq
 #define TORQUE_1 60
 #define TORQUE_2 120
 #define TORQUE_3 180
