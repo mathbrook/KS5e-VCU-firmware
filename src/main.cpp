@@ -96,10 +96,10 @@ void loop()
     state_machine.handle_state_machine(mcu_status);
     BusVoltage = pm100.getmcBusVoltage();
 
-    if (debug_tim.check())
-    {
-        // Serial.println("COPE SEEETHE MALD");
-    }
+    // if (debug_tim.check())
+    // {
+    //     Serial.println("COPE SEEETHE MALD");
+    // }
     if (timer_can_update.check())
     {
         // Send Main Control Unit status message
@@ -118,3 +118,4 @@ void loop()
         WriteCANToInverter(dash_msg);
     }
 }
+
