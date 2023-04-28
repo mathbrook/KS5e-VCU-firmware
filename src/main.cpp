@@ -109,7 +109,7 @@ void loop()
         tx_msg.len = sizeof(mcu_status);
         WriteCANToInverter(tx_msg);
 
-        // Send Dash Bus Voltage, pls don't change this jonathan :(
+        // Send Dash Bus Voltage
         CAN_message_t dash_msg;
         dash.ByteEachDigit(BusVoltage);
         memcpy(dash_msg.buf, dash.getBusVoltage(), dash_msg.len);
