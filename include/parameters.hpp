@@ -47,7 +47,6 @@
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
-';lq
 #define TORQUE_1 60
 #define TORQUE_2 120
 #define TORQUE_3 180
