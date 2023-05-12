@@ -117,6 +117,18 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   mcu_status.set_bms_ok_high(accumulator->get_bms_state());
   mcu_status.set_bspd_ok_high(true); // not reading this value so it defaults to off for now
 
+#ifdef DEBUG
+  // Serial.print("1: ");
+  // Serial.print(dash_->get_button1());
+  // Serial.print("2: ");
+  // Serial.print(dash_->get_button2());
+  // Serial.print("3: ");
+  // Serial.print(dash_->get_button3());
+  // Serial.print("4: ");
+  // Serial.println(dash_->get_button4());
+#endif
+
+
 #if USE_INVERTER
   pm100->updateInverterCAN();
 #endif
@@ -319,7 +331,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #if USE_INVERTER
       motor_speed = pm100->getmcMotorRPM();
 #endif
-      calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
+      calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual, dash_->get_button2());
     }
     
 #if USE_INVERTER
