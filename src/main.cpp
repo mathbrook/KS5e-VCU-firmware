@@ -20,7 +20,7 @@
 // Metro timers for inverter:
 Metro timer_mc_kick_timer = Metro(50, 1);
 Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
-Metro timer_motor_controller_send = Metro(10, 1);
+Metro timer_motor_controller_send = Metro(100, 1);
 
 // timers for the accumulator:
 Metro pchgMsgTimer = Metro(1000, 0);
@@ -29,7 +29,7 @@ Metro pchgMsgTimer = Metro(1000, 0);
 // timers for the pedals:
 
 Metro timer_debug_pedals_raw = Metro(100, 1);
-Metro pedal_debug = Metro(100, 1);
+Metro pedal_out = Metro(50, 1);
 Metro pedal_check = Metro(40, 1);
 
 // timers for the dashboard:
@@ -54,7 +54,7 @@ int BusVoltage = 0;
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 
 // timers for VCU state out:
-Metro timer_can_update = Metro(100, 1);
+Metro timer_can_update = Metro(10, 1);
 
 // Wheel speed shit
 FreqMeasureMulti wsfl;
@@ -64,7 +64,7 @@ FreqMeasureMulti wsfr;
 Dashboard dash;
 Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send);
 Accumulator accum(&pchgMsgTimer);
-PedalHandler pedals(&timer_debug_pedals_raw, &pedal_debug, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
+PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
 
@@ -76,7 +76,7 @@ void setup()
     delay(100);
 
     InitCAN();
-    
+
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
 
@@ -85,8 +85,7 @@ void setup()
     pinMode(LOWSIDE1, OUTPUT);
     pinMode(LOWSIDE2, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
-
-    // pinMode(WSFR, INPUT_PULLUP);
+    pinMode(WSFR, INPUT_PULLUP);
     mcu_status.set_inverter_powered(true); // this means nothing anymore
     mcu_status.set_max_torque(TORQUE_4);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
     state_machine.init_state_machine(mcu_status);
@@ -95,35 +94,30 @@ void setup()
 void loop()
 {
     state_machine.handle_state_machine(mcu_status);
-
     BusVoltage = pm100.getmcBusVoltage();
 
-    if (debug_tim.check())
-    {
-        // Serial.println("COPE SEEETHE MALD");
-    }
+    // if (debug_tim.check())
+    // {
+    //     Serial.println("COPE SEEETHE MALD");
+    // }
     if (timer_can_update.check())
     {
         // Send Main Control Unit status message
         CAN_message_t tx_msg;
-
         mcu_status.write(tx_msg.buf);
-
         tx_msg.id = ID_VCU_STATUS;
         tx_msg.len = sizeof(mcu_status);
-
         WriteCANToInverter(tx_msg);
 
-        // Send Dash Bus Voltage (pls don change this jonathan :( )
+        // Send Dash Bus Voltage
         CAN_message_t dash_msg;
-
+        BusVoltage = pm100.getmcBusVoltage();
+        // Serial.println(BusVoltage);
         dash.ByteEachDigit(BusVoltage);
-
-        memcpy(dash.getBusVoltage(), dash_msg.buf, dash_msg.len);
-    
+        memcpy(dash_msg.buf, dash.getBusVoltage(), dash_msg.len);
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;
-
         WriteCANToInverter(dash_msg);
     }
 }
+

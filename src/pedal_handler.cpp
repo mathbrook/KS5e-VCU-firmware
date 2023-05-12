@@ -1,5 +1,6 @@
 #include "pedal_handler.hpp"
-Metro debugPrint = Metro(50);
+#include "state_machine.hpp"
+Metro debugPrint = Metro(10);
 Metro deb = Metro(10);
 
 // initializes pedal's ADC
@@ -8,11 +9,11 @@ void PedalHandler::init_pedal_handler()
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
     pid_->setTimeStep(PID_TIMESTEP);
     wsfl_->begin(WSFL);
-    // wsfr_->begin(WSFR);
-    // pid_->setBangBang(double(BANGBANG_RANGE));
+    wsfr_->begin(WSFR);
+    pid_->setBangBang(double(BANGBANG_RANGE));
 }
 
-int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
+int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool regen_button)
 {
     int calculated_torque = 0;
     
@@ -41,6 +42,31 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     {
         calculated_torque = 0;
     }
+
+    // TODO actual regen mapping and not on/off, this was jerky on dyno
+    bool off_brake = (VCUPedalReadings.get_brake_transducer_1() <= 1850);
+    bool off_gas =  (torque1 <= 5);
+
+    Serial.print("button: ");
+    Serial.println(regen_button);
+    Serial.print("brake: ");
+    Serial.println(off_brake);
+    Serial.print("gas: ");
+    Serial.println(off_gas);
+    if(off_gas && off_brake && regen_button)
+    {
+        // regen_command = ;
+        // 40191 = -10nm
+        // 10101 = -100nm
+        uint16_t calculated_torque2 = (uint16_t)(-(regen_nm*10));
+        calculated_torque = static_cast<int>(calculated_torque2);
+        // calculated_torque = 40191;
+        Serial.print("regen torque: ");
+        Serial.println(calculated_torque);
+        // torquePart1=0x9C;
+        // torquePart2=0xFf; //-10nm sussy regen
+    }
+
     return calculated_torque;
 }
 
@@ -60,15 +86,14 @@ bool PedalHandler::read_pedal_values()
 
     if(debugPrint.check()){
         #ifdef DEBUG
-        Serial.print("ADC1 :");
-        Serial.println(accel1_);
-        Serial.print("ADC2 :");
-        Serial.println(accel2_);
-        Serial.print("BRAKE :");
-        Serial.println(brake1_);
+        // Serial.print("ADC1 :");
+        // Serial.println(accel1_);
+        // Serial.print("ADC2 :");
+        // Serial.println(accel2_);
+        // Serial.print("BRAKE :");
+        // Serial.println(brake1_);
         #endif
     }
-
 
     // This is the code to print raw ADC readings vs the filtered one
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);

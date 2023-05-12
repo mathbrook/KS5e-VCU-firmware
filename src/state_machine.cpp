@@ -10,44 +10,42 @@ void StateMachine::init_state_machine(MCU_status &mcu_status)
 /* Handle changes in state */
 void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 {
-
-
   if (mcu_status.get_state() == new_state)
   {
     return;
   }
 
-  // exit logic
+  // exit logic ----------------------------------------------------------------------------------------------------------------------------------------------------
   switch (mcu_status.get_state())
   {
-  case MCU_STATE::STARTUP:
+  case MCU_STATE::STARTUP: // ----------
   {
     break;
   }
-  case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
+  case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: // ----------
   {
 #if USE_INVERTER
     pm100->tryToClearMcFault();
 #endif
     break;
   }
-  case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
+  case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: // ----------
   {
     // accumulator->resetPchgState(); // dealing with sus behavior, precharge timed out but would stay "ready"
     break;
   }
-  case MCU_STATE::ENABLING_INVERTER:
+  case MCU_STATE::ENABLING_INVERTER: // ----------
   {
     break;
   }
-  case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
+  case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND: // ----------
   {
     // make dashboard stop buzzer
     mcu_status.set_activate_buzzer(false);
     digitalWrite(BUZZER, LOW);
     break;
   }
-  case MCU_STATE::READY_TO_DRIVE:
+  case MCU_STATE::READY_TO_DRIVE: // ----------
   {
     // reset "state" of precharge in memory
     // accumulator->resetPchgState();
@@ -61,27 +59,27 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 
   mcu_status.set_state(new_state);
 
-  // entry logic
+  // entry logic ----------------------------------------------------------------------------------------------------------------------------------------------------
   // TODO unfuck the other pixel setting
   switch (new_state)
   {
-  case MCU_STATE::STARTUP:
+  case MCU_STATE::STARTUP: // ----------
   {
     break;
   }
-  case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
+  case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: // ----------
   {
 #if USE_INVERTER
     pm100->forceMCdischarge();
 #endif
     break;
   }
-  case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
+  case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: // ----------
   {
 
     break;
   }
-  case MCU_STATE::ENABLING_INVERTER:
+  case MCU_STATE::ENABLING_INVERTER: // ----------
   {
 
 #if USE_INVERTER
@@ -91,7 +89,7 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 #endif
     break;
   }
-  case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
+  case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND: // ----------
   {
     // make dashboard sound buzzer
     mcu_status.set_activate_buzzer(true);
@@ -99,7 +97,7 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
     timer_ready_sound->reset();
     break;
   }
-  case MCU_STATE::READY_TO_DRIVE:
+  case MCU_STATE::READY_TO_DRIVE: // ----------
   {
     // enable low-side outputs
     digitalWrite(LOWSIDE1, HIGH);
@@ -109,16 +107,27 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
 }
 
+
+// Constant logic ----------------------------------------------------------------------------------------------------------------------------------------------------
 void StateMachine::handle_state_machine(MCU_status &mcu_status)
 {
   // things that are done every loop go here:
   // TODO make getting analog readings neater--this is the only necessary one for now
-  // mcu_status.set_bms_ok_high(true); // TODO BODGE TESTING, confirmed working 3/28/23, false = light ON, true = light OFF
-  // mcu_status.set_bspd_ok_high(true);
-  // mcu_status.set_imd_ok_high(true);
   mcu_status.set_imd_ok_high(accumulator->get_imd_state());
   mcu_status.set_bms_ok_high(accumulator->get_bms_state());
   mcu_status.set_bspd_ok_high(true); // not reading this value so it defaults to off for now
+
+#ifdef DEBUG
+  // Serial.print("1: ");
+  // Serial.print(dash_->get_button1());
+  // Serial.print("2: ");
+  // Serial.print(dash_->get_button2());
+  // Serial.print("3: ");
+  // Serial.print(dash_->get_button3());
+  // Serial.print("4: ");
+  // Serial.println(dash_->get_button4());
+#endif
+
 
 #if USE_INVERTER
   pm100->updateInverterCAN();
@@ -127,13 +136,14 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
   dash_->updateDashCAN();
   pedals->get_ws();
+
   switch (mcu_status.get_state())
   {
-  case MCU_STATE::STARTUP:
+  case MCU_STATE::STARTUP: // --------------------
   {
     break;
   }
-  case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE:
+  case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: // --------------------
   {
     // end of test block
 #if USE_INVERTER
@@ -145,8 +155,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
 
     bool accumulator_ready = false;
-
-    // *we are ok up to here*
 
     // TODO might wanna check this out and make sure that this shit works, idk if it does
     if (accumulator->check_precharge_success() && (!accumulator->check_precharge_timeout()))
@@ -182,7 +190,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     break;
   }
-  case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE:
+  case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: // --------------------
   {
 
     // TODO (Disabled to test error 3/27/23)
@@ -211,7 +219,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     break;
   }
-  case MCU_STATE::ENABLING_INVERTER:
+  case MCU_STATE::ENABLING_INVERTER: // --------------------
   {
 #if USE_INVERTER
     pm100->inverter_kick(1);
@@ -252,7 +260,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     break;
   }
-  case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND:
+  case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND: // --------------------
   {
   #if USE_INVERTER
     pm100->inverter_kick(1);
@@ -276,7 +284,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
     break;
   }
-  case MCU_STATE::READY_TO_DRIVE:
+  case MCU_STATE::READY_TO_DRIVE: // --------------------
   {
 #if USE_INVERTER
     
@@ -323,7 +331,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #if USE_INVERTER
       motor_speed = pm100->getmcMotorRPM();
 #endif
-      calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
+      calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual, dash_->get_button2());
     }
     
 #if USE_INVERTER
