@@ -147,15 +147,13 @@ void PedalHandler::verify_pedals(
     {
         accel_is_plausible = false;
     }
-    // check that the pedals are reading within 10% of each other TODO reenable???
+    // check that the pedals are reading within 10% of each other TODO re-enabled 6/10/23, why was it commented out in the first place? how did we fix it before??
     // sum of the two readings should be within 10% of the average travel
     // T.4.2.4
-    //     else if (torqDiff*100 > 50)
-    //     {
-
-    // #endif
-    //         accel_is_plausible = false;
-    //     }
+    else if (torqDiff*100 > 50)
+    {
+        accel_is_plausible = false;
+    }
     else
     {
         // mcu_status.set_no_accel_implausability(true);
