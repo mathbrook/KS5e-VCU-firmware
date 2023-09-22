@@ -57,6 +57,7 @@ void Accumulator::updateAccumulatorCAN()
     char lineBuffer[200];
     if (ReadAccumulatorCAN(rxMsg))
     {
+        WriteToDaqCAN(rxMsg);
         switch (rxMsg.id)
         {
         case (0x69):
