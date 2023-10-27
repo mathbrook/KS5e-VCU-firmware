@@ -87,7 +87,7 @@ void setup()
     pinMode(WSFL, INPUT_PULLUP);
     pinMode(WSFR, INPUT_PULLUP);
     mcu_status.set_inverter_powered(true); // this means nothing anymore
-    mcu_status.set_max_torque(60);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
+    mcu_status.set_max_torque(120);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
     state_machine.init_state_machine(mcu_status);
 }
 
