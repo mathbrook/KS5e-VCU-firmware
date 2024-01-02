@@ -47,12 +47,12 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool r
     bool off_brake = (VCUPedalReadings.get_brake_transducer_1() <= 1850);
     bool off_gas =  (torque1 <= 5);
 
-    Serial.print("button: ");
-    Serial.println(regen_button);
-    Serial.print("brake: ");
-    Serial.println(off_brake);
-    Serial.print("gas: ");
-    Serial.println(off_gas);
+    // Serial.print("button: ");
+    // Serial.println(regen_button);
+    // Serial.print("brake: ");
+    // Serial.println(off_brake);
+    // Serial.print("gas: ");
+    // Serial.println(off_gas);
     if(off_gas && off_brake && regen_button)
     {
         // regen_command = ;
@@ -66,7 +66,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool r
         // torquePart1=0x9C;
         // torquePart2=0xFf; //-10nm sussy regen
     }
-
+    // Serial.println(calculated_torque);
     return calculated_torque;
 }
 
@@ -86,12 +86,12 @@ bool PedalHandler::read_pedal_values()
 
     if(debugPrint.check()){
         #ifdef DEBUG
-        // Serial.print("ADC1 :");
-        // Serial.println(accel1_);
-        // Serial.print("ADC2 :");
-        // Serial.println(accel2_);
-        // Serial.print("BRAKE :");
-        // Serial.println(brake1_);
+        Serial.print("ADC1 :");
+        Serial.println(accel1_);
+        Serial.print("ADC2 :");
+        Serial.println(accel2_);
+        Serial.print("BRAKE :");
+        Serial.println(brake1_);
         #endif
     }
 
@@ -147,15 +147,13 @@ void PedalHandler::verify_pedals(
     {
         accel_is_plausible = false;
     }
-    // check that the pedals are reading within 10% of each other TODO reenable???
+    // check that the pedals are reading within 10% of each other TODO re-enabled 6/10/23, why was it commented out in the first place? how did we fix it before??
     // sum of the two readings should be within 10% of the average travel
     // T.4.2.4
-    //     else if (torqDiff*100 > 50)
-    //     {
-
-    // #endif
-    //         accel_is_plausible = false;
-    //     }
+    else if (torqDiff*100 > 50)
+    {
+        accel_is_plausible = false;
+    }
     else
     {
         // mcu_status.set_no_accel_implausability(true);
