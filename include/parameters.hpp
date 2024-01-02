@@ -40,7 +40,8 @@
 #define ALPHA 0.9772
 
 #define MIN_HV_VOLTAGE 600 // apparently this is divided by ten?
-
+#define DISCHARGE_POWER_LIM 17000
+#define CHARGE_POWER_LIM 9000
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772

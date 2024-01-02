@@ -1,7 +1,6 @@
 #ifndef DASHBOARD_HPP
 #define DASHBOARD_HPP
 #include <Arduino.h>
-#include "Adafruit_LEDBackpack.h"
 #include <WS2812Serial.h>
 #include "Metro.h"
 
@@ -14,7 +13,6 @@ class Dashboard
 private:
     WS2812Serial * leds;
     Metro *timer;
-    Adafruit_7segment DashDisplay = Adafruit_7segment();
     uint8_t enableLights[3] = {0, 7, 7};
     uint8_t waitingRtdLights[3] = {2, 7, 7};
     uint8_t rtdLights[3] = {3, 7, 7};
@@ -28,7 +26,6 @@ public:
     void init_dashboard();
     void DashLedscolorWipe();
     void set_dashboard_led_color(int color);
-    void refresh_dash(int voltage);
 };
 
 #endif

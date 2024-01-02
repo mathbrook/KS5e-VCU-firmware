@@ -2,15 +2,6 @@
 #include "dashboard.hpp"
 void Dashboard::init_dashboard()
 {
-    if (!DashDisplay.begin())
-    {
-        Serial.println("L dash");
-    };
-    DashDisplay.setBrightness(15);
-
-    DashDisplay.print(TORQUE_1);
-    DashDisplay.writeDisplay();
-    
     leds->begin();
     leds->setBrightness(BRIGHTNESS);
 
@@ -30,14 +21,6 @@ void Dashboard::set_dashboard_led_color(int color){
     led_color_ = color;
 }
 
-void Dashboard::refresh_dash(int voltage)
-{
-    DashDisplay.begin();
-    DashDisplay.clear();
-    DashDisplay.print(voltage, DEC);
-    DashDisplay.writeDisplay();
-    DashLedscolorWipe();
-}
 
 void Dashboard::DashLedscolorWipe()
 {

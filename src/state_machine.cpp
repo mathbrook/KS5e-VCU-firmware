@@ -114,6 +114,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   accumulator->updateAccumulatorCAN();
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
   pedals->get_ws();
+  pm100->send_current_limit(pm100->calc_current_limits(pm100->getmcBusVoltage(),DISCHARGE_POWER_LIM,CHARGE_POWER_LIM));
   switch (mcu_status.get_state())
   {
   case MCU_STATE::STARTUP:
@@ -351,18 +352,12 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
   if (debug_->check())
   {
-    uint16_t rpm_wsfl = (int)(pedals->get_wsfl()*100);
-    uint16_t rpm_wsfr = (int)(pedals->get_wsfr()*100);
+    // uint16_t rpm_wsfl = (int)(pedals->get_wsfl()*100);
+    // uint16_t rpm_wsfr = (int)(pedals->get_wsfr()*100);
 
     //Serial.printf("RPM: %d %d\n",rpm_wsfl,rpm_wsfr);
     // Serial.printf("button state: %i, pedal active %i\n", digitalRead(RTDbutton),
     // mcu_status.get_brake_pedal_active());
-    if(tempdisplay_>=1){
-      dash_->refresh_dash(mcu_status.get_max_torque());
-      tempdisplay_--; //this is so dumb
-    }else{
-      dash_->refresh_dash(pm100->getmcBusVoltage());
-    }
 
     //pm100->debug_print();
     switch(digitalRead(TORQUEMODE)){

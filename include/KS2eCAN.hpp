@@ -26,6 +26,7 @@
 #define ID_VCU_STATUS						0xC3
 #define ID_VCU_PEDAL_READINGS				0xC4
 #define ID_VCU_WS_READINGS                  0xC6
+#define ID_BMS_CURRENT_LIMIT 0x202
 #define ID_BMS_INFO 0x6B1
 // number of rx and tx mailboxes
 #define NUM_TX_MAILBOXES 2
