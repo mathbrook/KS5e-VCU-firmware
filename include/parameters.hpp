@@ -43,6 +43,8 @@
 #define regen_nm 120
 
 #define MIN_HV_VOLTAGE 600 // apparently this is divided by ten? yes maybe, bc getmcbusvoltage returns a can packet which is the bus voltage*10? idk
+#define DISCHARGE_POWER_LIM 17000
+#define CHARGE_POWER_LIM 9000
 
 // #define HT_DEBUG_EN
 // Torque Calculation Defines

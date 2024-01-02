@@ -15,9 +15,10 @@ class Inverter
 {
 
 private:
-    Metro *mcTim;
+    Metro *mc_kick_tim;
     Metro *timer_inverter_enable;
     Metro *timer_motor_controller_send;
+    Metro *timer_current_limit;
 
     void writeControldisableWithZeros();
     void writeEnableNoTorque();
@@ -35,7 +36,7 @@ private:
 
 public:
     // this is a member init list: https://www.youtube.com/watch?v=1nfuYMXjZsA
-    Inverter(Metro *mc_kick_timer, Metro *en_tim, Metro *comm_timer) : mcTim(mc_kick_timer), timer_inverter_enable(en_tim), timer_motor_controller_send(comm_timer){};
+    Inverter(Metro *mc_kick_timer, Metro *en_tim, Metro *comm_timer, Metro *current_lim_tim) : mc_kick_tim(mc_kick_timer), timer_inverter_enable(en_tim), timer_motor_controller_send(comm_timer),timer_current_limit(current_lim_tim){};
 
     void inverter_init();
     void doStartup();
@@ -54,6 +55,8 @@ public:
     bool check_inverter_enable_timeout();
     void debug_print();
     void commandRegen();
+    uint32_t calc_current_limits(uint16_t pack_voltage, uint16_t discharge_power_limit, uint16_t charge_power_limit);
+    bool send_current_limit(uint32_t current_limit);
 };
 
 #endif

@@ -155,7 +155,7 @@ void Inverter::enable_inverter()
 // kicks the inverter's heartbeat with the enable flag to either enable or disable inverter
 void Inverter::inverter_kick(bool enable)
 { // do u want the MC on or not?
-    if (mcTim->check())
+    if (mc_kick_tim->check())
     {
         CAN_message_t ctrlMsg;
         ctrlMsg.len = 8;
@@ -187,7 +187,7 @@ void Inverter::forceMCdischarge()
     elapsedMillis dischargeCountdown = 0;
     while (dischargeCountdown <= 100)
     {
-        if (mcTim->check() == 1)
+        if (mc_kick_tim->check() == 1)
         {
             CAN_message_t ctrlMsg;
             ctrlMsg.len = 8;
@@ -238,4 +238,29 @@ bool Inverter::check_TS_active()
 bool Inverter::check_inverter_disabled()
 {
     return (!pm100State.get_inverter_enable_state());
+}
+// Calculate discharge and charge current limits based on current pack voltage and
+// target power limit
+uint32_t Inverter::calc_current_limits(uint16_t pack_voltage, uint16_t discharge_power_limit,uint16_t charge_power_limit){
+    #ifdef DEBUG
+    Serial.printf("calc_current_limits(uint16_t pack_voltage = %d, uint16_t discharge_power_limit = %d, uint16_t charge_power_limit = %d\n",pack_voltage,discharge_power_limit,charge_power_limit);
+    #endif
+    pack_voltage /=10;
+    uint16_t discharge_current_limit = discharge_power_limit/pack_voltage;
+    uint16_t charge_current_limit = charge_power_limit/pack_voltage;
+    uint32_t current_limit = (discharge_current_limit << 16) + charge_current_limit; 
+    return current_limit;
+}
+
+bool Inverter::send_current_limit(uint32_t current_limit){
+    #ifdef DEBUG
+    Serial.printf("send_current_limit(uint32_t current_limit = %d\n",current_limit);
+    #endif
+    if (timer_current_limit->check()){
+        CAN_message_t bms_current_limit_msg;
+        bms_current_limit_msg.id=0x202;
+        memcpy(&bms_current_limit_msg.buf[0],&current_limit,sizeof(current_limit));
+        return WriteCANToInverter(bms_current_limit_msg);
+    }
+    else{   return false;   }
 }
