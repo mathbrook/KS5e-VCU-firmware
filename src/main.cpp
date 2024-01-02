@@ -21,6 +21,7 @@
 Metro timer_mc_kick_timer = Metro(50, 1);
 Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
 Metro timer_motor_controller_send = Metro(100, 1);
+Metro timer_current_limit_send = Metro(500,1);
 
 // timers for the accumulator:
 Metro pchgMsgTimer = Metro(1000, 0);
@@ -62,7 +63,7 @@ FreqMeasureMulti wsfr;
 
 // objects
 Dashboard dash;
-Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send);
+Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send);
 Accumulator accum(&pchgMsgTimer);
 PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);

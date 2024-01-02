@@ -136,6 +136,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
   dash_->updateDashCAN();
   pedals->get_ws();
+    pm100->send_current_limit(pm100->calc_current_limits(pm100->getmcBusVoltage(),DISCHARGE_POWER_LIM,CHARGE_POWER_LIM));
 
   switch (mcu_status.get_state())
   {
