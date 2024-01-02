@@ -68,6 +68,7 @@ Accumulator accum(&pchgMsgTimer);
 PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
+CAN_message_t fw_hash_msg;
 
 //----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -80,6 +81,12 @@ void setup()
 
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
+    // build up fw git hash message
+    fw_hash_msg.id = 0xC8; fw_hash_msg.len=8;
+    Serial.printf("FW git hash: %lu",AUTO_VERSION);
+    // long git_hash = strtol(AUTO_VERSION,0,16);
+    unsigned long git_hash = AUTO_VERSION;
+    memcpy(&fw_hash_msg.buf[0],&git_hash,sizeof(git_hash));
 
     pinMode(BUZZER, OUTPUT); // TODO write gpio initialization function
     digitalWrite(BUZZER, LOW);
@@ -119,6 +126,9 @@ void loop()
         dash_msg.id = ID_DASH_BUSVOLT;
         dash_msg.len = 8;
         WriteCANToInverter(dash_msg);
+
+        //broadcast firmware git hash
+        WriteCANToInverter(fw_hash_msg);
     }
 }
 
