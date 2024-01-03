@@ -21,6 +21,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool r
                       END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,
                       END_ACCELERATOR_PEDAL_2, 0, max_torque);
+    torque1=torque2; //TODO un-cheese (apps1 borked)
     // torque values are greater than the max possible value, set them to max
     if (torque1 > max_torque)
     {
@@ -66,7 +67,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool r
         // torquePart1=0x9C;
         // torquePart2=0xFf; //-10nm sussy regen
     }
-    // Serial.println(calculated_torque);
+    Serial.println(calculated_torque);
     return calculated_torque;
 }
 
@@ -129,10 +130,11 @@ void PedalHandler::verify_pedals(
     bool &accel_and_brake_plausible, bool &impl_occ)
 {
     int max_torque = TORQUE_1 * 10;
-    int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
-                      END_ACCELERATOR_PEDAL_1, 0, max_torque);
+    // int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
+    //                   END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,
                       END_ACCELERATOR_PEDAL_2, 0, max_torque);
+    int torque1 = torque2; //TODO un-cheese (apps1 borked)
     float torqSum = abs(torque1 - torque2);
     float torqAvg = (torque1 + torque2) / 2;
     float torqDiff = torqSum / torqAvg;
@@ -159,6 +161,7 @@ void PedalHandler::verify_pedals(
         // mcu_status.set_no_accel_implausability(true);
         accel_is_plausible = true;
     }
+    Serial.printf("Torque 1: %d Torque 2: %d Torque Sum: %f Torque Average %f Torque Difference: %f\n",torque1,torque2,torqSum,torqAvg,torqDiff);
 
     // BSE check
     // EV.5.6
@@ -205,6 +208,7 @@ void PedalHandler::verify_pedals(
     }
 
     impl_occ = implausibility_occured_;
+    Serial.printf("Implaus occured: %d accel plaus: %d brake plaus: %d accel and brake plaus: %d\n",implausibility_occured_,accel_is_plausible,brake_is_plausible,accel_and_brake_plausible);
 }
 
 // idgaf anything below (all wheel speed)

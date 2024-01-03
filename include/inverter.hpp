@@ -55,8 +55,7 @@ public:
     bool check_inverter_enable_timeout();
     void debug_print();
     void commandRegen();
-    uint32_t calc_current_limits(uint16_t pack_voltage, uint16_t discharge_power_limit, uint16_t charge_power_limit);
-    bool send_current_limit(uint32_t current_limit);
+    bool calc_and_send_current_limit(uint16_t pack_voltage, uint16_t discharge_power_limit,uint16_t charge_power_limit);
 };
 
 #endif
