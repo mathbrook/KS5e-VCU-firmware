@@ -243,7 +243,9 @@ bool Inverter::check_inverter_disabled()
 // target power limit
 uint32_t Inverter::calc_current_limits(uint16_t pack_voltage, uint16_t discharge_power_limit,uint16_t charge_power_limit){
     #ifdef DEBUG
-    Serial.printf("calc_current_limits(uint16_t pack_voltage = %d, uint16_t discharge_power_limit = %d, uint16_t charge_power_limit = %d\n",pack_voltage,discharge_power_limit,charge_power_limit);
+    // if (timer_current_limit->check()){
+    //     Serial.printf("calc_current_limits(uint16_t pack_voltage = %d, uint16_t discharge_power_limit = %d, uint16_t charge_power_limit = %d\n",pack_voltage,discharge_power_limit,charge_power_limit);
+    // }
     #endif
     pack_voltage /=10;
     uint16_t discharge_current_limit = discharge_power_limit/pack_voltage;
@@ -253,10 +255,10 @@ uint32_t Inverter::calc_current_limits(uint16_t pack_voltage, uint16_t discharge
 }
 
 bool Inverter::send_current_limit(uint32_t current_limit){
-    #ifdef DEBUG
-    Serial.printf("send_current_limit(uint32_t current_limit = %d\n",current_limit);
-    #endif
     if (timer_current_limit->check()){
+        #ifdef DEBUG
+        Serial.printf("send_current_limit(uint32_t current_limit = %d\n",current_limit);
+        #endif
         CAN_message_t bms_current_limit_msg;
         bms_current_limit_msg.id=0x202;
         memcpy(&bms_current_limit_msg.buf[0],&current_limit,sizeof(current_limit));
