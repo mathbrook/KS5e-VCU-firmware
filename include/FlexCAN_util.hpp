@@ -7,7 +7,7 @@
 int WriteToDaqCAN(CAN_message_t &msg);
 int WriteCANToInverter(CAN_message_t &msg);
 int WriteCANToAccumulator(CAN_message_t &msg);
-
+int WriteCANToJUSTInverter(CAN_message_t &msg);
 int ReadDaqCAN(CAN_message_t &msg);
 int ReadInverterCAN(CAN_message_t &msg);
 int ReadAccumulatorCAN(CAN_message_t &msg);

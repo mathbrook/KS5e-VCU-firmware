@@ -60,7 +60,7 @@ void Accumulator::updateAccumulatorCAN()
         WriteToDaqCAN(rxMsg);
         switch (rxMsg.id)
         {
-        case (0x69):
+        case (ID_PRECHARGE_STATUS):
         {
             pchgTimeout->reset();
             pchgState = rxMsg.buf[0];
@@ -82,7 +82,8 @@ void Accumulator::updateAccumulatorCAN()
         case (ID_BMS_SOC):
         {
             // forward message to dash
-            WriteCANToInverter(rxMsg);
+            // write to just inverter so it doesn't get forwarded twice
+            WriteCANToJUSTInverter(rxMsg);
             break;
         }
         default:

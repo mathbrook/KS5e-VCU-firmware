@@ -1,6 +1,6 @@
 #include "pedal_handler.hpp"
 #include "state_machine.hpp"
-Metro debugPrint = Metro(10);
+Metro debugPrint = Metro(1000);
 Metro deb = Metro(10);
 
 // initializes pedal's ADC

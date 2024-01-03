@@ -55,7 +55,7 @@ int BusVoltage = 0;
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 
 // timers for VCU state out:
-Metro timer_can_update = Metro(10, 1);
+Metro timer_can_update = Metro(1000, 1);
 
 // Wheel speed shit
 FreqMeasureMulti wsfl;
@@ -82,7 +82,7 @@ void setup()
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
     // build up fw git hash message
-    fw_hash_msg.id = 0xC8; fw_hash_msg.len=8;
+    fw_hash_msg.id = ID_VCU_FW_VERSION; fw_hash_msg.len=8;
     Serial.printf("FW git hash: %lu",AUTO_VERSION);
     // long git_hash = strtol(AUTO_VERSION,0,16);
     unsigned long git_hash = AUTO_VERSION;
