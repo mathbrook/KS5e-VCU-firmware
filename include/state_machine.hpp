@@ -20,8 +20,7 @@ private:
     PedalHandler *pedals;
     Metro *pedal_check_;
     void set_state(MCU_status &mcu_status, MCU_STATE new_state);
-    void sendPrechargeStartMsg();
-
+    void send_state_msg(MCU_status &mcu_status);
 public:
     StateMachine(Inverter *inv, Accumulator *acc, Metro *rs_tim, Dashboard *dash, Metro *debug, PedalHandler *pedals, Metro * ped_t) : pm100(inv), accumulator(acc), timer_ready_sound(rs_tim), dash_(dash), debug_(debug), pedals(pedals), pedal_check_(ped_t) {};
 

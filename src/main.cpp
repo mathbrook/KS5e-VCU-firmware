@@ -17,6 +17,7 @@
 #include "state_machine.hpp"
 #include "FlexCAN_util.hpp"
 
+static can_obj_ksu_dbc_h_t ksu_can;
 // Metro timers for inverter:
 Metro timer_mc_kick_timer = Metro(50, 1);
 Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
@@ -60,12 +61,14 @@ FreqMeasureMulti wsfr;
 
 // objects
 Dashboard dash;
-Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send);
-Accumulator accum(&pchgMsgTimer);
+Inverter pm100(&ksu_can,&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send);
+Accumulator accum(&pchgMsgTimer, &ksu_can);
 PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
-CAN_message_t fw_hash_msg;
+
+static CAN_message_t mcu_status_msg;
+static CAN_message_t fw_hash_msg;
 
 //----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -91,8 +94,9 @@ void setup()
     pinMode(LOWSIDE2, OUTPUT);
     pinMode(WSFL, INPUT_PULLUP);
     pinMode(WSFR, INPUT_PULLUP);
-    mcu_status.set_inverter_powered(true); // this means nothing anymore
-    mcu_status.set_max_torque(60);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
+    mcu_status.set_inverter_powered(true); // note VCU does not control inverter power on rev3
+    mcu_status.set_torque_mode(1); //TODO torque modes should be an enum
+    mcu_status.set_max_torque(torque_1);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
     state_machine.init_state_machine(mcu_status);
 }
 
@@ -103,14 +107,20 @@ void loop()
     if (timer_can_update.check())
     {
         // Send Main Control Unit status message
-        CAN_message_t tx_msg;
-        mcu_status.write(tx_msg.buf);
-        tx_msg.id = ID_VCU_STATUS;
-        tx_msg.len = sizeof(mcu_status);
-        WriteCANToInverter(tx_msg);
+        mcu_status.write(mcu_status_msg.buf);
+        mcu_status_msg.id = ID_VCU_STATUS;
+        mcu_status_msg.len = sizeof(mcu_status);
+        WriteCANToInverter(mcu_status_msg);
 
         //broadcast firmware git hash
         WriteCANToInverter(fw_hash_msg);
+        Serial.println("Can object: ");
+        char stringg[50];
+        FILE *test;
+        (print_message(&ksu_can,CAN_ID_MSGID_0X6B1,test));
+        while (fgets(stringg, 50, test) != NULL) {
+            Serial.printf("%s", stringg);
+        }
     }
 }
 

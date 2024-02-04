@@ -157,7 +157,7 @@ void PedalHandler::verify_pedals(
     bool &accel_is_plausible, bool &brake_is_plausible,
     bool &accel_and_brake_plausible, bool &impl_occ)
 {
-    int max_torque = TORQUE_1 * 10;
+    int max_torque = torque_1 * 10;
     // int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
     //                   END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,

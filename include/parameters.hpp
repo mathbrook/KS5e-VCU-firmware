@@ -17,7 +17,7 @@
 #define D_KI 0.3
 #define D_KD 0.5
 #define D_OUTPUT_MIN 0.0
-#define D_OUTPUT_MAX (TORQUE_1*10)
+#define D_OUTPUT_MAX 2400
 #define BANGBANG_RANGE 1000.0
 #define PID_TIMESTEP 100.0
 #define PID_MODE false //enable cruise control
@@ -41,8 +41,10 @@
 #define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2) / 2)
 #define ALPHA 0.9772
 #define REGEN_NM 120 
-#define BSPD_OK_HIGH_THRESHOLD 800 // ADC reading when BSPD is Latched (OK state)
-
+#define BSPD_OK_HIGH_THRESHOLD 500 // ADC reading when BSPD is Latched (OK state)
+const int accumulator_cell_count = 72;
+const float accumulator_cell_nominal_voltage = 3.6;
+const float bspd_current_high_threshold = 5000/(accumulator_cell_count * accumulator_cell_nominal_voltage); // Current value where BSPD current detection should be high (5kw at nominal voltage)
 #define MIN_HV_VOLTAGE 600 // apparently this is divided by ten? yes maybe, bc getmcbusvoltage returns a can packet which is the bus voltage*10? idk
 #define DISCHARGE_POWER_LIM 75000
 #define CHARGE_POWER_LIM 9000
@@ -50,10 +52,12 @@
 // #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
-#define TORQUE_1 60
-#define TORQUE_2 120
-#define TORQUE_3 180
-#define TORQUE_4 240
-#define TORQUE_5 320
+// Note that the variable max_torque is uin8_t
+// So it will overflow past a value of 255
+const uint8_t torque_1 = 60;
+const uint8_t torque_2 = 120;
+const uint8_t torque_3 = 180;
+const uint8_t torque_4 = 240;
+const int torque_mode_list[]={torque_1,torque_2,torque_3,torque_4};
 
 #endif

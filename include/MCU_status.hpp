@@ -104,17 +104,22 @@ public:
         {
             case 1:
             {
-                torque_mode=2;
+                set_torque_mode(2);
                 break;
             }
             case 2:
             {
-                torque_mode=3;
+                set_torque_mode(3);
                 break;
             }
             case 3:
             {
-                torque_mode=1;
+                set_torque_mode(4);
+                break;
+            }
+            case 4:
+            {
+                set_torque_mode(1);
                 break;
             }
             default:
@@ -125,6 +130,9 @@ public:
     }
 
 private:
+    // This is a placeholder if we ever want to add more flags to the mcu_status CAN frame
+    // Also to make it clear that the other signals do not start at bit 0, but at bit 8
+    uint8_t placeholder;
     // no free bits
     /* @Parse @Flaglist(
          imd_ok_high,
