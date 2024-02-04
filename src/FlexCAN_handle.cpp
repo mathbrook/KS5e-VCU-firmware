@@ -50,7 +50,7 @@ void InitCAN()
     }
     AccumulatorCAN_.setMB((FLEXCAN_MAILBOX)5, RX, EXT);
     // AccumulatorCAN_.setMBFilter(REJECT_ALL);
-    // AccumulatorCAN_.setMBFilter(MB0, 0x69, ID_BMS_INFO, 0x6B2);
+    // AccumulatorCAN_.setMBFilter(MB0, 0x69, ID_BMS_CURRENT_LIMIT_INFO, 0x6B2);
     AccumulatorCAN_.mailboxStatus();
 }
 

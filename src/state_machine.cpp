@@ -115,7 +115,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   // TODO make getting analog readings neater--this is the only necessary one for now
   mcu_status.set_imd_ok_high(accumulator->get_imd_state());
   mcu_status.set_bms_ok_high(accumulator->get_bms_state());
-  mcu_status.set_bspd_ok_high(true); // not reading this value so it defaults to off for now
+  mcu_status.set_bspd_ok_high(pedals->get_board_sensor_readings());
 
 #ifdef DEBUG
   // Serial.print("1: ");
@@ -136,7 +136,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
   dash_->updateDashCAN();
   pedals->get_ws();
-    pm100->calc_and_send_current_limit(pm100->getmcBusVoltage(),DISCHARGE_POWER_LIM,CHARGE_POWER_LIM);
+  pm100->calc_and_send_current_limit(pm100->getmcBusVoltage(),DISCHARGE_POWER_LIM,CHARGE_POWER_LIM);
 
   switch (mcu_status.get_state())
   {
@@ -243,7 +243,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #if USE_INVERTER
     bool tuff = pm100->check_inverter_enable_timeout();
 
-    if (tuff) // this does something is inverter times out
+    if (tuff) // if inverter times out , go from ENABLING_INVERTER to TRACTIVE_SYSTEM_ACTIVE
     {
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
       break;

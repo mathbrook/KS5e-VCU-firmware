@@ -39,7 +39,6 @@ Metro pm100speedInspection = Metro(500, 1);
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(200, 1);
-int temporarydisplaytime = 0;
 
 // PID shit
 volatile double current_rpm, set_rpm, throttle_out;
@@ -49,8 +48,6 @@ double KD = D_KD;
 double OUTPUT_MIN = D_OUTPUT_MIN;
 double OUTPUT_MAX = D_OUTPUT_MAX;
 
-// Bus Voltage
-int BusVoltage = 0;
 
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 
@@ -66,7 +63,7 @@ Dashboard dash;
 Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send);
 Accumulator accum(&pchgMsgTimer);
 PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
-StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
+StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
 CAN_message_t fw_hash_msg;
 
@@ -102,12 +99,7 @@ void setup()
 void loop()
 {
     state_machine.handle_state_machine(mcu_status);
-    BusVoltage = pm100.getmcBusVoltage();
 
-    // if (debug_tim.check())
-    // {
-    //     Serial.println("COPE SEEETHE MALD");
-    // }
     if (timer_can_update.check())
     {
         // Send Main Control Unit status message
@@ -116,16 +108,6 @@ void loop()
         tx_msg.id = ID_VCU_STATUS;
         tx_msg.len = sizeof(mcu_status);
         WriteCANToInverter(tx_msg);
-
-        // Send Dash Bus Voltage
-        CAN_message_t dash_msg;
-        BusVoltage = pm100.getmcBusVoltage();
-        // Serial.println(BusVoltage);
-        dash.ByteEachDigit(BusVoltage);
-        memcpy(dash_msg.buf, dash.getBusVoltage(), dash_msg.len);
-        dash_msg.id = ID_DASH_BUSVOLT;
-        dash_msg.len = 8;
-        WriteCANToInverter(dash_msg);
 
         //broadcast firmware git hash
         WriteCANToInverter(fw_hash_msg);

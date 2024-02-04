@@ -6,6 +6,10 @@ Metro deb = Metro(10);
 // initializes pedal's ADC
 void PedalHandler::init_pedal_handler()
 {
+    // TODO don't htink you actually have to init analog GPIOs on teensy
+    // for(int i; i < sizeof(analog_init_list)/sizeof(int);i++){
+    //     pinMode(analog_init_list[i],INPUT);
+    // }
     pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
     pid_->setTimeStep(PID_TIMESTEP);
     wsfl_->begin(WSFL);
@@ -59,7 +63,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool r
         // regen_command = ;
         // 40191 = -10nm
         // 10101 = -100nm
-        uint16_t calculated_torque2 = (uint16_t)(-(regen_nm*10));
+        uint16_t calculated_torque2 = (uint16_t)(-(REGEN_NM*10));
         calculated_torque = static_cast<int>(calculated_torque2);
         // calculated_torque = 40191;
         Serial.print("regen torque: ");
@@ -83,7 +87,8 @@ bool PedalHandler::read_pedal_values()
     brake1_ =
         ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
     
-    steering_angle_ = pedal_ADC.read_adc(3);
+    steering_angle_ =
+        ALPHA * steering_angle_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_HALL_CHANNEL);
 
     if(debugPrint.check()){
         #ifdef DEBUG
@@ -93,36 +98,59 @@ bool PedalHandler::read_pedal_values()
         Serial.println(accel2_);
         Serial.print("BRAKE :");
         Serial.println(brake1_);
+        Serial.print("STEERING_ANGLE :");
+        Serial.println(steering_angle_);        
         #endif
     }
 
-    // This is the code to print raw ADC readings vs the filtered one
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
     VCUPedalReadings.set_accelerator_pedal_2(accel2_);
     VCUPedalReadings.set_brake_transducer_1(brake1_);
     VCUPedalReadings.set_brake_transducer_2(steering_angle_);
-    CAN_message_t tx_msg;
-    CAN_message_t tx_msg2;
-    // Send Main Control Unit pedal reading message
-    VCUPedalReadings.write(tx_msg.buf);
-    tx_msg.id = ID_VCU_PEDAL_READINGS;
-    tx_msg.len = sizeof(VCUPedalReadings);
-    tx_msg2.id = ID_VCU_WS_READINGS;
-    tx_msg.len = 8;
-    uint32_t rpm_wsfl = (int)(current_rpm * 100);
-    uint32_t rpm_wsfr = (int)(current_rpm2 * 100);
-    memcpy(&tx_msg2.buf[0], &rpm_wsfl, sizeof(rpm_wsfl));
-    memcpy(&tx_msg2.buf[4], &rpm_wsfr, sizeof(rpm_wsfr));
-
-    // write out the actual accel command over CAN
-    if (pedal_out->check())
-    {
-        WriteToDaqCAN(tx_msg);
-        WriteToDaqCAN(tx_msg2);
-    }
     // only uses front brake pedal
     brake_is_active_ = (brake1_ >= BRAKE_ACTIVE);
     return brake_is_active_;
+}
+
+void PedalHandler::send_readings(){
+    if (pedal_out->check())
+    {
+        // Send Main Control Unit pedal reading message
+        CAN_message_t tx_msg;
+        VCUPedalReadings.write(tx_msg.buf);
+        tx_msg.id = ID_VCU_PEDAL_READINGS;
+        tx_msg.len = sizeof(VCUPedalReadings);
+
+        // Send wheel speed readings
+        CAN_message_t tx_msg2;
+        tx_msg2.id = ID_VCU_WS_READINGS;
+        tx_msg2.len = 8;
+        uint32_t rpm_wsfl = (int)(current_rpm * 100);
+        uint32_t rpm_wsfr = (int)(current_rpm2 * 100);
+        memcpy(&tx_msg2.buf[0], &rpm_wsfl, sizeof(rpm_wsfl));
+        memcpy(&tx_msg2.buf[4], &rpm_wsfr, sizeof(rpm_wsfr));
+
+        // Send miscellaneous board analog readings
+        CAN_message_t tx_msg3;
+        tx_msg3.id = ID_VCU_BOARD_ANALOG_READS_ONE;
+        memcpy(&tx_msg3.buf[0],&glv_current_,sizeof(glv_current_));
+        memcpy(&tx_msg3.buf[2],&glv_voltage_,sizeof(glv_voltage_));
+        memcpy(&tx_msg3.buf[4],&bspd_voltage_,sizeof(bspd_voltage_));
+        memcpy(&tx_msg3.buf[6],&vcc_voltage_,sizeof(vcc_voltage_));
+
+        CAN_message_t tx_msg4;
+        tx_msg4.id = ID_VCU_BOARD_ANALOG_READS_TWO;
+        memcpy(&tx_msg4.buf[0],&sdc_voltage_,sizeof(sdc_voltage_));
+        memcpy(&tx_msg4.buf[2],&sdc_current_,sizeof(sdc_current_));
+        memcpy(&tx_msg4.buf[4],&analog_input_nine_voltage_,sizeof(analog_input_nine_voltage_));
+        memcpy(&tx_msg4.buf[6],&analog_input_ten_voltage_,sizeof(analog_input_ten_voltage_));
+
+
+        WriteCANToInverter(tx_msg);
+        WriteCANToInverter(tx_msg2);
+        WriteCANToInverter(tx_msg3);
+        WriteCANToInverter(tx_msg4);
+    }
 }
 
 void PedalHandler::verify_pedals(
@@ -272,3 +300,15 @@ void PedalHandler::get_ws()
         }
     }
 }
+// Returns true if BSPD is ok, false if not
+bool PedalHandler::get_board_sensor_readings(){
+    glv_current_ = ALPHA * glv_current_ + (1 - ALPHA) * analogRead(GLV_ISENSE);
+    glv_voltage_ = ALPHA * glv_voltage_ + (1 - ALPHA) * analogRead(GLV_VSENSE);
+    bspd_voltage_ = ALPHA * bspd_voltage_ + (1 - ALPHA) * analogRead(BSPDSENSE);
+    sdc_voltage_ = ALPHA * sdc_voltage_ + (1 - ALPHA) * analogRead(SDCVSENSE);
+    sdc_current_ = ALPHA * sdc_current_ + (1 - ALPHA) * analogRead(SDCISENSE);
+    vcc_voltage_ = ALPHA * vcc_voltage_ + (1 - ALPHA) * analogRead(_5V_VSENSE);
+    analog_input_nine_voltage_ = ALPHA * analog_input_nine_voltage_ + (1 - ALPHA) * analogRead(A9);
+    analog_input_ten_voltage_ = ALPHA * analog_input_ten_voltage_ + (1 - ALPHA) * analogRead(A10);
+    return (bspd_voltage_ > BSPD_OK_HIGH_THRESHOLD);
+}  

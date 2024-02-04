@@ -36,6 +36,8 @@ private:
     uint16_t accel1_{}, accel2_{}, brake1_{}, steering_angle_;
     bool implausibility_occured_;
 
+    uint16_t sdc_voltage_{},sdc_current_{},bspd_voltage_{},glv_voltage_{},glv_current_{},vcc_voltage_{},analog_input_nine_voltage_{},analog_input_ten_voltage_{};
+
     AutoPID *pid_;
     double *current_;
     double *set_;
@@ -71,6 +73,8 @@ public:
     void get_ws();
     double get_wsfl();
     double get_wsfr();
+    void send_readings();
+    bool get_board_sensor_readings();
 };
 
 #endif

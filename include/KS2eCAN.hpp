@@ -27,12 +27,14 @@
 #define ID_VCU_PEDAL_READINGS				                        0xC4
 #define ID_VCU_WS_READINGS                                          0xC6
 #define ID_VCU_FW_VERSION                                           0xC8
+#define ID_VCU_BOARD_ANALOG_READS_ONE                               0xC9
+#define ID_VCU_BOARD_ANALOG_READS_TWO                               0xCA
 #define ID_DASH_BUTTONS                                             0xEB
-#define ID_DASH_BUSVOLT                                             0xD4
 #define ID_BMS_SOC                                                  0x6B3 //made this real!
 
 
-#define ID_BMS_INFO     0x6B1
+#define ID_BMS_CURRENT_LIMIT_INFO     0x6B1
+#define ID_BMS_PACK_VOLTAGE_INFO      0x6B2
 #define ID_ACU_RELAY    0x68
 #define ID_PRECHARGE_STATUS 0x69
 #define ID_ACU_MEASUREMENTS 0xC7

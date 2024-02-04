@@ -40,10 +40,11 @@
 #define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1) / 2)
 #define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2) / 2)
 #define ALPHA 0.9772
-#define regen_nm 120
+#define REGEN_NM 120 
+#define BSPD_OK_HIGH_THRESHOLD 800 // ADC reading when BSPD is Latched (OK state)
 
 #define MIN_HV_VOLTAGE 600 // apparently this is divided by ten? yes maybe, bc getmcbusvoltage returns a can packet which is the bus voltage*10? idk
-#define DISCHARGE_POWER_LIM 17000
+#define DISCHARGE_POWER_LIM 75000
 #define CHARGE_POWER_LIM 9000
 
 // #define HT_DEBUG_EN
@@ -54,19 +55,5 @@
 #define TORQUE_3 180
 #define TORQUE_4 240
 #define TORQUE_5 320
-
-// Pump speed
-#define PUMP_SPEED 3400
-
-// neo-pixel specific
-#define RED    0xFF0000
-#define GREEN  0x00FF00
-#define BLUE   0x0000FF
-#define YELLOW 0xFFFF00
-#define PINK   0x10EF0078
-#define ORANGE 0xE05800
-#define WHITE  0xFF000000
-#define BLACK  0x0
-#define BRIGHTNESS 64
 
 #endif

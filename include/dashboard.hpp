@@ -22,24 +22,19 @@ public:
 
     inline bool get_button1()  const {return !(button_states&0x01);} // RTD BUTTON
     inline bool get_button2()  const {return !(button_states&0x02);} // REGEN GREEN LMAO
-    inline bool get_button3()  const {return button_states&0x04;}
-    inline bool get_button4()  const {return button_states&0x08;}
-    inline bool get_button5()  const {return button_states&0x10;}
-    inline bool get_button6()  const {return button_states&0x20;}
+    inline bool get_button3()  const {return !(button_states&0x04);}
+    inline bool get_button4()  const {return !(button_states&0x08);}
+    inline bool get_button5()  const {return !(button_states&0x10);}
+    inline bool get_button6()  const {return !(button_states&0x20);}
 
     inline void set_buttons(const uint8_t inputs)        { button_states = inputs; }
 
     void updateDashCAN();
 
-    void ByteEachDigit(int num);
-
-    uint8_t *getBusVoltage();
  
 private:
     uint8_t button_states;
 
-    // Stuff for bus voltage 
-    uint8_t BusVolt_ByteEachDigit[8] = { 0 };
 };
 
 #pragma pack(pop)

@@ -74,10 +74,14 @@ void Accumulator::updateAccumulatorCAN()
             bmsstate = rxMsg.buf[2];
             break;
         }
-        case (ID_BMS_INFO):
+        case (ID_BMS_CURRENT_LIMIT_INFO):
         {
-            memcpy(BMS_packInfo, rxMsg.buf, sizeof(BMS_packInfo));
+            
             break;
+        }
+        case (ID_BMS_PACK_VOLTAGE_INFO):
+        {
+
         }
         case (ID_BMS_SOC):
         {

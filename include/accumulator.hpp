@@ -13,6 +13,9 @@ private:
     int pchgState;
     unsigned long pchgAliveTimer;
     uint8_t BMS_packInfo[8];
+    
+    int16_t bms_pack_current;
+    uint16_t bms_pack_open_voltage, bms_pack_inst_voltage, bms_pack_summed_voltage;
 
 public:
     Accumulator(Metro *pch_timeout) : pchgTimeout(pch_timeout){};

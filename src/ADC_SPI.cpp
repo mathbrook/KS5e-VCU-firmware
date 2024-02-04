@@ -12,7 +12,7 @@
  */
 ADC_SPI::ADC_SPI()
 {
-	init(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
+	// init(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
 }
 
 /*

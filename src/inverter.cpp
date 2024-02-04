@@ -241,7 +241,7 @@ bool Inverter::check_inverter_disabled()
 }
 // Calculate discharge and charge current limits based on current pack voltage and
 // target power limit
-bool Inverter::calc_and_send_current_limit(uint16_t pack_voltage, uint16_t discharge_power_limit,uint16_t charge_power_limit){
+bool Inverter::calc_and_send_current_limit(uint16_t pack_voltage, uint32_t discharge_power_limit,uint32_t charge_power_limit){
     pack_voltage /=10;
     uint16_t discharge_current_limit = min((discharge_power_limit)/pack_voltage,280);
     uint16_t charge_current_limit = min((charge_power_limit/pack_voltage),32);
