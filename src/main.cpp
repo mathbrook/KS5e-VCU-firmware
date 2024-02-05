@@ -115,12 +115,12 @@ void loop()
         //broadcast firmware git hash
         WriteCANToInverter(fw_hash_msg);
         Serial.println("Can object: ");
-        char stringg[50];
-        FILE *test;
-        (print_message(&ksu_can,CAN_ID_MSGID_0X6B1,test));
-        while (fgets(stringg, 50, test) != NULL) {
-            Serial.printf("%s", stringg);
-        }
+        // char stringg[50];
+        // FILE *test;
+        // (print_message(&ksu_can,CAN_ID_MSGID_0X6B1,test));
+        // while (fgets(stringg, 50, test) != NULL) {
+        //     Serial.printf("%s", stringg);
+        // }
     }
 }
 
