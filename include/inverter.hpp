@@ -11,6 +11,7 @@
 #include "inverter/mc_temperatures.hpp"
 #include "inverter/mc_voltage_information.hpp"
 #include "inverter/mc_command_message.hpp"
+#include "dashboard.hpp"
 #include "FlexCAN_util.hpp"
 class Inverter
 {
@@ -21,7 +22,7 @@ private:
     Metro *timer_inverter_enable;
     Metro *timer_motor_controller_send;
     Metro *timer_current_limit;
-
+    Dashboard *dash;
     void writeControldisableWithZeros();
     void writeEnableNoTorque();
     can_0x202_BMS_Current_Limit_t inverter_current_limit_message;
@@ -52,7 +53,7 @@ private:
 
 public:
     // this is a member init list: https://www.youtube.com/watch?v=1nfuYMXjZsA
-    Inverter(can_obj_ksu_dbc_h_t *ksu_can_,Metro *mc_kick_timer, Metro *en_tim, Metro *comm_timer, Metro *current_lim_tim) : inverter_ksu_can(ksu_can_),mc_kick_tim(mc_kick_timer), timer_inverter_enable(en_tim), timer_motor_controller_send(comm_timer),timer_current_limit(current_lim_tim){};
+    Inverter(can_obj_ksu_dbc_h_t *ksu_can_,Metro *mc_kick_timer, Metro *en_tim, Metro *comm_timer, Metro *current_lim_tim, Dashboard *dash_) : inverter_ksu_can(ksu_can_),mc_kick_tim(mc_kick_timer), timer_inverter_enable(en_tim), timer_motor_controller_send(comm_timer),timer_current_limit(current_lim_tim),dash(dash_){};
 
     void inverter_init();
     void doStartup();

@@ -17,6 +17,8 @@
 #include "state_machine.hpp"
 #include "FlexCAN_util.hpp"
 
+#define NEBUG
+
 static can_obj_ksu_dbc_h_t ksu_can;
 // Metro timers for inverter:
 Metro timer_mc_kick_timer = Metro(50, 1);
@@ -43,11 +45,11 @@ Metro debug_tim = Metro(200, 1);
 
 // PID shit
 volatile double current_rpm, set_rpm, throttle_out;
-double KP = D_KP;
-double KI = D_KI;
-double KD = D_KD;
-double OUTPUT_MIN = D_OUTPUT_MIN;
-double OUTPUT_MAX = D_OUTPUT_MAX;
+const double KP = D_KP;
+const double KI = D_KI;
+const double KD = D_KD;
+const double OUTPUT_MIN = D_OUTPUT_MIN;
+const double OUTPUT_MAX = D_OUTPUT_MAX;
 
 
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
@@ -61,7 +63,7 @@ FreqMeasureMulti wsfr;
 
 // objects
 Dashboard dash;
-Inverter pm100(&ksu_can,&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send);
+Inverter pm100(&ksu_can,&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send, &dash);
 Accumulator accum(&pchgMsgTimer, &ksu_can);
 PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals, &pedal_check);
@@ -114,7 +116,7 @@ void loop()
 
         //broadcast firmware git hash
         WriteCANToInverter(fw_hash_msg);
-        Serial.println("Can object: ");
+        // Serial.println("Can object: ");
         // char stringg[50];
         // FILE *test;
         // (print_message(&ksu_can,CAN_ID_MSGID_0X6B1,test));

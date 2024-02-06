@@ -8,7 +8,8 @@ void StateMachine::init_state_machine(MCU_status &mcu_status)
 }
 
 // Send a state message on every state transition so we don't miss any
-void StateMachine::send_state_msg(MCU_status &mcu_status){
+void StateMachine::send_state_msg(MCU_status &mcu_status)
+{
   CAN_message_t tx_msg;
   mcu_status.write(tx_msg.buf);
   tx_msg.id = ID_VCU_STATUS;
@@ -20,7 +21,7 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 {
   // Send current mcu_status
   send_state_msg(mcu_status);
-  // If current state is the same as new state, exit 
+  // If current state is the same as new state, exit
   if (mcu_status.get_state() == new_state)
   {
     return;
@@ -71,7 +72,7 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 
   mcu_status.set_state(new_state);
   // Send new mcu_status
-  send_state_msg(mcu_status); 
+  send_state_msg(mcu_status);
   // entry logic ----------------------------------------------------------------------------------------------------------------------------------------------------
   switch (new_state)
   {
@@ -126,7 +127,8 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   pm100->updateInverterCAN();
 #endif
   accumulator->updateAccumulatorCAN();
-  dash_->updateDashCAN();
+  // dash_->updateDashCAN(); Reading inverter CAN and "dash can" at the same time
+  // causes a lot of delay. DOn't do it
 
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
   pedals->get_ws();
@@ -134,15 +136,18 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   mcu_status.set_imd_ok_high(accumulator->get_imd_state());
   mcu_status.set_bms_ok_high(accumulator->get_bms_state());
   mcu_status.set_bspd_ok_high(pedals->get_board_sensor_readings());
-  mcu_status.set_bspd_current_high((accumulator->get_acc_current() > (bspd_current_high_threshold* 10)));
-  if (dash_->get_button1())
+  mcu_status.set_bspd_current_high((accumulator->get_acc_current() > (bspd_current_high_threshold * 10)));
+
+  pedals->send_readings();
+  // torque toggle works, but will change as fast as button command sends
+  if (dash_->get_button1() && (dash_->get_torque_mode_last_pressed())>500)
   {
+    dash_->set_torque_mode_last_pressed(0);
     mcu_status.toggle_max_torque(mcu_status.get_torque_mode());
+    mcu_status.set_max_torque(torque_mode_list[mcu_status.get_torque_mode()-1]);
+    send_state_msg(mcu_status);
   }
-  if (mcu_status.get_max_torque() != torque_mode_list[mcu_status.get_torque_mode()])
-  {
-    mcu_status.set_max_torque(torque_mode_list[mcu_status.get_torque_mode()]);
-  }
+
   // end of functions that run every loop unconditionally
 
   // start of state machine conditional functionality
@@ -150,7 +155,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   {
   case MCU_STATE::STARTUP: // --------------------
   {
-    set_state(mcu_status,MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
+    set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
     break;
   }
   case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: // --------------------
@@ -358,7 +363,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // Put debug prints here if/when needed
 #ifdef DEBUG
     pm100->debug_print();
-    //Serial.printf("\tDASH BUTTONS \nONE: %d TWO: %d THREE: %d FOUR: %d FIVE: %d SIX: %d\n",dash_->get_button1(),dash_->get_button2(),dash_->get_button3(),dash_->get_button4(),dash_->get_button5(),dash_->get_button6());
+    Serial.printf("\tDASH BUTTONS \nONE: %d TWO: %d THREE: %d FOUR: %d FIVE: %d SIX: %d\n",dash_->get_button1(),dash_->get_button2(),dash_->get_button3(),dash_->get_button4(),dash_->get_button5(),dash_->get_button6());
 #endif
   }
   // TODO update the dash here properly

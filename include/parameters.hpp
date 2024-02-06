@@ -2,7 +2,7 @@
 #define PARAMETERS_HPP
 
 #define HT_DEBUG_EN
-#define DEBUG
+// #define DEBUG
 
 
 #define USE_INVERTER true

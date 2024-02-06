@@ -60,6 +60,13 @@ void Inverter::updateInverterCAN()
             pm100temp3.load(rxMsg.buf);
             break;
         }
+        case (ID_DASH_BUTTONS):
+        {   
+            float timestamp = millis() / float(1000);
+            Serial.printf("Dash last received interval: %f\n",(timestamp-(dash->last_received_timestamp)));
+            dash->last_received_timestamp=timestamp;
+            dash->set_buttons(rxMsg.buf[0]);
+        }
         default:
             break;
         }
