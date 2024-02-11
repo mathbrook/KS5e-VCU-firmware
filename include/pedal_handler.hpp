@@ -77,4 +77,16 @@ public:
     bool get_board_sensor_readings();
 };
 
+typedef struct pedal_thresholds_t {
+    const uint16_t brake_active_threshold = BRAKE_ACTIVE;
+    const uint16_t apps1_uv_threshold = MIN_ACCELERATOR_PEDAL_1;
+    const uint16_t apps1_start_threshold = START_ACCELERATOR_PEDAL_1;
+    const uint16_t apps1_end_threshold = END_ACCELERATOR_PEDAL_1;
+    const uint16_t apps1_ov_threshold = MAX_ACCELERATOR_PEDAL_1;
+    const uint16_t apps2_uv_threshold = MIN_ACCELERATOR_PEDAL_2;
+    const uint16_t apps2_start_threshold = START_ACCELERATOR_PEDAL_2;
+    const uint16_t apps2_end_threshold = END_ACCELERATOR_PEDAL_2;
+    const uint16_t apps2_ov_threshold = MAX_ACCELERATOR_PEDAL_2;
+} pedal_thresholds_t;
+
 #endif

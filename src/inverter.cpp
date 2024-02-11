@@ -1,7 +1,6 @@
 #include "inverter.hpp"
 #include "FlexCAN_util.hpp"
 #include "pedal_handler.hpp"
-#define HT_DEBUG_EN
 // inverter has got to be crunk up before yeeting
 void Inverter::doStartup()
 {
@@ -19,7 +18,7 @@ void Inverter::updateInverterCAN()
 
     if (ReadInverterCAN(rxMsg))
     {
-        unpack_flexcan_message(inverter_ksu_can,rxMsg);
+        unpack_flexcan_message(inverter_ksu_can, rxMsg);
         WriteToDaqCAN(rxMsg);
         switch (rxMsg.id)
         {
@@ -36,7 +35,7 @@ void Inverter::updateInverterCAN()
         case (ID_MC_VOLTAGE_INFORMATION):
         {
             pm100Voltage.load(rxMsg.buf);
-            
+
             break;
         }
         case (ID_MC_MOTOR_POSITION_INFORMATION):
@@ -61,10 +60,10 @@ void Inverter::updateInverterCAN()
             break;
         }
         case (ID_DASH_BUTTONS):
-        {   
+        {
             float timestamp = millis() / float(1000);
-            Serial.printf("Dash last received interval: %f\n",(timestamp-(dash->last_received_timestamp)));
-            dash->last_received_timestamp=timestamp;
+            Serial.printf("Dash last received interval: %f\n", (timestamp - (dash->last_received_timestamp)));
+            dash->last_received_timestamp = timestamp;
             dash->set_buttons(rxMsg.buf[0]);
         }
         default:
@@ -75,8 +74,8 @@ void Inverter::updateInverterCAN()
 
 void Inverter::debug_print()
 {
-    Serial.printf("Inverter fault codes: %d %d %d %d",inverter_fault_info.D1_Post_Fault_Lo,inverter_fault_info.D2_Post_Fault_Hi,inverter_fault_info.D3_Run_Fault_Lo,inverter_fault_info.D4_Run_Fault_Hi);
-    Serial.printf("Inverter temperatures: %d",inverter_temperature_set_1.D1_Module_A);
+    Serial.printf("Inverter fault codes: %d %d %d %d", inverter_fault_info.D1_Post_Fault_Lo, inverter_fault_info.D2_Post_Fault_Hi, inverter_fault_info.D3_Run_Fault_Lo, inverter_fault_info.D4_Run_Fault_Hi);
+    Serial.printf("Inverter temperatures: %d", inverter_temperature_set_1.D1_Module_A);
 }
 
 void Inverter::writeControldisableWithZeros()
@@ -99,12 +98,12 @@ void Inverter::writeEnableNoTorque()
 // returns false if the command was unable to be sent
 bool Inverter::command_torque(int torque)
 {
-    inverter_command_message.Direction_Command=1;
-    inverter_command_message.Inverter_Enable=1;
-    inverter_command_message.Speed_Command=0;
-    inverter_command_message.Speed_Mode_Enable=0;
-    inverter_command_message.Torque_Limit_Command=0;
-    inverter_command_message.Torque_Command=torque;
+    inverter_command_message.Direction_Command = 1;
+    inverter_command_message.Inverter_Enable = 1;
+    inverter_command_message.Speed_Command = 0;
+    inverter_command_message.Speed_Mode_Enable = 0;
+    inverter_command_message.Torque_Limit_Command = 0;
+    inverter_command_message.Torque_Command = torque;
     uint8_t torquePart1 = torque % 256;
     uint8_t torquePart2 = torque / 256;
     uint8_t angularVelocity1 = 0, angularVelocity2 = 0;
@@ -254,21 +253,26 @@ bool Inverter::check_inverter_disabled()
 }
 // Calculate discharge and charge current limits based on current pack voltage and
 // target power limit
-bool Inverter::calc_and_send_current_limit(uint16_t pack_voltage, uint32_t discharge_power_limit,uint32_t charge_power_limit){
-    pack_voltage /=10;
-    uint16_t discharge_current_limit = min((discharge_power_limit)/pack_voltage,280);
-    uint16_t charge_current_limit = min((charge_power_limit/pack_voltage),32);
-    if (timer_current_limit->check()){
-        #ifdef DEBUG
-        Serial.printf("discharge current limit: %d charge current limit: %d\n",discharge_current_limit,charge_current_limit);
-        #endif
+bool Inverter::calc_and_send_current_limit(uint16_t pack_voltage, uint32_t discharge_power_limit, uint32_t charge_power_limit)
+{
+    pack_voltage /= 10;
+    uint16_t discharge_current_limit = min((discharge_power_limit) / pack_voltage, accumulator_max_discharge_current);
+    uint16_t charge_current_limit = min((charge_power_limit / pack_voltage), accumulator_max_charge_current);
+    if (timer_current_limit->check())
+    {
+#if DEBUG
+        Serial.printf("discharge current limit: %d charge current limit: %d\n", discharge_current_limit, charge_current_limit);
+#endif
         inverter_current_limit_message.D1_Max_Discharge_Current = discharge_current_limit;
         inverter_current_limit_message.D2_Max_Charge_Current = charge_current_limit;
         CAN_message_t bms_current_limit_msg;
-        bms_current_limit_msg.id=0x202;
-        memcpy(&bms_current_limit_msg.buf[0],&discharge_current_limit,sizeof(discharge_current_limit));
-        memcpy(&bms_current_limit_msg.buf[2],&charge_current_limit,sizeof(charge_current_limit));
+        bms_current_limit_msg.id = ID_MC_CURRENT_LIMIT_COMMAND;
+        memcpy(&bms_current_limit_msg.buf[0], &discharge_current_limit, sizeof(discharge_current_limit));
+        memcpy(&bms_current_limit_msg.buf[2], &charge_current_limit, sizeof(charge_current_limit));
         return WriteCANToInverter(bms_current_limit_msg);
     }
-    else{   return false;   }
+    else
+    {
+        return false;
+    }
 }

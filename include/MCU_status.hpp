@@ -2,9 +2,6 @@
 
 #include <string.h>
 #include <stdint.h>
-#ifdef HT_DEBUG_EN
-    #include "Arduino.h"
-#endif
 
 enum class MCU_STATE
 {
@@ -130,9 +127,6 @@ public:
     }
 
 private:
-    // This is a placeholder if we ever want to add more flags to the mcu_status CAN frame
-    // Also to make it clear that the other signals do not start at bit 0, but at bit 8
-    // uint8_t placeholder;
     // no free bits
     /* @Parse @Flaglist(
          imd_ok_high,

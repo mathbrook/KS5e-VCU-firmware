@@ -1,8 +1,7 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
-#define HT_DEBUG_EN
-// #define DEBUG
+#define DEBUG true
 
 
 #define USE_INVERTER true
@@ -42,14 +41,17 @@
 #define ALPHA 0.9772
 #define REGEN_NM 120 
 #define BSPD_OK_HIGH_THRESHOLD 500 // ADC reading when BSPD is Latched (OK state)
+const uint16_t accumulator_max_discharge_current = 280;
+const uint16_t accumulator_max_charge_current = 32;
 const int accumulator_cell_count = 72;
+const float accumulator_cell_minimum_voltage = 2.5;
 const float accumulator_cell_nominal_voltage = 3.6;
+const float accumulator_cell_maximum_voltage = 4.2;
 const float bspd_current_high_threshold = 5000/(accumulator_cell_count * accumulator_cell_nominal_voltage); // Current value where BSPD current detection should be high (5kw at nominal voltage)
 #define MIN_HV_VOLTAGE 600 // apparently this is divided by ten? yes maybe, bc getmcbusvoltage returns a can packet which is the bus voltage*10? idk
 #define DISCHARGE_POWER_LIM 75000
 #define CHARGE_POWER_LIM 9000
 
-// #define HT_DEBUG_EN
 // Torque Calculation Defines
 #define ALPHA 0.9772
 // Note that the variable max_torque is uin8_t

@@ -140,11 +140,11 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
   pedals->send_readings();
   // torque toggle works, but will change as fast as button command sends
-  if (dash_->get_button1() && (dash_->get_torque_mode_last_pressed())>500)
+  if (dash_->get_button1() && (dash_->get_torque_mode_last_pressed()) > 500)
   {
     dash_->set_torque_mode_last_pressed(0);
     mcu_status.toggle_max_torque(mcu_status.get_torque_mode());
-    mcu_status.set_max_torque(torque_mode_list[mcu_status.get_torque_mode()-1]);
+    mcu_status.set_max_torque(torque_mode_list[mcu_status.get_torque_mode() - 1]);
     send_state_msg(mcu_status);
   }
 
@@ -358,13 +358,12 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     break;
   }
   }
+#if DEBUG
   if (debug_->check())
   {
     // Put debug prints here if/when needed
-#ifdef DEBUG
     pm100->debug_print();
-    Serial.printf("\tDASH BUTTONS \nONE: %d TWO: %d THREE: %d FOUR: %d FIVE: %d SIX: %d\n",dash_->get_button1(),dash_->get_button2(),dash_->get_button3(),dash_->get_button4(),dash_->get_button5(),dash_->get_button6());
-#endif
+    Serial.printf("\tDASH BUTTONS \nONE: %d TWO: %d THREE: %d FOUR: %d FIVE: %d SIX: %d\n", dash_->get_button1(), dash_->get_button2(), dash_->get_button3(), dash_->get_button4(), dash_->get_button5(), dash_->get_button6());
   }
-  // TODO update the dash here properly
+#endif
 }

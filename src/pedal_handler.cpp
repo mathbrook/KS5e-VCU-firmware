@@ -20,12 +20,12 @@ void PedalHandler::init_pedal_handler()
 int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool regen_button)
 {
     int calculated_torque = 0;
-    
+
     int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
                       END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,
                       END_ACCELERATOR_PEDAL_2, 0, max_torque);
-    torque1=torque2; //TODO un-cheese (apps1 borked)
+    torque1 = torque2; // TODO un-cheese (apps1 borked)
     // torque values are greater than the max possible value, set them to max
     if (torque1 > max_torque)
     {
@@ -36,8 +36,8 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool r
         torque2 = max_torque;
     }
     // compare torques to check for accelerator implausibility
-    
-    calculated_torque = (torque1 + torque2) / 2; //TODO un-cheese this
+
+    calculated_torque = (torque1 + torque2) / 2; // TODO un-cheese this
 
     if (calculated_torque > max_torque)
     {
@@ -50,7 +50,7 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool r
 
     // TODO actual regen mapping and not on/off, this was jerky on dyno
     bool off_brake = (VCUPedalReadings.get_brake_transducer_1() <= 1850);
-    bool off_gas =  (torque1 <= 5);
+    bool off_gas = (torque1 <= 5);
 
     // Serial.print("button: ");
     // Serial.println(regen_button);
@@ -58,12 +58,12 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool r
     // Serial.println(off_brake);
     // Serial.print("gas: ");
     // Serial.println(off_gas);
-    if(off_gas && off_brake && regen_button)
+    if (off_gas && off_brake && regen_button)
     {
         // regen_command = ;
         // 40191 = -10nm
         // 10101 = -100nm
-        uint16_t calculated_torque2 = (uint16_t)(-(REGEN_NM*10));
+        uint16_t calculated_torque2 = (uint16_t)(-(REGEN_NM * 10));
         calculated_torque = static_cast<int>(calculated_torque2);
         // calculated_torque = 40191;
         Serial.print("regen torque: ");
@@ -80,27 +80,30 @@ bool PedalHandler::read_pedal_values()
 {
     /* Filter ADC readings */
 
+    // exponential smoothing https://chat.openai.com/share/cf98f2ea-d87c-4d25-a365-e398ffebf968
+    // TODO - evaluate this ALPHA value and if maybe we should decrease it
     accel1_ =
         ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
     accel2_ =
         ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
     brake1_ =
         ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
-    
+
     steering_angle_ =
         ALPHA * steering_angle_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_HALL_CHANNEL);
 
-    if(debugPrint.check()){
-        #ifdef DEBUG
-        Serial.print("ADC1 :");
+    if (debugPrint.check())
+    {
+#if DEBUG
+        Serial.print("APPS1 :");
         Serial.println(accel1_);
-        Serial.print("ADC2 :");
+        Serial.print("APPS2 :");
         Serial.println(accel2_);
         Serial.print("BRAKE :");
         Serial.println(brake1_);
         Serial.print("STEERING_ANGLE :");
-        Serial.println(steering_angle_);        
-        #endif
+        Serial.println(steering_angle_);
+#endif
     }
 
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
@@ -112,7 +115,8 @@ bool PedalHandler::read_pedal_values()
     return brake_is_active_;
 }
 
-void PedalHandler::send_readings(){
+void PedalHandler::send_readings()
+{
     if (pedal_out->check())
     {
         // Send Main Control Unit pedal reading message
@@ -133,18 +137,17 @@ void PedalHandler::send_readings(){
         // Send miscellaneous board analog readings
         CAN_message_t tx_msg3;
         tx_msg3.id = ID_VCU_BOARD_ANALOG_READS_ONE;
-        memcpy(&tx_msg3.buf[0],&glv_current_,sizeof(glv_current_));
-        memcpy(&tx_msg3.buf[2],&glv_voltage_,sizeof(glv_voltage_));
-        memcpy(&tx_msg3.buf[4],&bspd_voltage_,sizeof(bspd_voltage_));
-        memcpy(&tx_msg3.buf[6],&vcc_voltage_,sizeof(vcc_voltage_));
+        memcpy(&tx_msg3.buf[0], &glv_current_, sizeof(glv_current_));
+        memcpy(&tx_msg3.buf[2], &glv_voltage_, sizeof(glv_voltage_));
+        memcpy(&tx_msg3.buf[4], &bspd_voltage_, sizeof(bspd_voltage_));
+        memcpy(&tx_msg3.buf[6], &vcc_voltage_, sizeof(vcc_voltage_));
 
         CAN_message_t tx_msg4;
         tx_msg4.id = ID_VCU_BOARD_ANALOG_READS_TWO;
-        memcpy(&tx_msg4.buf[0],&sdc_voltage_,sizeof(sdc_voltage_));
-        memcpy(&tx_msg4.buf[2],&sdc_current_,sizeof(sdc_current_));
-        memcpy(&tx_msg4.buf[4],&analog_input_nine_voltage_,sizeof(analog_input_nine_voltage_));
-        memcpy(&tx_msg4.buf[6],&analog_input_ten_voltage_,sizeof(analog_input_ten_voltage_));
-
+        memcpy(&tx_msg4.buf[0], &sdc_voltage_, sizeof(sdc_voltage_));
+        memcpy(&tx_msg4.buf[2], &sdc_current_, sizeof(sdc_current_));
+        memcpy(&tx_msg4.buf[4], &analog_input_nine_voltage_, sizeof(analog_input_nine_voltage_));
+        memcpy(&tx_msg4.buf[6], &analog_input_ten_voltage_, sizeof(analog_input_ten_voltage_));
 
         WriteCANToInverter(tx_msg);
         WriteCANToInverter(tx_msg2);
@@ -162,7 +165,7 @@ void PedalHandler::verify_pedals(
     //                   END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,
                       END_ACCELERATOR_PEDAL_2, 0, max_torque);
-    int torque1 = torque2; //TODO un-cheese (apps1 borked)
+    int torque1 = torque2; // TODO un-cheese (apps1 borked)
     float torqSum = abs(torque1 - torque2);
     float torqAvg = (torque1 + torque2) / 2;
     float torqDiff = torqSum / torqAvg;
@@ -180,7 +183,7 @@ void PedalHandler::verify_pedals(
     // check that the pedals are reading within 10% of each other TODO re-enabled 6/10/23, why was it commented out in the first place? how did we fix it before??
     // sum of the two readings should be within 10% of the average travel
     // T.4.2.4
-    else if (torqDiff*100 > 50)
+    else if (torqDiff * 100 > 50)
     {
         accel_is_plausible = false;
     }
@@ -189,7 +192,7 @@ void PedalHandler::verify_pedals(
         // mcu_status.set_no_accel_implausability(true);
         accel_is_plausible = true;
     }
-    Serial.printf("Torque 1: %d Torque 2: %d Torque Sum: %f Torque Average %f Torque Difference: %f\n",torque1,torque2,torqSum,torqAvg,torqDiff);
+    Serial.printf("Torque 1: %d Torque 2: %d Torque Sum: %f Torque Average %f Torque Difference: %f\n", torque1, torque2, torqSum, torqAvg, torqDiff);
 
     // BSE check
     // EV.5.6
@@ -211,7 +214,7 @@ void PedalHandler::verify_pedals(
                      START_ACCELERATOR_PEDAL_2))) &&
         brake_is_active_)
     {
-        
+
         accel_and_brake_plausible = false;
     }
     else if ((accel1_ <
@@ -236,7 +239,9 @@ void PedalHandler::verify_pedals(
     }
 
     impl_occ = implausibility_occured_;
-    Serial.printf("Implaus occured: %d accel plaus: %d brake plaus: %d accel and brake plaus: %d\n",implausibility_occured_,accel_is_plausible,brake_is_plausible,accel_and_brake_plausible);
+#if DEBUG
+    Serial.printf("Implaus occured: %d accel plaus: %d brake plaus: %d accel and brake plaus: %d\n", implausibility_occured_, accel_is_plausible, brake_is_plausible, accel_and_brake_plausible);
+#endif
 }
 
 // idgaf anything below (all wheel speed)
@@ -301,7 +306,8 @@ void PedalHandler::get_ws()
     }
 }
 // Returns true if BSPD is ok, false if not
-bool PedalHandler::get_board_sensor_readings(){
+bool PedalHandler::get_board_sensor_readings()
+{
     glv_current_ = ALPHA * glv_current_ + (1 - ALPHA) * analogRead(GLV_ISENSE);
     glv_voltage_ = ALPHA * glv_voltage_ + (1 - ALPHA) * analogRead(GLV_VSENSE);
     bspd_voltage_ = ALPHA * bspd_voltage_ + (1 - ALPHA) * analogRead(BSPDSENSE);
@@ -311,4 +317,4 @@ bool PedalHandler::get_board_sensor_readings(){
     analog_input_nine_voltage_ = ALPHA * analog_input_nine_voltage_ + (1 - ALPHA) * analogRead(A9);
     analog_input_ten_voltage_ = ALPHA * analog_input_ten_voltage_ + (1 - ALPHA) * analogRead(A10);
     return (bspd_voltage_ > BSPD_OK_HIGH_THRESHOLD);
-}  
+}

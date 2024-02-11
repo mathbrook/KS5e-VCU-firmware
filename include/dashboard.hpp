@@ -3,10 +3,6 @@
 #include <string.h>
 #include <stdint.h>
 
-#ifdef HT_DEBUG_EN
-    #include "Arduino.h"
-#endif
-
 #pragma pack(push,1)
 
 class Dashboard 
