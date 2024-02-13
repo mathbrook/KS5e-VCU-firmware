@@ -19,7 +19,6 @@
 
 #define NEBUG
 
-static can_obj_ksu_dbc_h_t ksu_can;
 // Metro timers for inverter:
 Metro timer_mc_kick_timer = Metro(50, 1);
 Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
@@ -62,15 +61,17 @@ FreqMeasureMulti wsfr;
 
 // objects
 Dashboard dash;
-Inverter pm100(&ksu_can, &timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send, &dash);
-Accumulator accum(&pchgMsgTimer, &ksu_can);
+Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send, &dash);
+Accumulator accum(&pchgMsgTimer);
 PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
 
 static CAN_message_t mcu_status_msg;
 static CAN_message_t fw_hash_msg;
+static CAN_message_t pedal_thresholds_msg;
 device_status_t vcu_status_t;
+pedal_thresholds_t vcu_pedal_thresholds_t;
 
 void gpio_init();
 
@@ -117,13 +118,21 @@ void loop()
         vcu_status_t.on_time_seconds = millis() / 1000;
         memcpy(fw_hash_msg.buf, &vcu_status_t, sizeof(vcu_status_t));
         WriteCANToInverter(fw_hash_msg);
-        // Serial.println("Can object: ");
-        // char stringg[50];
-        // FILE *test;
-        // (print_message(&ksu_can,CAN_ID_MSGID_0X6B1,test));
-        // while (fgets(stringg, 50, test) != NULL) {
-        //     Serial.printf("%s", stringg);
-        // }
+
+        // broadcast pedal thresholds information
+        pedal_thresholds_msg.id = ID_VCU_PEDAL_THRESHOLD_SETTINGS;
+        pedal_thresholds_msg.len = 7;
+        pedal_thresholds_msg.buf[0]=0;
+        memcpy(&pedal_thresholds_msg.buf[1], &vcu_pedal_thresholds_t.pedal_thresholds_0, sizeof(vcu_pedal_thresholds_t.pedal_thresholds_0));
+        WriteCANToInverter(pedal_thresholds_msg);
+
+        pedal_thresholds_msg.buf[0]=1;
+        memcpy(&pedal_thresholds_msg.buf[1], &vcu_pedal_thresholds_t.pedal_thresholds_1, sizeof(vcu_pedal_thresholds_t.pedal_thresholds_1));
+        WriteCANToInverter(pedal_thresholds_msg);
+
+        pedal_thresholds_msg.buf[0]=2;
+        memcpy(&pedal_thresholds_msg.buf[1], &vcu_pedal_thresholds_t.pedal_thresholds_2, sizeof(vcu_pedal_thresholds_t.pedal_thresholds_2));
+        WriteCANToInverter(pedal_thresholds_msg);
     }
 }
 

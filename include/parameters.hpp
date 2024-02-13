@@ -1,7 +1,7 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
-#define DEBUG true
+#define DEBUG false
 
 
 #define USE_INVERTER true

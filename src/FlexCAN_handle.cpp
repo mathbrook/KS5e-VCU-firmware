@@ -54,12 +54,6 @@ void InitCAN()
     AccumulatorCAN_.mailboxStatus();
 }
 
-int unpack_flexcan_message(can_obj_ksu_dbc_h_t *o, CAN_message_t &msg)
-{
-    uint64_t data;
-    memcpy(&data, msg.buf, sizeof(msg.buf));
-    return unpack_message(o, msg.id, data, msg.len, millis());
-}
 
 int WriteCANToInverter(CAN_message_t &msg)
 {

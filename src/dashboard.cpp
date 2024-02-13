@@ -23,7 +23,7 @@ void Dashboard::updateDashCAN()
             float timestamp = millis() / float(1000);
             Serial.printf("Dash last received interval: %f\n",(timestamp-last_received_timestamp));
             last_received_timestamp=timestamp;
-            WriteToDaqCAN(rxMsg);
+            // WriteToDaqCAN(rxMsg);
             button_states = rxMsg.buf[0];
         }
     }

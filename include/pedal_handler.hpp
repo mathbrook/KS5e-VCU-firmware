@@ -77,16 +77,30 @@ public:
     bool get_board_sensor_readings();
 };
 
-typedef struct pedal_thresholds_t {
+typedef struct pedal_thresholds_0_t {
+    // const uint8_t mux = 0;
     const uint16_t brake_active_threshold = BRAKE_ACTIVE;
     const uint16_t apps1_uv_threshold = MIN_ACCELERATOR_PEDAL_1;
     const uint16_t apps1_start_threshold = START_ACCELERATOR_PEDAL_1;
+} pedal_thresholds_0_t;
+
+typedef struct pedal_thresholds_1_t {
+    // const uint8_t mux = 1;
     const uint16_t apps1_end_threshold = END_ACCELERATOR_PEDAL_1;
     const uint16_t apps1_ov_threshold = MAX_ACCELERATOR_PEDAL_1;
     const uint16_t apps2_uv_threshold = MIN_ACCELERATOR_PEDAL_2;
+} pedal_thresholds_1_t;
+
+typedef struct pedal_thresholds_2_t {
+    // const uint8_t mux = 2;
     const uint16_t apps2_start_threshold = START_ACCELERATOR_PEDAL_2;
     const uint16_t apps2_end_threshold = END_ACCELERATOR_PEDAL_2;
     const uint16_t apps2_ov_threshold = MAX_ACCELERATOR_PEDAL_2;
-} pedal_thresholds_t;
+} pedal_thresholds_2_t;
 
+typedef struct pedal_thresholds_t {
+    const pedal_thresholds_0_t pedal_thresholds_0;
+    const pedal_thresholds_1_t pedal_thresholds_1;
+    const pedal_thresholds_2_t pedal_thresholds_2;
+} pedal_thresholds_t;
 #endif

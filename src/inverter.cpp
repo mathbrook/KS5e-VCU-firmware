@@ -18,7 +18,6 @@ void Inverter::updateInverterCAN()
 
     if (ReadInverterCAN(rxMsg))
     {
-        unpack_flexcan_message(inverter_ksu_can, rxMsg);
         WriteToDaqCAN(rxMsg);
         switch (rxMsg.id)
         {
@@ -74,8 +73,7 @@ void Inverter::updateInverterCAN()
 
 void Inverter::debug_print()
 {
-    Serial.printf("Inverter fault codes: %d %d %d %d", inverter_fault_info.D1_Post_Fault_Lo, inverter_fault_info.D2_Post_Fault_Hi, inverter_fault_info.D3_Run_Fault_Lo, inverter_fault_info.D4_Run_Fault_Hi);
-    Serial.printf("Inverter temperatures: %d", inverter_temperature_set_1.D1_Module_A);
+
 }
 
 void Inverter::writeControldisableWithZeros()
@@ -98,12 +96,6 @@ void Inverter::writeEnableNoTorque()
 // returns false if the command was unable to be sent
 bool Inverter::command_torque(int torque)
 {
-    inverter_command_message.Direction_Command = 1;
-    inverter_command_message.Inverter_Enable = 1;
-    inverter_command_message.Speed_Command = 0;
-    inverter_command_message.Speed_Mode_Enable = 0;
-    inverter_command_message.Torque_Limit_Command = 0;
-    inverter_command_message.Torque_Command = torque;
     uint8_t torquePart1 = torque % 256;
     uint8_t torquePart2 = torque / 256;
     uint8_t angularVelocity1 = 0, angularVelocity2 = 0;
@@ -138,7 +130,6 @@ bool Inverter::command_torque(int torque)
 //
 bool Inverter::check_inverter_ready()
 {
-    bool inv_en = inverter_internal_states_info.D6_Inverter_Enable_State;
     bool inverter_is_enabled = pm100State.get_inverter_enable_state();
 
     // delay(1000);
@@ -263,8 +254,6 @@ bool Inverter::calc_and_send_current_limit(uint16_t pack_voltage, uint32_t disch
 #if DEBUG
         Serial.printf("discharge current limit: %d charge current limit: %d\n", discharge_current_limit, charge_current_limit);
 #endif
-        inverter_current_limit_message.D1_Max_Discharge_Current = discharge_current_limit;
-        inverter_current_limit_message.D2_Max_Charge_Current = charge_current_limit;
         CAN_message_t bms_current_limit_msg;
         bms_current_limit_msg.id = ID_MC_CURRENT_LIMIT_COMMAND;
         memcpy(&bms_current_limit_msg.buf[0], &discharge_current_limit, sizeof(discharge_current_limit));

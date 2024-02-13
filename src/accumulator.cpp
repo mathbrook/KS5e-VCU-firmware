@@ -35,22 +35,7 @@ void Accumulator::resetPchgState()
 }
 
 int16_t Accumulator::get_acc_current(){
-    return bms_voltage_info.Pack_Current;
-}
-
-void Accumulator::update_acc_state(){
-    if (bms_curr_lim_info.Pack_DCL <= 0 ){
-        acc_ok = false;
-    }
-    if (bms_curr_lim_info.High_Temperature>=60){
-        acc_ok = false;
-    }
-    if (bms_curr_lim_info.Pack_DCL > 0 ){
-        acc_ok = true;
-    }
-    if (bms_curr_lim_info.High_Temperature<60){
-        acc_ok = true;
-    }
+    return 0; // TODO implement
 }
 // returns true if the precharge has timed out on the BMS
 // if we havent timed out yet, and the precharge hasnt succeeded, dont change states
@@ -77,8 +62,6 @@ void Accumulator::updateAccumulatorCAN()
     if (ReadAccumulatorCAN(rxMsg))
     {
         WriteToDaqCAN(rxMsg);
-        unpack_flexcan_message(acc_ksu_can,rxMsg);
-        update_acc_state();
         switch (rxMsg.id)
         {
         case (ID_PRECHARGE_STATUS):
@@ -97,12 +80,10 @@ void Accumulator::updateAccumulatorCAN()
         }
         case (ID_BMS_CURRENT_LIMIT_INFO):
         {
-            memcpy(&bms_curr_lim_info,&acc_ksu_can->can_0x6b1_MSGID_0X6B1,sizeof(acc_ksu_can->can_0x6b1_MSGID_0X6B1));
             break;
         }
         case (ID_BMS_PACK_VOLTAGE_INFO):
         {
-            memcpy(&bms_voltage_info,&acc_ksu_can->can_0x6b2_MSGID_0X6B2,sizeof(acc_ksu_can->can_0x6b2_MSGID_0X6B2));
             break;
         }
         case (ID_BMS_SOC):
