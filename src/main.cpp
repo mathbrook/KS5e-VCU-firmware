@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <FreqMeasureMulti.h>
-
+#include <cmath>
 // our includes
 #include "MCU_status.hpp"
 #include "KS2eCAN.hpp"
@@ -74,7 +74,25 @@ device_status_t vcu_status_t;
 pedal_thresholds_t vcu_pedal_thresholds_t;
 
 void gpio_init();
+// Use this to emulate a changing signal from the ADC
+uint16_t generateSineValue(double time_ms, double amplitude, double frequency, double phase_shift, double offset) {
+    // Convert time from milliseconds to seconds
+    double time_s = time_ms / 1000.0;
 
+    // Calculate the angle (in radians) based on time, frequency, and phase shift
+    double angle = 2 * M_PI * frequency * time_s + phase_shift;
+
+    // Calculate the sine value
+    double value = amplitude * sin(angle) + offset;
+    value+=amplitude;
+    // Ensure the value is within the 12-bit unsigned integer range
+    value = fmax(0, fmin(value, 4095));
+    // Serial.println(value);
+    // double value = 1000;
+    return static_cast<uint16_t>(value);
+}
+int dummy_max_torque = 1000;
+int16_t dummy_motor_speed = 1000;
 //----------------------------------------------------------------------------------------------------------------------------------------
 
 void setup()
@@ -104,6 +122,11 @@ void setup()
 
 void loop()
 {
+    // delay(10);
+    // uint16_t value = generateSineValue(millis(),1500/2,0.5,0,0);
+    // pedals.read_pedal_values_debug(value);
+    // pedals.run_pedals();
+    // pedals.calculate_torque(dummy_motor_speed,dummy_max_torque);
     state_machine.handle_state_machine(mcu_status);
 
     if (timer_can_update.check())

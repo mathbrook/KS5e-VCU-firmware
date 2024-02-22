@@ -1,6 +1,6 @@
 #include "pedal_handler.hpp"
 #include "state_machine.hpp"
-Metro debugPrint = Metro(1000);
+Metro debugPrint = Metro(100);
 Metro deb = Metro(10);
 
 // initializes pedal's ADC
@@ -16,15 +16,24 @@ void PedalHandler::init_pedal_handler()
     wsfr_->begin(WSFR);
     pid_->setBangBang(double(BANGBANG_RANGE));
 }
+void PedalHandler::run_pedals()
+{
+    this->apps1.sensor_run();
+    this->apps2.sensor_run();
+    this->bse1.sensor_run();
+}
 
-int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool regen_button)
+int16_t PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 {
     int calculated_torque = 0;
 
-    int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
-                      END_ACCELERATOR_PEDAL_1, 0, max_torque);
-    int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,
-                      END_ACCELERATOR_PEDAL_2, 0, max_torque);
+    int torque1 = static_cast<int>(this->apps1.getTravelRatio() * max_torque);
+    int torque2 = static_cast<int>(this->apps2.getTravelRatio() * max_torque);
+    // if (torque1 > 0 || torque2 > 0 ){
+    // Serial.printf("apps1: %f %f\n",this->apps1.getVoltage(),this->apps1.getTravelRatio());
+    // Serial.printf("apps2: %f %f\n",this->apps2.getVoltage(),this->apps2.getTravelRatio());
+    // Serial.printf("bse1: %f %f\n",this->bse1.getVoltage(),this->bse1.getTravelRatio());
+    // }
     torque1 = torque2; // TODO un-cheese (apps1 borked)
     // torque values are greater than the max possible value, set them to max
     if (torque1 > max_torque)
@@ -48,33 +57,22 @@ int PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque, bool r
         calculated_torque = 0;
     }
 
-    // TODO actual regen mapping and not on/off, this was jerky on dyno
-    bool off_brake = (VCUPedalReadings.get_brake_transducer_1() <= 1850);
-    bool off_gas = (torque1 <= 5);
-
-    // Serial.print("button: ");
-    // Serial.println(regen_button);
-    // Serial.print("brake: ");
-    // Serial.println(off_brake);
-    // Serial.print("gas: ");
-    // Serial.println(off_gas);
-    if (off_gas && off_brake && regen_button)
-    {
-        // regen_command = ;
-        // 40191 = -10nm
-        // 10101 = -100nm
-        uint16_t calculated_torque2 = (uint16_t)(-(REGEN_NM * 10));
-        calculated_torque = static_cast<int>(calculated_torque2);
-        // calculated_torque = 40191;
-        Serial.print("regen torque: ");
-        Serial.println(calculated_torque);
-        // torquePart1=0x9C;
-        // torquePart2=0xFf; //-10nm sussy regen
-    }
-    Serial.println(calculated_torque);
     return calculated_torque;
 }
 
+int16_t PedalHandler::calculate_regen(int16_t &motor_speed, int16_t max_regen_torque)
+{
+    int16_t calculated_regen_torque = 0;
+    // regen_command = ;
+    // 40191 = -10nm
+    // 10101 = -100nm
+    uint16_t calculated_torque2 = this->bse1.getTravelRatio() * (uint16_t)(-(REGEN_NM * 10));
+    calculated_regen_torque = static_cast<int>(calculated_torque2);
+    // calculated_torque = 40191;
+    Serial.print("regen torque: ");
+    Serial.println(calculated_regen_torque);
+    return calculated_regen_torque;
+}
 // returns true if the brake pedal is active
 bool PedalHandler::read_pedal_values()
 {
@@ -129,8 +127,8 @@ void PedalHandler::send_readings()
         CAN_message_t tx_msg2;
         tx_msg2.id = ID_VCU_WS_READINGS;
         tx_msg2.len = 8;
-        uint32_t rpm_wsfl = (int)(current_rpm * 100);
-        uint32_t rpm_wsfr = (int)(current_rpm2 * 100);
+        uint32_t rpm_wsfl = (int)(wsfl_t.current_rpm * 100);
+        uint32_t rpm_wsfr = (int)(wsfr_t.current_rpm * 100);
         memcpy(&tx_msg2.buf[0], &rpm_wsfl, sizeof(rpm_wsfl));
         memcpy(&tx_msg2.buf[4], &rpm_wsfr, sizeof(rpm_wsfr));
 
@@ -197,7 +195,7 @@ void PedalHandler::verify_pedals(
     // BSE check
     // EV.5.6
     // FSAE T.4.3.4
-    if (brake1_ < 200 || brake1_ > 4000)
+    if (brake1_ < MIN_BRAKE_PEDAL || brake1_ > MAX_BRAKE_PEDAL)
     {
         brake_is_plausible = false;
     }
@@ -245,26 +243,22 @@ void PedalHandler::verify_pedals(
 }
 
 // idgaf anything below (all wheel speed)
-double PedalHandler::get_wsfr() { return current_rpm2; }
-double PedalHandler::get_wsfl() { return current_rpm; }
-void PedalHandler::get_ws()
-{
-    unsigned long test = millis();
-    if ((test - current_rpm_change_time) > RPM_TIMEOUT)
-    {
-        // rpm.data = 0;
-        current_rpm = 0;
+double PedalHandler::get_wsfr() { return wsfr_t.current_rpm; }
+double PedalHandler::get_wsfl() { return wsfl_t.current_rpm; }
+void PedalHandler::update_wheelspeed(unsigned long current_time_millis, wheelspeeds_t *ws, FreqMeasureMulti *freq){
+    if ((current_time_millis - ws->current_rpm_change_time) > RPM_TIMEOUT) 
+    { 
+        ws->current_rpm = 0;
     }
-    if (wsfl_->available())
-    {
+    if (freq->available()){
         // average several reading together
-        sum = sum + wsfl_->read();
-        count = count + 1;
-        current_rpm_change_time = millis();
-        if (count > 1)
+        ws->sum = ws->sum + freq->read();
+        ws->count = ws->count + 1;
+        ws->current_rpm_change_time = millis();
+        if (ws->count > 1)
         {
-            float testRpm = wsfl_->countToFrequency(sum / count) * 60 / 18;
-            current_rpm = testRpm;
+            float testRpm = freq->countToFrequency(ws->sum / ws->count) * 60 / WHEELSPEED_TOOTH_COUNT;
+            ws->current_rpm = testRpm;
 
             /*if ( testRpm - prev_rpm < 1)
             {
@@ -272,39 +266,21 @@ void PedalHandler::get_ws()
               prev_rpm = testRpm;
             }*/
 
-            sum = 0;
-            count = 0;
+            ws->sum = 0;
+            ws->count = 0;
             // prev_rpm = testRpm;
         }
-    }
-    unsigned long test2 = millis();
-    if ((test2 - current_rpm_change_time2) > RPM_TIMEOUT)
-    {
-        // rpm.data = 0;
-        current_rpm2 = 0;
-    }
-    if (wsfr_->available())
-    {
-        // average several reading together
-        sum2 = sum2 + wsfr_->read();
-        count2 = count2 + 1;
-        current_rpm_change_time2 = millis();
-        if (count2 > 1)
-        {
-            float testRpm2 = wsfr_->countToFrequency(sum2 / count2) * 60 / 18;
-            current_rpm2 = testRpm2;
-            /*if ( testRpm2 - prev_rpm2 < 1)
-            {
-              current_rpm2 = testRpm2;
-              prev_rpm2 = testRpm2;
-            }*/
 
-            sum2 = 0;
-            count2 = 0;
-            prev_rpm2 = testRpm2;
-        }
     }
 }
+
+void PedalHandler::ws_run()
+{
+    update_wheelspeed(millis(),&wsfl_t, wsfl_);
+    update_wheelspeed(millis(),&wsfr_t, wsfr_);
+}
+
+
 // Returns true if BSPD is ok, false if not
 bool PedalHandler::get_board_sensor_readings()
 {
@@ -317,4 +293,43 @@ bool PedalHandler::get_board_sensor_readings()
     analog_input_nine_voltage_ = ALPHA * analog_input_nine_voltage_ + (1 - ALPHA) * analogRead(A9);
     analog_input_ten_voltage_ = ALPHA * analog_input_ten_voltage_ + (1 - ALPHA) * analogRead(A10);
     return (bspd_voltage_ > BSPD_OK_HIGH_THRESHOLD);
+}
+
+// Use this to manipulate ADC values with a fake one
+void PedalHandler::read_pedal_values_debug(uint16_t value)
+{
+    /* Filter ADC readings */
+
+    // exponential smoothing https://chat.openai.com/share/cf98f2ea-d87c-4d25-a365-e398ffebf968
+    // TODO - evaluate this ALPHA value and if maybe we should decrease it
+    accel1_ =
+        ALPHA * accel1_ + (1 - ALPHA) * value;
+    accel2_ =
+        ALPHA * accel2_ + (1 - ALPHA) * value;
+    brake1_ =
+        ALPHA * brake1_ + (1 - ALPHA) * value;
+
+    steering_angle_ =
+        ALPHA * steering_angle_ + (1 - ALPHA) * value;
+
+    if (debugPrint.check())
+    {
+#if DEBUG
+        // Serial.print("APPS1 :");
+        // Serial.println(accel1_);
+        // Serial.print("APPS2 :");
+        // Serial.println(accel2_);
+        // Serial.print("BRAKE :");
+        // Serial.println(brake1_);
+        // Serial.print("STEERING_ANGLE :");
+        // Serial.println(steering_angle_);
+        // this->apps1.printValues();
+        // this->apps2.printValues();
+        // this->bse1.printValues();
+        Serial.printf("%d\t%d\t%f\n",value,accel1_,this->apps1.getTravelRatio()*100);
+        // Serial.printf("apps1: %f %f\n",this->apps1.getVoltage(),this->apps1.getTravelRatio());
+        // Serial.printf("apps2: %f %f\n",this->apps2.getVoltage(),this->apps2.getTravelRatio());
+        // Serial.printf("bse1: %f %f\n",this->bse1.getVoltage(),this->bse1.getTravelRatio());
+#endif
+    }
 }

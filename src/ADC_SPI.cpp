@@ -38,7 +38,7 @@ void ADC_SPI::init(int CS, unsigned int SPIspeed)
 	SPI_SPEED = SPIspeed;
 
 	pinMode(ADC_SPI_CS, OUTPUT);
-	pinMode(ADC_SPI_CS, HIGH);
+	digitalWrite(ADC_SPI_CS, HIGH);
 
 	// Initialize SPI:
 	SPI.begin();

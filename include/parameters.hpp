@@ -1,7 +1,7 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
-#define DEBUG false
+#define DEBUG true
 
 
 #define USE_INVERTER true
@@ -22,23 +22,30 @@
 #define PID_MODE false //enable cruise control
 #define PID_TC_MODE false //enable traction control
 #define EXP_TORQUE_CURVE false //set to TRUE for kustom pedal curve
-
+#define WHEELSPEED_TOOTH_COUNT 18
 //Longer RPM Timeout means we can read slower RPM
 //Shouldnt hurt to have it long. Should help for things like
 //Traction control
 #define RPM_TIMEOUT 1000
+#define MIN_BRAKE_PEDAL 0
+#define START_BRAKE_PEDAL 50
 #define BRAKE_ACTIVE 3000             // Threshold for brake pedal active
+#define END_BRAKE_PEDAL 3500
+#define MAX_BRAKE_PEDAL 3600
+
 #define MIN_ACCELERATOR_PEDAL_1 0    // Low accelerator implausibility threshold
 #define START_ACCELERATOR_PEDAL_1 50  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_1 1600    // Position to max out acceleration
 #define MAX_ACCELERATOR_PEDAL_1 2000    // High accelerator implausibility threshold
+
 #define MIN_ACCELERATOR_PEDAL_2 0   // Low accelerator implausibility threshold
 #define START_ACCELERATOR_PEDAL_2 50  // Position to start acceleration
 #define END_ACCELERATOR_PEDAL_2 2550    // Position to max out acceleration
 #define MAX_ACCELERATOR_PEDAL_2 3000    // High accelerator implausibility threshold
+
 #define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1) / 2)
 #define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2) / 2)
-#define ALPHA 0.9772
+
 #define REGEN_NM 120 
 #define BSPD_OK_HIGH_THRESHOLD 500 // ADC reading when BSPD is Latched (OK state)
 const uint16_t accumulator_max_discharge_current = 280;
@@ -53,7 +60,7 @@ const float bspd_current_high_threshold = 5000/(accumulator_cell_count * accumul
 #define CHARGE_POWER_LIM 9000
 
 // Torque Calculation Defines
-#define ALPHA 0.9772
+#define ALPHA 0.9
 // Note that the variable max_torque is uin8_t
 // So it will overflow past a value of 255
 const uint8_t torque_1 = 60;

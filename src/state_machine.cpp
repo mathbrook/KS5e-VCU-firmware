@@ -44,7 +44,7 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: // ----------
   {
     // Reset precharge status when exit of TS ACTIVE
-    accumulator->resetPchgState(); // dealing with sus behavior, precharge timed out but would stay "ready"
+    accumulator->resetPchgState(); // precharge will time out but stay "ready" if we don't reset it here
     break;
   }
   case MCU_STATE::ENABLING_INVERTER: // ----------
@@ -131,7 +131,8 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   // causes a lot of delay. DOn't do it
 
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
-  pedals->get_ws();
+  pedals->run_pedals(); // Maybe wrap all of this in a "pedals superloop" function
+  pedals->ws_run();
   pm100->calc_and_send_current_limit(pm100->getmcBusVoltage(), DISCHARGE_POWER_LIM, CHARGE_POWER_LIM);
   mcu_status.set_imd_ok_high(accumulator->get_imd_state());
   mcu_status.set_bms_ok_high(accumulator->get_bms_state());
@@ -349,7 +350,11 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #if USE_INVERTER
       motor_speed = pm100->getmcMotorRPM();
 #endif
-      calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual, dash_->get_button2());
+      calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
+      
+      if (mcu_status.get_brake_pedal_active() && dash_->get_button2() && calculated_torque < 5){
+        calculated_torque = pedals->calculate_regen(motor_speed,REGEN_NM);
+      }
     }
 
 #if USE_INVERTER
@@ -361,6 +366,10 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 #if DEBUG
   if (debug_->check())
   {
+
+    int16_t motor_speed = 1000;
+    int max_torque = 1000;
+    pedals->calculate_torque(motor_speed,max_torque); // Just to print the calced value and confirm it's right
     // Put debug prints here if/when needed
     pm100->debug_print();
     Serial.printf("\tDASH BUTTONS \nONE: %d TWO: %d THREE: %d FOUR: %d FIVE: %d SIX: %d\n", dash_->get_button1(), dash_->get_button2(), dash_->get_button3(), dash_->get_button4(), dash_->get_button5(), dash_->get_button6());
