@@ -140,13 +140,43 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   mcu_status.set_bspd_current_high((accumulator->get_acc_current() > (bspd_current_high_threshold * 10)));
 
   pedals->send_readings();
-  // torque toggle works, but will change as fast as button command sends
-  if (dash_->get_button1() && (dash_->get_torque_mode_last_pressed()) > 500)
+
+  if (dash_->get_button6() && dash_->get_button2() && (dash_->get_torque_mode_last_pressed_time()) > 500)
   {
-    dash_->set_torque_mode_last_pressed(0);
+    dash_->set_torque_mode_last_pressed_time(0);
     mcu_status.toggle_max_torque(mcu_status.get_torque_mode());
     mcu_status.set_max_torque(torque_mode_list[mcu_status.get_torque_mode() - 1]);
     send_state_msg(mcu_status);
+  }
+  // Do Torque Calcs here
+  int calculated_torque = 0;
+  bool accel_is_plausible = false;
+  bool brake_is_plausible = false;
+  bool accel_and_brake_plausible = false;
+  bool impl_occ = true;
+
+  // FSAE EV.5.5
+  // FSAE T.4.2.10
+  pedals->verify_pedals(accel_is_plausible, brake_is_plausible, accel_and_brake_plausible, impl_occ);
+  mcu_status.set_accel_implausible(!accel_is_plausible);
+  mcu_status.set_brake_implausible(!brake_is_plausible);
+  mcu_status.set_accel_brake_implausible(!accel_and_brake_plausible);
+
+  if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
+  {
+
+    int max_t_actual = mcu_status.get_max_torque() * 10;
+
+    int16_t motor_speed = 0;
+#if USE_INVERTER
+    motor_speed = pm100->getmcMotorRPM();
+#endif
+    calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
+
+    if (mcu_status.get_brake_pedal_active() && dash_->get_button2() && calculated_torque < 5)
+    {
+      calculated_torque = pedals->calculate_regen(motor_speed, REGEN_NM);
+    }
   }
 
   // end of functions that run every loop unconditionally
@@ -206,6 +236,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     break;
   }
+  // TRACTIVE SYSTEM ACTIVE, HV ON
   case MCU_STATE::TRACTIVE_SYSTEM_ACTIVE: // --------------------
   {
 
@@ -237,6 +268,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     break;
   }
+  // ATTEMPTING TO ENABLE INVERTER
   case MCU_STATE::ENABLING_INVERTER: // --------------------
   {
 #if USE_INVERTER
@@ -280,6 +312,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     break;
   }
+  // WAITING TO ENTER READY TO DRIVE (BUZZER ACTIVE)
   case MCU_STATE::WAITING_READY_TO_DRIVE_SOUND: // --------------------
   {
 #if USE_INVERTER
@@ -304,6 +337,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     }
     break;
   }
+  // READY TO DRIVE
   case MCU_STATE::READY_TO_DRIVE: // --------------------
   {
 #if USE_INVERTER
@@ -326,36 +360,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
       break;
     }
-
-    int calculated_torque = 0;
-    bool accel_is_plausible = false;
-    bool brake_is_plausible = false;
-    bool accel_and_brake_plausible = false;
-    bool impl_occ = true;
-
-    // FSAE EV.5.5
-    // FSAE T.4.2.10
-    pedals->verify_pedals(accel_is_plausible, brake_is_plausible, accel_and_brake_plausible, impl_occ);
-    mcu_status.set_no_accel_implausability(!accel_is_plausible);
-    mcu_status.set_no_brake_implausability(!brake_is_plausible);
-    mcu_status.set_no_accel_brake_implausability(!accel_and_brake_plausible);
-
-    if (accel_is_plausible && brake_is_plausible && accel_and_brake_plausible && (!impl_occ))
-    {
-
-      uint8_t max_t = mcu_status.get_max_torque();
-      int max_t_actual = max_t * 10;
-
-      int16_t motor_speed = 0;
-#if USE_INVERTER
-      motor_speed = pm100->getmcMotorRPM();
-#endif
-      calculated_torque = pedals->calculate_torque(motor_speed, max_t_actual);
-      
-      if (mcu_status.get_brake_pedal_active() && dash_->get_button2() && calculated_torque < 5){
-        calculated_torque = pedals->calculate_regen(motor_speed,REGEN_NM);
-      }
-    }
+    // Moved the torque calc to always run in the superloop
 
 #if USE_INVERTER
     pm100->command_torque(calculated_torque);
@@ -367,9 +372,9 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   if (debug_->check())
   {
 
-    int16_t motor_speed = 1000;
-    int max_torque = 1000;
-    pedals->calculate_torque(motor_speed,max_torque); // Just to print the calced value and confirm it's right
+    // int16_t motor_speed = 1000;
+    // int max_torque = 1000;
+    // pedals->calculate_torque(motor_speed, max_torque); // Just to print the calced value and confirm it's right
     // Put debug prints here if/when needed
     pm100->debug_print();
     Serial.printf("\tDASH BUTTONS \nONE: %d TWO: %d THREE: %d FOUR: %d FIVE: %d SIX: %d\n", dash_->get_button1(), dash_->get_button2(), dash_->get_button3(), dash_->get_button4(), dash_->get_button5(), dash_->get_button6());

@@ -20,10 +20,10 @@
 #define NEBUG
 
 // Metro timers for inverter:
-Metro timer_mc_kick_timer = Metro(50, 1);
-Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
-Metro timer_motor_controller_send = Metro(100, 1);
-Metro timer_current_limit_send = Metro(500, 1);
+Metro timer_mc_kick_timer = Metro(50, 1); // Motor controller heartbeat timer
+Metro timer_inverter_enable = Metro(2000, 1); // Timeout for inverter enabling
+Metro timer_motor_controller_send = Metro(10, 1); // Motor controller torque command timer
+Metro timer_current_limit_send = Metro(500, 1); // Motor controller power limiting timer
 
 // timers for the accumulator:
 Metro pchgMsgTimer = Metro(1000, 0);
@@ -116,7 +116,7 @@ void setup()
 
     mcu_status.set_inverter_powered(true); // note VCU does not control inverter power on rev3
     mcu_status.set_torque_mode(1);         // TODO torque modes should be an enum
-    mcu_status.set_max_torque(torque_1);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
+    mcu_status.set_max_torque(TORQUE_1);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
     state_machine.init_state_machine(mcu_status);
 }
 

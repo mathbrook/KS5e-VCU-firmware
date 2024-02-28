@@ -48,20 +48,20 @@ public:
     /* Pedal system monitoring */
 
     inline uint8_t get_pedal_states()               const { return pedal_states; }
-    inline bool get_no_accel_implausability()       const { return pedal_states & 0x04; }
-    inline bool get_no_brake_implausability()       const { return pedal_states & 0x08; }
+    inline bool get_accel_implausible()       const { return pedal_states & 0x04; }
+    inline bool get_brake_implausible()       const { return pedal_states & 0x08; }
     inline bool get_brake_pedal_active()            const { return pedal_states & 0x10; }
     inline bool get_bspd_current_high()             const { return pedal_states & 0x20; }
     inline bool get_bspd_brake_high()               const { return pedal_states & 0x40; }
-    inline bool get_no_accel_brake_implausability() const { return pedal_states & 0x80; }
+    inline bool get_accel_brake_implausible() const { return pedal_states & 0x80; }
 
     inline void set_pedal_states(const uint8_t states)                 { pedal_states = states; }
-    inline void set_no_accel_implausability(const bool implausable)       { pedal_states = (pedal_states & 0xFB) | (implausable << 2); }
-    inline void set_no_brake_implausability(const bool implausable)       { pedal_states = (pedal_states & 0xF7) | (implausable << 3); }
+    inline void set_accel_implausible(const bool implausable)       { pedal_states = (pedal_states & 0xFB) | (implausable << 2); }
+    inline void set_brake_implausible(const bool implausable)       { pedal_states = (pedal_states & 0xF7) | (implausable << 3); }
     inline void set_brake_pedal_active(const bool pressed)                { pedal_states = (pedal_states & 0xEF) | (pressed     << 4); }
     inline void set_bspd_current_high(const bool high)                    { pedal_states = (pedal_states & 0xDF) | (high        << 5); }
     inline void set_bspd_brake_high(const bool high)                      { pedal_states = (pedal_states & 0xBF) | (high        << 6); }
-    inline void set_no_accel_brake_implausability(const bool implausable) { pedal_states = (pedal_states & 0x7F) | (implausable << 7); }
+    inline void set_accel_brake_implausible(const bool implausable) { pedal_states = (pedal_states & 0x7F) | (implausable << 7); }
 
     /* ECU state */
 
@@ -149,12 +149,12 @@ private:
      * accel/brake implausability
      */
     /* @Parse @Flaglist(
-        no_accel_implausability,
-        no_brake_implausability,
+        accel_implausible,
+        brake_implausible,
         brake_pedal_active,
         bspd_current_high,
         bspd_brake_high,
-        no_accel_brake_implausability
+        accel_brake_implausible
         ) */
     uint8_t pedal_states;
 

@@ -10,7 +10,7 @@ void PedalHandler::init_pedal_handler()
     // for(int i; i < sizeof(analog_init_list)/sizeof(int);i++){
     //     pinMode(analog_init_list[i],INPUT);
     // }
-    pedal_ADC = ADC_SPI(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
+    pedal_ADC = ADC_SPI(CS_ADC, DEFAULT_SPI_SPEED);
     pid_->setTimeStep(PID_TIMESTEP);
     wsfl_->begin(WSFL);
     wsfr_->begin(WSFR);
@@ -29,12 +29,6 @@ int16_t PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 
     int torque1 = static_cast<int>(this->apps1.getTravelRatio() * max_torque);
     int torque2 = static_cast<int>(this->apps2.getTravelRatio() * max_torque);
-    // if (torque1 > 0 || torque2 > 0 ){
-    // Serial.printf("apps1: %f %f\n",this->apps1.getVoltage(),this->apps1.getTravelRatio());
-    // Serial.printf("apps2: %f %f\n",this->apps2.getVoltage(),this->apps2.getTravelRatio());
-    // Serial.printf("bse1: %f %f\n",this->bse1.getVoltage(),this->bse1.getTravelRatio());
-    // }
-    torque1 = torque2; // TODO un-cheese (apps1 borked)
     // torque values are greater than the max possible value, set them to max
     if (torque1 > max_torque)
     {
@@ -44,7 +38,7 @@ int16_t PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     {
         torque2 = max_torque;
     }
-    // compare torques to check for accelerator implausibility
+    // Use average of the two APPS torque results to calculate the torque request
 
     calculated_torque = (torque1 + torque2) / 2; // TODO un-cheese this
 
@@ -158,12 +152,11 @@ void PedalHandler::verify_pedals(
     bool &accel_is_plausible, bool &brake_is_plausible,
     bool &accel_and_brake_plausible, bool &impl_occ)
 {
-    int max_torque = torque_1 * 10;
-    // int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
-    //                   END_ACCELERATOR_PEDAL_1, 0, max_torque);
+    int max_torque = TORQUE_1 * 10;
+    int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
+                      END_ACCELERATOR_PEDAL_1, 0, max_torque);
     int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,
                       END_ACCELERATOR_PEDAL_2, 0, max_torque);
-    int torque1 = torque2; // TODO un-cheese (apps1 borked)
     float torqSum = abs(torque1 - torque2);
     float torqAvg = (torque1 + torque2) / 2;
     float torqDiff = torqSum / torqAvg;
@@ -187,10 +180,9 @@ void PedalHandler::verify_pedals(
     }
     else
     {
-        // mcu_status.set_no_accel_implausability(true);
         accel_is_plausible = true;
     }
-    Serial.printf("Torque 1: %d Torque 2: %d Torque Sum: %f Torque Average %f Torque Difference: %f\n", torque1, torque2, torqSum, torqAvg, torqDiff);
+    // Serial.printf("Torque 1: %d Torque 2: %d Torque Sum: %f Torque Average %f Torque Difference: %f\n", torque1, torque2, torqSum, torqAvg, torqDiff);
 
     // BSE check
     // EV.5.6
@@ -238,7 +230,7 @@ void PedalHandler::verify_pedals(
 
     impl_occ = implausibility_occured_;
 #if DEBUG
-    Serial.printf("Implaus occured: %d accel plaus: %d brake plaus: %d accel and brake plaus: %d\n", implausibility_occured_, accel_is_plausible, brake_is_plausible, accel_and_brake_plausible);
+    // Serial.printf("Implaus occured: %d accel plaus: %d brake plaus: %d accel and brake plaus: %d\n", implausibility_occured_, accel_is_plausible, brake_is_plausible, accel_and_brake_plausible);
 #endif
 }
 

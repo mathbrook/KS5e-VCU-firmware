@@ -1,7 +1,7 @@
 #ifndef PARAMETERS_HPP
 #define PARAMETERS_HPP
 
-#define DEBUG true
+#define DEBUG false
 
 
 #define USE_INVERTER true
@@ -63,10 +63,10 @@ const float bspd_current_high_threshold = 5000/(accumulator_cell_count * accumul
 #define ALPHA 0.9
 // Note that the variable max_torque is uin8_t
 // So it will overflow past a value of 255
-const uint8_t torque_1 = 60;
-const uint8_t torque_2 = 120;
-const uint8_t torque_3 = 180;
-const uint8_t torque_4 = 240;
-const int torque_mode_list[]={torque_1,torque_2,torque_3,torque_4};
+const uint8_t TORQUE_1 = 60;
+const uint8_t TORQUE_2 = 120;
+const uint8_t TORQUE_3 = 180;
+const uint8_t TORQUE_4 = 240;
+const int torque_mode_list[]={TORQUE_1,TORQUE_2,TORQUE_3,TORQUE_4};
 
 #endif
