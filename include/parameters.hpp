@@ -15,18 +15,15 @@
 #define D_KP 1.5
 #define D_KI 0.3
 #define D_KD 0.5
-#define D_OUTPUT_MIN 0.0
-#define D_OUTPUT_MAX 2400
-#define BANGBANG_RANGE 1000.0
+#define D_OUTPUT_MIN 0.0 // Minimum output of the PID controller
+#define D_OUTPUT_MAX 2400 // Max output of the PID controller
+#define BANGBANG_RANGE 1000.0 
 #define PID_TIMESTEP 100.0
 #define PID_MODE false //enable cruise control
 #define PID_TC_MODE false //enable traction control
 #define EXP_TORQUE_CURVE false //set to TRUE for kustom pedal curve
 #define WHEELSPEED_TOOTH_COUNT 18
-//Longer RPM Timeout means we can read slower RPM
-//Shouldnt hurt to have it long. Should help for things like
-//Traction control
-#define RPM_TIMEOUT 1000
+#define RPM_TIMEOUT 500 // Timeout for wheel speed RPM to reset to 0
 #define MIN_BRAKE_PEDAL 400           // ~0.5v, set on 2-29-2024
 #define START_BRAKE_PEDAL 1300        // 1.58V, set on 2-29-2024
 #define BRAKE_ACTIVE 2293             // Threshold for brake pedal active (set to be doable by hand)
@@ -43,8 +40,7 @@
 #define END_ACCELERATOR_PEDAL_2 2550    // Position to max out acceleration
 #define MAX_ACCELERATOR_PEDAL_2 3000    // High accelerator implausibility threshold
 
-#define HALF_ACCELERATOR_PEDAL_1 ((START_ACCELERATOR_PEDAL_1 + END_ACCELERATOR_PEDAL_1) / 2)
-#define HALF_ACCELERATOR_PEDAL_2 ((START_ACCELERATOR_PEDAL_2 + END_ACCELERATOR_PEDAL_2) / 2)
+#define APPS_ALLOWABLE_TRAVEL_DEVIATION 50 // % allowable deviation of APPS1 and APPS2 travel readings
 
 #define REGEN_NM 60 
 #define BSPD_OK_HIGH_THRESHOLD 500 // ADC reading when BSPD is Latched (OK state)
@@ -60,7 +56,11 @@ const float bspd_current_high_threshold = 5000/(accumulator_cell_count * accumul
 #define CHARGE_POWER_LIM 9000
 
 // Torque Calculation Defines
-#define ALPHA 0.9 // This is the coefficient for exponential smoothing
+#define ALPHA 0.99 // This is the coefficient for exponential smoothing
+const float cutoff_10hz = 10; // Hz
+// Calculate filtering alpha value for the cutoff frequency  
+const double FILTERING_ALPHA_10HZ = 2 * 3.14 * cutoff_10hz / (1 + 2 * 3.14 * cutoff_10hz);
+
 // Note that the variable max_torque is uin8_t
 // So it will overflow past a value of 255
 const uint8_t TORQUE_1 = 60; // 1st Torque setting

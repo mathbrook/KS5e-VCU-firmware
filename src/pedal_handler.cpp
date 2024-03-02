@@ -93,7 +93,7 @@ bool PedalHandler::read_pedal_values()
 
     // exponential smoothing https://chat.openai.com/share/cf98f2ea-d87c-4d25-a365-e398ffebf968
     // TODO - evaluate this ALPHA value and if maybe we should decrease it
-    pedal_ADC.update_readings(ALPHA);
+    pedal_ADC.update_readings(FILTERING_ALPHA_10HZ);
     accel1_ = pedal_ADC.get_reading(ADC_ACCEL_1_CHANNEL);
     accel2_ = pedal_ADC.get_reading(ADC_ACCEL_2_CHANNEL);
     brake1_ = pedal_ADC.get_reading(ADC_BRAKE_1_CHANNEL);
@@ -189,10 +189,9 @@ void PedalHandler::verify_pedals(
     bool &accel_and_brake_plausible, bool &impl_occ)
 {
     int max_torque = TORQUE_1 * 10;
-    int torque1 = map(round(accel1_), START_ACCELERATOR_PEDAL_1,
-                      END_ACCELERATOR_PEDAL_1, 0, max_torque);
-    int torque2 = map(round(accel2_), START_ACCELERATOR_PEDAL_2,
-                      END_ACCELERATOR_PEDAL_2, 0, max_torque);
+    int torque1 =static_cast<int>(this->apps1.getTravelRatio() * max_torque);
+    int torque2 =static_cast<int>(this->apps2.getTravelRatio() * max_torque);
+
     float torqSum = abs(torque1 - torque2);
     float torqAvg = (torque1 + torque2) / 2;
     float torqDiff = torqSum / torqAvg;
@@ -210,7 +209,7 @@ void PedalHandler::verify_pedals(
     // check that the pedals are reading within 10% of each other TODO re-enabled 6/10/23, why was it commented out in the first place? how did we fix it before??
     // sum of the two readings should be within 10% of the average travel
     // T.4.2.4
-    else if (torqDiff * 100 > 50)
+    else if (torqDiff * 100 > APPS_ALLOWABLE_TRAVEL_DEVIATION)
     {
         accel_is_plausible = false;
     }
@@ -319,14 +318,14 @@ void PedalHandler::ws_run()
 // Returns true if BSPD is ok, false if not
 bool PedalHandler::get_board_sensor_readings()
 {
-    glv_current_ = ALPHA * glv_current_ + (1 - ALPHA) * analogRead(GLV_ISENSE);
-    glv_voltage_ = ALPHA * glv_voltage_ + (1 - ALPHA) * analogRead(GLV_VSENSE);
-    bspd_voltage_ = ALPHA * bspd_voltage_ + (1 - ALPHA) * analogRead(BSPDSENSE);
-    sdc_voltage_ = ALPHA * sdc_voltage_ + (1 - ALPHA) * analogRead(SDCVSENSE);
-    sdc_current_ = ALPHA * sdc_current_ + (1 - ALPHA) * analogRead(SDCISENSE);
-    vcc_voltage_ = ALPHA * vcc_voltage_ + (1 - ALPHA) * analogRead(_5V_VSENSE);
-    analog_input_nine_voltage_ = ALPHA * analog_input_nine_voltage_ + (1 - ALPHA) * analogRead(A9);
-    analog_input_ten_voltage_ = ALPHA * analog_input_ten_voltage_ + (1 - ALPHA) * analogRead(A10);
+    glv_current_ = FILTERING_ALPHA_10HZ * glv_current_ + (1 - FILTERING_ALPHA_10HZ) * analogRead(GLV_ISENSE);
+    glv_voltage_ = FILTERING_ALPHA_10HZ * glv_voltage_ + (1 - FILTERING_ALPHA_10HZ) * analogRead(GLV_VSENSE);
+    bspd_voltage_ = FILTERING_ALPHA_10HZ * bspd_voltage_ + (1 - FILTERING_ALPHA_10HZ) * analogRead(BSPDSENSE);
+    sdc_voltage_ = FILTERING_ALPHA_10HZ * sdc_voltage_ + (1 - FILTERING_ALPHA_10HZ) * analogRead(SDCVSENSE);
+    sdc_current_ = FILTERING_ALPHA_10HZ * sdc_current_ + (1 - FILTERING_ALPHA_10HZ) * analogRead(SDCISENSE);
+    vcc_voltage_ = FILTERING_ALPHA_10HZ * vcc_voltage_ + (1 - FILTERING_ALPHA_10HZ) * analogRead(_5V_VSENSE);
+    analog_input_nine_voltage_ = FILTERING_ALPHA_10HZ * analog_input_nine_voltage_ + (1 - FILTERING_ALPHA_10HZ) * analogRead(A9);
+    analog_input_ten_voltage_ = FILTERING_ALPHA_10HZ * analog_input_ten_voltage_ + (1 - FILTERING_ALPHA_10HZ) * analogRead(A10);
     return (bspd_voltage_ > BSPD_OK_HIGH_THRESHOLD);
 }
 
@@ -336,16 +335,16 @@ void PedalHandler::read_pedal_values_debug(uint16_t value)
     /* Filter ADC readings */
 
     // exponential smoothing https://chat.openai.com/share/cf98f2ea-d87c-4d25-a365-e398ffebf968
-    // TODO - evaluate this ALPHA value and if maybe we should decrease it
+    // TODO - evaluate this FILTERING_ALPHA_10HZ value and if maybe we should decrease it
     accel1_ =
-        ALPHA * accel1_ + (1 - ALPHA) * value;
+        FILTERING_ALPHA_10HZ * accel1_ + (1 - FILTERING_ALPHA_10HZ) * value;
     accel2_ =
-        ALPHA * accel2_ + (1 - ALPHA) * value;
+        FILTERING_ALPHA_10HZ * accel2_ + (1 - FILTERING_ALPHA_10HZ) * value;
     brake1_ =
-        ALPHA * brake1_ + (1 - ALPHA) * value;
+        FILTERING_ALPHA_10HZ * brake1_ + (1 - FILTERING_ALPHA_10HZ) * value;
 
     steering_angle_ =
-        ALPHA * steering_angle_ + (1 - ALPHA) * value;
+        FILTERING_ALPHA_10HZ * steering_angle_ + (1 - FILTERING_ALPHA_10HZ) * value;
 
     if (debugPrint.check())
     {

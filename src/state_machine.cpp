@@ -191,7 +191,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   }
   case MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE: // --------------------
   {
-    // end of test block
 #if USE_INVERTER
     pm100->inverter_kick(0);
 #endif
@@ -202,7 +201,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
     bool accumulator_ready = false;
 
-    // TODO might wanna check this out and make sure that this shit works, idk if it does
     if (accumulator->check_precharge_success() && (!accumulator->check_precharge_timeout()))
     {
       accumulator_ready = true;
@@ -223,12 +221,12 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // if TS is above HV threshold, move to Tractive System Active
 #if USE_INVERTER
 
-    if (pm100->check_TS_active() && accumulator_ready) // TODO somewhere here, dont allow TS active if a fault is known
+    if (pm100->check_TS_active() && accumulator_ready)
     {
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
     }
 #else
-    if (accumulator_ready) // TODO somewhere here, dont allow TS active if a fault is known
+    if (accumulator_ready)
     {
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_ACTIVE);
     }
