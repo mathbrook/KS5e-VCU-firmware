@@ -19,7 +19,7 @@ const int analog_init_list[]={SDCVSENSE,SDCISENSE,BSPDSENSE,GLV_VSENSE,GLV_ISENS
  * ADC pin definitions
  */
 #define ADC_BRAKE_1_CHANNEL 2
-#define ADC_HALL_CHANNEL 3 //currently offline because i cooked one of the filter hcips
+#define ADC_STEERING_CHANNEL 3 
 #define ADC_ACCEL_1_CHANNEL 0
 #define ADC_ACCEL_2_CHANNEL 1
 #define CS_ADC 10

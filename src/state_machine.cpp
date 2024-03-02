@@ -19,7 +19,7 @@ void StateMachine::send_state_msg(MCU_status &mcu_status)
 /* Handle changes in state */
 void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
 {
-  // Send current mcu_status
+  // Send current mcu_status before state transition
   send_state_msg(mcu_status);
   // If current state is the same as new state, exit
   if (mcu_status.get_state() == new_state)
@@ -71,7 +71,7 @@ void StateMachine::set_state(MCU_status &mcu_status, MCU_STATE new_state)
   }
 
   mcu_status.set_state(new_state);
-  // Send new mcu_status
+  // Send new mcu_status after transition
   send_state_msg(mcu_status);
   // entry logic ----------------------------------------------------------------------------------------------------------------------------------------------------
   switch (new_state)
@@ -133,7 +133,6 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
   mcu_status.set_brake_pedal_active(pedals->read_pedal_values());
   pedals->run_pedals(); // Maybe wrap all of this in a "pedals superloop" function
   pedals->ws_run();
-  pm100->calc_and_send_current_limit(pm100->getmcBusVoltage(), DISCHARGE_POWER_LIM, CHARGE_POWER_LIM);
   mcu_status.set_imd_ok_high(accumulator->get_imd_state());
   mcu_status.set_bms_ok_high(accumulator->get_bms_state());
   mcu_status.set_bspd_ok_high(pedals->get_board_sensor_readings());
@@ -141,9 +140,10 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
 
   pedals->send_readings();
 
-  if (dash_->get_button6() && dash_->get_button2() && (dash_->get_torque_mode_last_pressed_time()) > 500)
+  // If dash button is on and has been on for 
+  if (dash_->get_button(6) && (dash_->get_button_last_pressed_time(6)) > 750)
   {
-    dash_->set_torque_mode_last_pressed_time(0);
+    dash_->set_button_last_pressed_time(0,6);
     mcu_status.toggle_max_torque(mcu_status.get_torque_mode());
     mcu_status.set_max_torque(torque_mode_list[mcu_status.get_torque_mode() - 1]);
     send_state_msg(mcu_status);
@@ -360,9 +360,15 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
       set_state(mcu_status, MCU_STATE::TRACTIVE_SYSTEM_NOT_ACTIVE);
       break;
     }
-    // Moved the torque calc to always run in the superloop
 
+    // Torque calc always runs in the superloop
+
+    if (mcu_status.get_launch_ctrl_active())
+    {
+      // Do launch control things
+    }
 #if USE_INVERTER
+    pm100->calc_and_send_current_limit(pm100->getmcBusVoltage(), DISCHARGE_POWER_LIM, CHARGE_POWER_LIM);
     pm100->command_torque(calculated_torque);
 #endif
     break;
@@ -377,6 +383,7 @@ void StateMachine::handle_state_machine(MCU_status &mcu_status)
     // pedals->calculate_torque(motor_speed, max_torque); // Just to print the calced value and confirm it's right
     // Put debug prints here if/when needed
     pm100->debug_print();
+    accumulator->acc_debug_print();
     Serial.printf("\tDASH BUTTONS \nONE: %d TWO: %d THREE: %d FOUR: %d FIVE: %d SIX: %d\n", dash_->get_button1(), dash_->get_button2(), dash_->get_button3(), dash_->get_button4(), dash_->get_button5(), dash_->get_button6());
   }
 #endif

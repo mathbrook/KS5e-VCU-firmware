@@ -18,32 +18,32 @@
 #include "device_status.h"
 
 #define NEBUG
-
+static can_obj_ksu_ev_can_h_t ksu_can;
 // Metro timers for inverter:
 Metro timer_mc_kick_timer = Metro(50, 1); // Motor controller heartbeat timer
 Metro timer_inverter_enable = Metro(2000, 1); // Timeout for inverter enabling
 Metro timer_motor_controller_send = Metro(10, 1); // Motor controller torque command timer
-Metro timer_current_limit_send = Metro(500, 1); // Motor controller power limiting timer
+Metro timer_current_limit_send = Metro(10, 1); // Motor controller power limiting timer
 
 // timers for the accumulator:
-Metro pchgMsgTimer = Metro(1000, 0);
-// Metro pchgTimeout = Metro(500);
+// precharge_timeout is the time allowed for no precharge message to be received until the car goes out of RTD
+Metro precharge_timeout = Metro(500, 0);
 
 // timers for the pedals:
 
 Metro timer_debug_pedals_raw = Metro(100, 1);
-Metro pedal_out = Metro(50, 1);
+Metro pedal_out_20hz = Metro(50, 1); // CAN sending at 20hz
+Metro pedal_out_1hz = Metro(1000,1); // CAN sending at 1hz
 Metro pedal_check = Metro(40, 1);
 
 // timers for the dashboard:
-Metro pm100speedInspection = Metro(500, 1);
-
+// there are no timers for the dash
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(200, 1);
 
 // PID shit
-volatile double current_rpm, set_rpm, throttle_out;
+double current_rpm, set_rpm, throttle_out;
 const double KP = D_KP;
 const double KI = D_KI;
 const double KD = D_KD;
@@ -62,8 +62,8 @@ FreqMeasureMulti wsfr;
 // objects
 Dashboard dash;
 Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send, &dash);
-Accumulator accum(&pchgMsgTimer);
-PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
+Accumulator accum(&precharge_timeout,&ksu_can);
+PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out_20hz, &pedal_out_1hz, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
 StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
 
@@ -75,6 +75,7 @@ pedal_thresholds_t vcu_pedal_thresholds_t;
 
 void gpio_init();
 // Use this to emulate a changing signal from the ADC
+#if DEBUG
 uint16_t generateSineValue(double time_ms, double amplitude, double frequency, double phase_shift, double offset) {
     // Convert time from milliseconds to seconds
     double time_s = time_ms / 1000.0;
@@ -91,6 +92,7 @@ uint16_t generateSineValue(double time_ms, double amplitude, double frequency, d
     // double value = 1000;
     return static_cast<uint16_t>(value);
 }
+#endif
 int dummy_max_torque = 1000;
 int16_t dummy_motor_speed = 1000;
 //----------------------------------------------------------------------------------------------------------------------------------------

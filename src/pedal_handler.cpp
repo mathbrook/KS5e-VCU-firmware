@@ -1,7 +1,6 @@
 #include "pedal_handler.hpp"
 #include "state_machine.hpp"
 Metro debugPrint = Metro(100);
-Metro deb = Metro(10);
 
 // initializes pedal's ADC
 void PedalHandler::init_pedal_handler()
@@ -23,6 +22,13 @@ void PedalHandler::run_pedals()
     this->bse1.sensor_run();
 }
 
+/**
+ * @brief calculate torque to be commanded based on accel pedal position
+ * 
+ * @param motor_speed 
+ * @param max_torque 
+ * @return int16_t 
+ */
 int16_t PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
 {
     int calculated_torque = 0;
@@ -54,39 +60,56 @@ int16_t PedalHandler::calculate_torque(int16_t &motor_speed, int &max_torque)
     return calculated_torque;
 }
 
+/**
+ * @brief calculate the regen to be commanded based on brake pedal position
+ * 
+ * @param motor_speed 
+ * @param max_regen_torque 
+ * @return int16_t 
+ */
 int16_t PedalHandler::calculate_regen(int16_t &motor_speed, int16_t max_regen_torque)
 {
     int16_t calculated_regen_torque = 0;
-    // regen_command = ;
-    // 40191 = -10nm
-    // 10101 = -100nm
-    uint16_t calculated_torque2 = this->bse1.getTravelRatio() * (uint16_t)(-(REGEN_NM * 10));
-    calculated_regen_torque = static_cast<int>(calculated_torque2);
-    // calculated_torque = 40191;
-    Serial.print("regen torque: ");
-    Serial.println(calculated_regen_torque);
-    return calculated_regen_torque;
+
+    const int16_t regen_torque_maximum = REGEN_NM * -10;
+    calculated_regen_torque = this->bse1.getTravelRatio() * regen_torque_maximum;
+    // Smooth regen torque so it doesnt yeet driveline
+    // TODO find out what this limits the rate of change to
+    smoothed_regen_torque = 0.8 * smoothed_regen_torque + (1-0.8) * calculated_regen_torque;
+    #if DEBUG
+    Serial.printf("Calculated regen: %d smoothed regen: %d",calculated_regen_torque,smoothed_regen_torque);
+    #endif
+    return smoothed_regen_torque;
 }
-// returns true if the brake pedal is active
+/**
+ * @brief read and update all pedal values
+ * 
+ * @return true if brake active
+ * @return false if not active
+ */
 bool PedalHandler::read_pedal_values()
 {
     /* Filter ADC readings */
 
     // exponential smoothing https://chat.openai.com/share/cf98f2ea-d87c-4d25-a365-e398ffebf968
     // TODO - evaluate this ALPHA value and if maybe we should decrease it
-    accel1_ =
-        ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
-    accel2_ =
-        ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
-    brake1_ =
-        ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
+    pedal_ADC.update_readings(ALPHA);
+    accel1_ = pedal_ADC.get_reading(ADC_ACCEL_1_CHANNEL);
+    accel2_ = pedal_ADC.get_reading(ADC_ACCEL_2_CHANNEL);
+    brake1_ = pedal_ADC.get_reading(ADC_BRAKE_1_CHANNEL);
+    steering_angle_ = pedal_ADC.get_reading(ADC_STEERING_CHANNEL);
+    // accel1_ =
+    //     ALPHA * accel1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_1_CHANNEL);
+    // accel2_ =
+    //     ALPHA * accel2_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_ACCEL_2_CHANNEL);
+    // brake1_ =
+    //     ALPHA * brake1_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_BRAKE_1_CHANNEL);
 
-    steering_angle_ =
-        ALPHA * steering_angle_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_HALL_CHANNEL);
-
+    // steering_angle_ =
+    //     ALPHA * steering_angle_ + (1 - ALPHA) * pedal_ADC.read_adc(ADC_STEERING_CHANNEL);
+#if DEBUG
     if (debugPrint.check())
     {
-#if DEBUG
         Serial.print("APPS1 :");
         Serial.println(accel1_);
         Serial.print("APPS2 :");
@@ -95,38 +118,46 @@ bool PedalHandler::read_pedal_values()
         Serial.println(brake1_);
         Serial.print("STEERING_ANGLE :");
         Serial.println(steering_angle_);
-#endif
     }
+#endif
 
     VCUPedalReadings.set_accelerator_pedal_1(accel1_);
     VCUPedalReadings.set_accelerator_pedal_2(accel2_);
     VCUPedalReadings.set_brake_transducer_1(brake1_);
     VCUPedalReadings.set_brake_transducer_2(steering_angle_);
-    // only uses front brake pedal
+
     brake_is_active_ = (brake1_ >= BRAKE_ACTIVE);
     return brake_is_active_;
 }
 
+/**
+ * @brief send pedal readings over CAN, with timers built in to function
+ * 
+ */
 void PedalHandler::send_readings()
 {
-    if (pedal_out->check())
+    if (pedal_out_20hz->check())
     {
-        // Send Main Control Unit pedal reading message
+        // Send Main Control Unit pedal reading message @ 20hz
         CAN_message_t tx_msg;
         VCUPedalReadings.write(tx_msg.buf);
         tx_msg.id = ID_VCU_PEDAL_READINGS;
         tx_msg.len = sizeof(VCUPedalReadings);
 
-        // Send wheel speed readings
+        // Send wheel speed readings @ 20hz
         CAN_message_t tx_msg2;
         tx_msg2.id = ID_VCU_WS_READINGS;
         tx_msg2.len = 8;
-        uint32_t rpm_wsfl = (int)(wsfl_t.current_rpm * 100);
-        uint32_t rpm_wsfr = (int)(wsfr_t.current_rpm * 100);
-        memcpy(&tx_msg2.buf[0], &rpm_wsfl, sizeof(rpm_wsfl));
-        memcpy(&tx_msg2.buf[4], &rpm_wsfr, sizeof(rpm_wsfr));
-
-        // Send miscellaneous board analog readings
+        int16_t rpm_wsfl = (int16_t)(wsfl_t.current_rpm);
+        int16_t rpm_wsfr = (int16_t)(wsfr_t.current_rpm);
+        int16_t rpm_buf[]={rpm_wsfl,rpm_wsfr};
+        memcpy(&tx_msg2.buf[0], &rpm_buf, sizeof(rpm_buf));
+        WriteCANToInverter(tx_msg);
+        WriteCANToInverter(tx_msg2);
+    }
+    if (pedal_out_1hz->check())
+    {
+        // Send miscellaneous board analog readings @ 1hz
         CAN_message_t tx_msg3;
         tx_msg3.id = ID_VCU_BOARD_ANALOG_READS_ONE;
         memcpy(&tx_msg3.buf[0], &glv_current_, sizeof(glv_current_));
@@ -140,14 +171,19 @@ void PedalHandler::send_readings()
         memcpy(&tx_msg4.buf[2], &sdc_current_, sizeof(sdc_current_));
         memcpy(&tx_msg4.buf[4], &analog_input_nine_voltage_, sizeof(analog_input_nine_voltage_));
         memcpy(&tx_msg4.buf[6], &analog_input_ten_voltage_, sizeof(analog_input_ten_voltage_));
-
-        WriteCANToInverter(tx_msg);
-        WriteCANToInverter(tx_msg2);
         WriteCANToInverter(tx_msg3);
         WriteCANToInverter(tx_msg4);
     }
 }
 
+/**
+ * @brief do rules required pedal plausibility checks
+ * 
+ * @param accel_is_plausible 
+ * @param brake_is_plausible 
+ * @param accel_and_brake_plausible 
+ * @param impl_occ 
+ */
 void PedalHandler::verify_pedals(
     bool &accel_is_plausible, bool &brake_is_plausible,
     bool &accel_and_brake_plausible, bool &impl_occ)
@@ -237,6 +273,13 @@ void PedalHandler::verify_pedals(
 // idgaf anything below (all wheel speed)
 double PedalHandler::get_wsfr() { return wsfr_t.current_rpm; }
 double PedalHandler::get_wsfl() { return wsfl_t.current_rpm; }
+/**
+ * @brief update wheel speed readings
+ * 
+ * @param current_time_millis 
+ * @param ws 
+ * @param freq 
+ */
 void PedalHandler::update_wheelspeed(unsigned long current_time_millis, wheelspeeds_t *ws, FreqMeasureMulti *freq){
     if ((current_time_millis - ws->current_rpm_change_time) > RPM_TIMEOUT) 
     { 

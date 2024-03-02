@@ -60,10 +60,22 @@ void Inverter::updateInverterCAN()
         }
         case (ID_DASH_BUTTONS):
         {
+            uint8_t new_inputs = rxMsg.buf[0];
             float timestamp = millis() / float(1000);
             Serial.printf("Dash last received interval: %f\n", (timestamp - (dash->last_received_timestamp)));
             dash->last_received_timestamp = timestamp;
-            dash->set_buttons(rxMsg.buf[0]);
+            for (int i = 0; i < 6; i++)
+            {
+                uint8_t bit = (0x1 << i);
+                bool new_val = new_inputs & bit;
+                bool old_val = (dash->get_buttons() & bit);
+                if (new_val != old_val)
+                {
+                    Serial.printf("Button number %d changed from %d to %d",i+1,old_val,new_val);
+                    dash->set_button_last_pressed_time(0,i);
+                }
+            }
+            dash->set_buttons(new_inputs);
         }
         default:
             break;
@@ -93,7 +105,13 @@ void Inverter::writeEnableNoTorque()
     WriteCANToInverter(ctrlMsg);
 }
 
-// returns false if the command was unable to be sent
+/**
+ * @brief Sends torque command to the inverter
+ * 
+ * @param torque the 0 - 3000 torque value (in Nm x 10)
+ * @return true if sent succesfully
+ * @return false if not
+ */
 bool Inverter::command_torque(int torque)
 {
     uint8_t torquePart1 = torque % 256;
