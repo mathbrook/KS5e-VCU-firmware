@@ -62,7 +62,9 @@ void Inverter::updateInverterCAN()
         {
             uint8_t new_inputs = rxMsg.buf[0];
             float timestamp = millis() / float(1000);
+        #if DEBUG
             Serial.printf("Dash last received interval: %f\n", (timestamp - (dash->last_received_timestamp)));
+        #endif
             dash->last_received_timestamp = timestamp;
             for (int i = 0; i < 6; i++)
             {
@@ -117,7 +119,7 @@ bool Inverter::command_torque(int torque)
     uint8_t torquePart1 = torque % 256;
     uint8_t torquePart2 = torque / 256;
     uint8_t angularVelocity1 = 0, angularVelocity2 = 0;
-    bool emraxDirection = true; // forward
+    bool emraxDirection = true; // true for forward, false for reverse
     bool inverterEnable = true; // go brrr
     // // TODO actual regen mapping and not on/off, this was jerky on dyno
     //  if(pedals->VCUPedalReadings.get_brake_transducer_1()>=1950){
