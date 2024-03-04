@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <FreqMeasureMulti.h>
-
+#include <cmath>
 // our includes
 #include "MCU_status.hpp"
 #include "KS2eCAN.hpp"
@@ -15,42 +15,40 @@
 #include "inverter.hpp"
 #include "accumulator.hpp"
 #include "state_machine.hpp"
-#include "FlexCAN_util.hpp"
+#include "device_status.h"
 
+#define NEBUG
+static can_obj_ksu_ev_can_h_t ksu_can;
 // Metro timers for inverter:
-Metro timer_mc_kick_timer = Metro(50, 1);
-Metro timer_inverter_enable = Metro(2000, 1); // Timeout failed inverter enable
-Metro timer_motor_controller_send = Metro(100, 1);
-Metro timer_current_limit_send = Metro(500,1);
+Metro timer_mc_kick_timer = Metro(50, 1); // Motor controller heartbeat timer
+Metro timer_inverter_enable = Metro(2000, 1); // Timeout for inverter enabling
+Metro timer_motor_controller_send = Metro(10, 1); // Motor controller torque command timer
+Metro timer_current_limit_send = Metro(10, 1); // Motor controller power limiting timer
 
 // timers for the accumulator:
-Metro pchgMsgTimer = Metro(1000, 0);
-// Metro pchgTimeout = Metro(500);
+// precharge_timeout is the time allowed for no precharge message to be received until the car goes out of RTD
+Metro precharge_timeout = Metro(500, 0);
 
 // timers for the pedals:
 
 Metro timer_debug_pedals_raw = Metro(100, 1);
-Metro pedal_out = Metro(50, 1);
+Metro pedal_out_20hz = Metro(50, 1); // CAN sending at 20hz
+Metro pedal_out_1hz = Metro(1000,1); // CAN sending at 1hz
 Metro pedal_check = Metro(40, 1);
 
 // timers for the dashboard:
-Metro pm100speedInspection = Metro(500, 1);
-
+// there are no timers for the dash
 // timers for the state machine:
 Metro timer_ready_sound = Metro(1000); // Time to play RTD sound
 Metro debug_tim = Metro(200, 1);
-int temporarydisplaytime = 0;
 
 // PID shit
-volatile double current_rpm, set_rpm, throttle_out;
-double KP = D_KP;
-double KI = D_KI;
-double KD = D_KD;
-double OUTPUT_MIN = D_OUTPUT_MIN;
-double OUTPUT_MAX = D_OUTPUT_MAX;
-
-// Bus Voltage
-int BusVoltage = 0;
+double current_rpm, set_rpm, throttle_out;
+const double KP = D_KP;
+const double KI = D_KI;
+const double KD = D_KD;
+const double OUTPUT_MIN = D_OUTPUT_MIN;
+const double OUTPUT_MAX = D_OUTPUT_MAX;
 
 AutoPID speedPID(&current_rpm, &set_rpm, &throttle_out, OUTPUT_MIN, OUTPUT_MAX, KP, KI, KD);
 
@@ -63,13 +61,40 @@ FreqMeasureMulti wsfr;
 
 // objects
 Dashboard dash;
-Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send);
-Accumulator accum(&pchgMsgTimer);
-PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
-StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &temporarydisplaytime, &pedals, &pedal_check);
+Inverter pm100(&timer_mc_kick_timer, &timer_inverter_enable, &timer_motor_controller_send, &timer_current_limit_send, &dash);
+Accumulator accum(&precharge_timeout,&ksu_can);
+PedalHandler pedals(&timer_debug_pedals_raw, &pedal_out_20hz, &pedal_out_1hz, &speedPID, &current_rpm, &set_rpm, &throttle_out, &wsfl, &wsfr);
+StateMachine state_machine(&pm100, &accum, &timer_ready_sound, &dash, &debug_tim, &pedals, &pedal_check);
 MCU_status mcu_status = MCU_status();
-CAN_message_t fw_hash_msg;
 
+static CAN_message_t mcu_status_msg;
+static CAN_message_t fw_hash_msg;
+static CAN_message_t pedal_thresholds_msg;
+device_status_t vcu_status_t;
+pedal_thresholds_t vcu_pedal_thresholds_t;
+
+void gpio_init();
+// Use this to emulate a changing signal from the ADC
+#if DEBUG
+uint16_t generateSineValue(double time_ms, double amplitude, double frequency, double phase_shift, double offset) {
+    // Convert time from milliseconds to seconds
+    double time_s = time_ms / 1000.0;
+
+    // Calculate the angle (in radians) based on time, frequency, and phase shift
+    double angle = 2 * M_PI * frequency * time_s + phase_shift;
+
+    // Calculate the sine value
+    double value = amplitude * sin(angle) + offset;
+    value+=amplitude;
+    // Ensure the value is within the 12-bit unsigned integer range
+    value = fmax(0, fmin(value, 4095));
+    // Serial.println(value);
+    // double value = 1000;
+    return static_cast<uint16_t>(value);
+}
+#endif
+int dummy_max_torque = 1000;
+int16_t dummy_motor_speed = 1000;
 //----------------------------------------------------------------------------------------------------------------------------------------
 
 void setup()
@@ -78,57 +103,70 @@ void setup()
     delay(100);
 
     InitCAN();
-
+    gpio_init();
     mcu_status.set_max_torque(0); // no torque on startup
     mcu_status.set_torque_mode(0);
     // build up fw git hash message
-    fw_hash_msg.id = ID_VCU_FW_VERSION; fw_hash_msg.len=8;
-    Serial.printf("FW git hash: %lu",AUTO_VERSION);
-    // long git_hash = strtol(AUTO_VERSION,0,16);
-    unsigned long git_hash = AUTO_VERSION;
-    memcpy(&fw_hash_msg.buf[0],&git_hash,sizeof(git_hash));
+    fw_hash_msg.id = ID_VCU_FW_VERSION;
+    fw_hash_msg.len = sizeof(vcu_status_t) / sizeof(uint8_t);
+#if DEBUG
+    Serial.printf("FW git hash: %lu, IS_DIRTY: %d IS_MAIN: %d\n", AUTO_VERSION, FW_PROJECT_IS_DIRTY, FW_PROJECT_IS_MAIN_OR_MASTER);
+    Serial.printf("FW git hash in the struct: %lu\n", vcu_status_t.firmware_version);
+#endif
+    vcu_status_t.on_time_seconds = millis() / 1000;
+    memcpy(fw_hash_msg.buf, &vcu_status_t, sizeof(vcu_status_t));
 
-    pinMode(BUZZER, OUTPUT); // TODO write gpio initialization function
-    digitalWrite(BUZZER, LOW);
-    pinMode(LOWSIDE1, OUTPUT);
-    pinMode(LOWSIDE2, OUTPUT);
-    pinMode(WSFL, INPUT_PULLUP);
-    pinMode(WSFR, INPUT_PULLUP);
-    mcu_status.set_inverter_powered(true); // this means nothing anymore
-    mcu_status.set_max_torque(60);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
+    mcu_status.set_inverter_powered(true); // note VCU does not control inverter power on rev3
+    mcu_status.set_torque_mode(1);         // TODO torque modes should be an enum
+    mcu_status.set_max_torque(TORQUE_1);   // TORQUE_1=60nm, 2=120nm, 3=180nm, 4=240nm
     state_machine.init_state_machine(mcu_status);
 }
 
 void loop()
 {
+    // delay(10);
+    // uint16_t value = generateSineValue(millis(),1500/2,0.5,0,0);
+    // pedals.read_pedal_values_debug(value);
+    // pedals.run_pedals();
+    // pedals.calculate_torque(dummy_motor_speed,dummy_max_torque);
     state_machine.handle_state_machine(mcu_status);
-    BusVoltage = pm100.getmcBusVoltage();
 
-    // if (debug_tim.check())
-    // {
-    //     Serial.println("COPE SEEETHE MALD");
-    // }
     if (timer_can_update.check())
     {
         // Send Main Control Unit status message
-        CAN_message_t tx_msg;
-        mcu_status.write(tx_msg.buf);
-        tx_msg.id = ID_VCU_STATUS;
-        tx_msg.len = sizeof(mcu_status);
-        WriteCANToInverter(tx_msg);
+        mcu_status.write(mcu_status_msg.buf);
+        mcu_status_msg.id = ID_VCU_STATUS;
+        mcu_status_msg.len = sizeof(mcu_status);
+        WriteCANToInverter(mcu_status_msg);
 
-        // Send Dash Bus Voltage
-        CAN_message_t dash_msg;
-        BusVoltage = pm100.getmcBusVoltage();
-        // Serial.println(BusVoltage);
-        dash.ByteEachDigit(BusVoltage);
-        memcpy(dash_msg.buf, dash.getBusVoltage(), dash_msg.len);
-        dash_msg.id = ID_DASH_BUSVOLT;
-        dash_msg.len = 8;
-        WriteCANToInverter(dash_msg);
-
-        //broadcast firmware git hash
+        // broadcast firmware git hash
+        vcu_status_t.on_time_seconds = millis() / 1000;
+        memcpy(fw_hash_msg.buf, &vcu_status_t, sizeof(vcu_status_t));
         WriteCANToInverter(fw_hash_msg);
+
+        // broadcast pedal thresholds information
+        pedal_thresholds_msg.id = ID_VCU_PEDAL_THRESHOLD_SETTINGS;
+        pedal_thresholds_msg.len = 7;
+        pedal_thresholds_msg.buf[0]=0;
+        memcpy(&pedal_thresholds_msg.buf[1], &vcu_pedal_thresholds_t.pedal_thresholds_0, sizeof(vcu_pedal_thresholds_t.pedal_thresholds_0));
+        WriteCANToInverter(pedal_thresholds_msg);
+
+        pedal_thresholds_msg.buf[0]=1;
+        memcpy(&pedal_thresholds_msg.buf[1], &vcu_pedal_thresholds_t.pedal_thresholds_1, sizeof(vcu_pedal_thresholds_t.pedal_thresholds_1));
+        WriteCANToInverter(pedal_thresholds_msg);
+
+        pedal_thresholds_msg.buf[0]=2;
+        memcpy(&pedal_thresholds_msg.buf[1], &vcu_pedal_thresholds_t.pedal_thresholds_2, sizeof(vcu_pedal_thresholds_t.pedal_thresholds_2));
+        WriteCANToInverter(pedal_thresholds_msg);
     }
 }
 
+void gpio_init()
+{
+    pinMode(BUZZER, OUTPUT);
+    digitalWrite(BUZZER, LOW);
+    pinMode(LOWSIDE1, OUTPUT);
+    pinMode(LOWSIDE2, OUTPUT);
+    pinMode(WSFL, INPUT_PULLUP);
+    pinMode(WSFR, INPUT_PULLUP);
+}

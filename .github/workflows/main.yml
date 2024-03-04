@@ -26,5 +26,5 @@ jobs:
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.ref_name }}-teensy-hex
+          name: ${{ github.sha }}-teensy-hex
           path: .pio/build/teensy41/firmware.hex

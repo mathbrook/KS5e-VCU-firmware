@@ -18,7 +18,7 @@ void InitCAN()
     {
         DaqCAN_.setMB((FLEXCAN_MAILBOX)i, TX, STD);
     }
-    DaqCAN_.setMB((FLEXCAN_MAILBOX)(NUM_RX_MAILBOXES-1), RX, EXT);
+    DaqCAN_.setMB((FLEXCAN_MAILBOX)(NUM_RX_MAILBOXES - 1), RX, EXT);
     DaqCAN_.mailboxStatus();
 
     // inverter can must send & receive, 6rx MB and 2tx MB
@@ -48,10 +48,17 @@ void InitCAN()
     {
         AccumulatorCAN_.setMB((FLEXCAN_MAILBOX)i, TX, STD);
     }
-    AccumulatorCAN_.setMB((FLEXCAN_MAILBOX)5, RX, EXT);
+    AccumulatorCAN_.setMB((FLEXCAN_MAILBOX)(NUM_RX_MAILBOXES - 1), RX, EXT);
     // AccumulatorCAN_.setMBFilter(REJECT_ALL);
-    // AccumulatorCAN_.setMBFilter(MB0, 0x69, ID_BMS_INFO, 0x6B2);
+    // AccumulatorCAN_.setMBFilter(MB0, 0x69, ID_BMS_CURRENT_LIMIT_INFO, 0x6B2);
     AccumulatorCAN_.mailboxStatus();
+}
+
+int unpack_flexcan_message(can_obj_ksu_ev_can_h_t *o, CAN_message_t &msg)
+{
+    uint64_t data;
+    memcpy(&data, msg.buf, sizeof(msg.buf));
+    return unpack_message(o, msg.id, data, msg.len, millis());
 }
 
 int WriteCANToInverter(CAN_message_t &msg)
