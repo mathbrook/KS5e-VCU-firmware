@@ -63,10 +63,11 @@ const double FILTERING_ALPHA_10HZ = 2 * 3.14 * cutoff_10hz / (1 + 2 * 3.14 * cut
 
 // Note that the variable max_torque is uin8_t
 // So it will overflow past a value of 255
-const uint8_t TORQUE_1 = 60; // 1st Torque setting
-const uint8_t TORQUE_2 = 120; //2nd torque seting
+const uint8_t TORQUE_1 = 10; // 1st Torque setting
+const uint8_t TORQUE_2 = 120; //2nd torque setting
 const uint8_t TORQUE_3 = 180; //3rd torque setting
 const uint8_t TORQUE_4 = 240; //4th torque setting
+// List of torque modes (Nm) 
 const int torque_mode_list[]={TORQUE_1,TORQUE_2,TORQUE_3,TORQUE_4};
 
 #endif
