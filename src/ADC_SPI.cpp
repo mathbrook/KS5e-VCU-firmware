@@ -12,7 +12,7 @@
  */
 ADC_SPI::ADC_SPI()
 {
-	init(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
+	// init(DEFAULT_SPI_CS, DEFAULT_SPI_SPEED);
 }
 
 /*
@@ -38,8 +38,7 @@ void ADC_SPI::init(int CS, unsigned int SPIspeed)
 	SPI_SPEED = SPIspeed;
 
 	pinMode(ADC_SPI_CS, OUTPUT);
-	pinMode(ADC_SPI_CS, HIGH);
-
+	digitalWrite(ADC_SPI_CS, HIGH);
 	// Initialize SPI:
 	SPI.begin();
 }
@@ -76,4 +75,22 @@ uint16_t ADC_SPI::read_adc(int channel)
 	SPI.endTransaction();
 
 	return (result1 << 4) | (result2 >> 4);
+}
+
+uint16_t ADC_SPI::get_reading(int channel)
+{
+	if (channel > NUM_ADC_CHANNELS || channel < 0)
+	{
+		return 0;
+	}
+	return readings[channel];
+}
+// Will read from ADC and apply exponential smooth
+void ADC_SPI::update_readings(const double ADC_ALPHA)
+{
+	for (unsigned int i = 0; i < (sizeof(readings) / sizeof(readings[0])); i++)
+	{
+		// exponential smoothing https://chat.openai.com/share/cf98f2ea-d87c-4d25-a365-e398ffebf968
+		readings[i] = ADC_ALPHA * readings[i] + (1-ADC_ALPHA) * read_adc(i);
+	}
 }

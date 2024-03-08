@@ -1,7 +1,6 @@
 #include "inverter.hpp"
 #include "FlexCAN_util.hpp"
 #include "pedal_handler.hpp"
-#define HT_DEBUG_EN
 // inverter has got to be crunk up before yeeting
 void Inverter::doStartup()
 {
@@ -14,10 +13,6 @@ void Inverter::doStartup()
 
 void Inverter::updateInverterCAN()
 {
-    CAN_message_t rxMsg2;
-
-    // TODO Hey John delete this because I'm just putting it here to read CAN1
-    // ReadDaqCAN(rxMsg2);
 
     CAN_message_t rxMsg;
 
@@ -39,11 +34,12 @@ void Inverter::updateInverterCAN()
         case (ID_MC_VOLTAGE_INFORMATION):
         {
             pm100Voltage.load(rxMsg.buf);
-            
+
             break;
         }
         case (ID_MC_MOTOR_POSITION_INFORMATION):
         {
+
             pm100Speed.load(rxMsg.buf);
             break;
         }
@@ -62,6 +58,27 @@ void Inverter::updateInverterCAN()
             pm100temp3.load(rxMsg.buf);
             break;
         }
+        case (ID_DASH_BUTTONS):
+        {
+            uint8_t new_inputs = rxMsg.buf[0];
+            float timestamp = millis() / float(1000);
+        #if DEBUG
+            Serial.printf("Dash last received interval: %f\n", (timestamp - (dash->last_received_timestamp)));
+        #endif
+            dash->last_received_timestamp = timestamp;
+            for (int i = 0; i < 6; i++)
+            {
+                uint8_t bit = (0x1 << i);
+                bool new_val = new_inputs & bit;
+                bool old_val = (dash->get_buttons() & bit);
+                if (new_val != old_val)
+                {
+                    Serial.printf("Button number %d changed from %d to %d",i+1,old_val,new_val);
+                    dash->set_button_last_pressed_time(0,i);
+                }
+            }
+            dash->set_buttons(new_inputs);
+        }
         default:
             break;
         }
@@ -70,13 +87,14 @@ void Inverter::updateInverterCAN()
 
 void Inverter::debug_print()
 {
+
 }
 
 void Inverter::writeControldisableWithZeros()
 {
     CAN_message_t ctrlMsg;
     ctrlMsg.len = 8;
-    ctrlMsg.id = 0xC0; // OUR CONTROLLER
+    ctrlMsg.id = ID_MC_COMMAND_MESSAGE; // OUR CONTROLLER
     memcpy(ctrlMsg.buf, disableWithZeros, sizeof(ctrlMsg.buf));
 }
 
@@ -84,18 +102,24 @@ void Inverter::writeEnableNoTorque()
 {
     CAN_message_t ctrlMsg;
     ctrlMsg.len = 8;
-    ctrlMsg.id = 0xC0; // OUR CONTROLLER
+    ctrlMsg.id = ID_MC_COMMAND_MESSAGE; // OUR CONTROLLER
     memcpy(ctrlMsg.buf, enableNoTorque, sizeof(ctrlMsg.buf));
     WriteCANToInverter(ctrlMsg);
 }
 
-// returns false if the command was unable to be sent
+/**
+ * @brief Sends torque command to the inverter
+ * 
+ * @param torque the 0 - 3000 torque value (in Nm x 10)
+ * @return true if sent succesfully
+ * @return false if not
+ */
 bool Inverter::command_torque(int torque)
 {
     uint8_t torquePart1 = torque % 256;
     uint8_t torquePart2 = torque / 256;
     uint8_t angularVelocity1 = 0, angularVelocity2 = 0;
-    bool emraxDirection = true; // forward
+    bool emraxDirection = true; // true for forward, false for reverse
     bool inverterEnable = true; // go brrr
     // // TODO actual regen mapping and not on/off, this was jerky on dyno
     //  if(pedals->VCUPedalReadings.get_brake_transducer_1()>=1950){
@@ -126,7 +150,6 @@ bool Inverter::command_torque(int torque)
 //
 bool Inverter::check_inverter_ready()
 {
-
     bool inverter_is_enabled = pm100State.get_inverter_enable_state();
 
     // delay(1000);
@@ -155,7 +178,7 @@ void Inverter::enable_inverter()
 // kicks the inverter's heartbeat with the enable flag to either enable or disable inverter
 void Inverter::inverter_kick(bool enable)
 { // do u want the MC on or not?
-    if (mcTim->check())
+    if (mc_kick_tim->check())
     {
         CAN_message_t ctrlMsg;
         ctrlMsg.len = 8;
@@ -187,7 +210,7 @@ void Inverter::forceMCdischarge()
     elapsedMillis dischargeCountdown = 0;
     while (dischargeCountdown <= 100)
     {
-        if (mcTim->check() == 1)
+        if (mc_kick_tim->check() == 1)
         {
             CAN_message_t ctrlMsg;
             ctrlMsg.len = 8;
@@ -238,4 +261,27 @@ bool Inverter::check_TS_active()
 bool Inverter::check_inverter_disabled()
 {
     return (!pm100State.get_inverter_enable_state());
+}
+// Calculate discharge and charge current limits based on current pack voltage and
+// target power limit
+bool Inverter::calc_and_send_current_limit(uint16_t pack_voltage, uint32_t discharge_power_limit, uint32_t charge_power_limit)
+{
+    pack_voltage /= 10;
+    uint16_t discharge_current_limit = min((discharge_power_limit) / pack_voltage, accumulator_max_discharge_current);
+    uint16_t charge_current_limit = min((charge_power_limit / pack_voltage), accumulator_max_charge_current);
+    if (timer_current_limit->check())
+    {
+#if DEBUG
+        Serial.printf("discharge current limit: %d charge current limit: %d\n", discharge_current_limit, charge_current_limit);
+#endif
+        CAN_message_t bms_current_limit_msg;
+        bms_current_limit_msg.id = ID_MC_CURRENT_LIMIT_COMMAND;
+        memcpy(&bms_current_limit_msg.buf[0], &discharge_current_limit, sizeof(discharge_current_limit));
+        memcpy(&bms_current_limit_msg.buf[2], &charge_current_limit, sizeof(charge_current_limit));
+        return WriteCANToInverter(bms_current_limit_msg);
+    }
+    else
+    {
+        return false;
+    }
 }
